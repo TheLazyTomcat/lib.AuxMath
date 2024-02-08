@@ -64,7 +64,6 @@ uses
   SysUtils,
   AuxTypes;
 
-
 {===============================================================================
     Library-specific exceptions
 ===============================================================================}
@@ -102,6 +101,7 @@ procedure DivMod(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overlo
 procedure DivMod(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
 procedure DivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+
 {===============================================================================
 --------------------------------------------------------------------------------
                           Combined division and ceiling
@@ -130,6 +130,7 @@ Function DivCeil(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inli
 Function DivCeil(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeil(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeil(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -160,6 +161,7 @@ Function DivFloor(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} i
 Function DivFloor(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloor(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+
 {===============================================================================
 --------------------------------------------------------------------------------
                               64bit ceil and floor                             
@@ -176,6 +178,7 @@ Function DivFloor(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} i
 Function Ceil64(N: Extended): Int64;
 
 Function Floor64(N: Extended): Int64;
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -207,6 +210,7 @@ Function IsPow2(N: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -271,18 +275,75 @@ Function TryDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): 
 Function TryDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function TryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-(*
-procedure iDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32; out IsPow2: Boolean); overload;
-procedure uDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32; out IsPow2: Boolean); overload;
+
+{===============================================================================
+--------------------------------------------------------------------------------
+               Combined division and modulo by integer power of 2
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  If divisor is a positive integer power of 2, it will perform highly optimized
+  integer division and modulo in one operation and return true.
+  Otherwise it will perform standard integer division and modulo and return
+  false.
+
+    NOTE - the highly optimized division (TryDivModPow2) is always called and
+           only when it fails the standard division (DivMod) is called instead.
+}
+
+Function iDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;
+Function iDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;
+Function iDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;
+Function iDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function uDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;
+Function uDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;
+Function uDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;
+Function uDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function DivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
-procedure iDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;
-procedure uDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;
+{===============================================================================
+--------------------------------------------------------------------------------
+         Combined division and modulo by integer power of 2 (no checks)
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Performs highly optimized integer division and modulo, while assuming the
+  divisor is a positive integer power of 2. If the divisor is not a power of
+  two, then the results are completely undefined.
 
+    WARNING - it is caller's resposibility to ensure that the divisor is a
+              positive integral power of 2, as it is not checked.
+}
 
-procedure iDivModPow2Fast(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;
-procedure uDivModPow2Fast(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;
-*)
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+procedure DivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -2614,6 +2675,68 @@ end;
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
+    TryDivModPow2 - internal functions
+-------------------------------------------------------------------------------}
+
+{$IFDEF PurePascal}
+
+Function SAR_8(Value: UInt8; Shift: Integer): UInt8;
+begin
+If Shift <> 0 then
+  begin
+    If (Value and $80) <> 0 then
+      Result := UInt8((Value shr Shift) or (UInt8(-1) shl (8 - Shift)))
+    else
+      Result := Value shr Shift;
+  end
+else Result := Value;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function SAR_16(Value: UInt16; Shift: Integer): UInt16;
+begin
+If Shift <> 0 then
+  begin
+    If (Value and $8000) <> 0 then
+      Result := UInt16((Value shr Shift) or (UInt16(-1) shl (16 - Shift)))
+    else
+      Result := Value shr Shift;
+  end
+else Result := Value;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function SAR_32(Value: UInt32; Shift: Integer): UInt32;
+begin
+If Shift <> 0 then
+  begin
+    If (Value and $80000000) <> 0 then
+      Result := UInt32((Value shr Shift) or (UInt32(-1) shl (32 - Shift)))
+    else
+      Result := Value shr Shift;
+  end
+else Result := Value;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function SAR_64(Value: UInt64; Shift: Integer): UInt64;
+begin
+If Shift <> 0 then
+  begin
+    If (Value and $8000000000000000) <> 0 then
+      Result := UInt64((Value shr Shift) or (UInt64(-1) shl (64 - Shift)))
+    else
+      Result := Value shr Shift;
+  end
+else Result := Value;
+end;
+
+{$ENDIF}
+
+{-------------------------------------------------------------------------------
     iTryDivModPow2 - signed integers
 -------------------------------------------------------------------------------}
 
@@ -2820,21 +2943,8 @@ asm
 {$ENDIF}
 end;
 {$ELSE}
-
-  Function SAR(Value: UInt8; Shift: Integer): UInt8;
-  begin
-    If Shift <> 0 then
-      begin
-        If (Value and $80) <> 0 then
-          Result := UInt8((Value shr Shift) or (UInt8(-1) shl (8 - Shift)))
-        else
-          Result := Value shr Shift;
-      end
-    else Result := Value;
-  end;
-
 var
-  PowerExp:     Integer;
+  PowerExp:     Int32;
   PredDivisor:  Int8;
 begin
 PowerExp := iIntLog2(Divisor);
@@ -2846,7 +2956,7 @@ If PowerExp >= 0 then
         // both Q and R are negative
         PredDivisor := Pred(Divisor);
         // Dividend + PredDivisor can and will overflow
-        Quotient := Int8(SAR(UInt8(Dividend + PredDivisor),PowerExp));
+        Quotient := Int8(SAR_8(UInt8(Dividend + PredDivisor),PowerExp));
         Remainder := Dividend and PredDivisor;
         If Remainder <> 0 then
           Remainder := Remainder or Int8(UInt8(-1) shl PowerExp);
@@ -3056,21 +3166,8 @@ asm
 {$ENDIF}
 end;
 {$ELSE}
-
-  Function SAR(Value: UInt16; Shift: Integer): UInt16;
-  begin
-    If Shift <> 0 then
-      begin
-        If (Value and $8000) <> 0 then
-          Result := UInt16((Value shr Shift) or (UInt16(-1) shl (16 - Shift)))
-        else
-          Result := Value shr Shift;
-      end
-    else Result := Value;
-  end;
-
 var
-  PowerExp:     Integer;
+  PowerExp:     Int32;
   PredDivisor:  Int16;
 begin
 PowerExp := iIntLog2(Divisor);
@@ -3079,7 +3176,7 @@ If PowerExp >= 0 then
     If Dividend < 0 then
       begin
         PredDivisor := Pred(Divisor);
-        Quotient := Int16(SAR(UInt16(Dividend + PredDivisor),PowerExp));
+        Quotient := Int16(SAR_16(UInt16(Dividend + PredDivisor),PowerExp));
         Remainder := Dividend and PredDivisor;
         If Remainder <> 0 then
           Remainder := Remainder or Int16(UInt16(-1) shl PowerExp);
@@ -3288,21 +3385,8 @@ asm
 {$ENDIF}
 end;
 {$ELSE}
-
-  Function SAR(Value: UInt32; Shift: Integer): UInt32;
-  begin
-    If Shift <> 0 then
-      begin
-        If (Value and $80000000) <> 0 then
-          Result := UInt32((Value shr Shift) or (UInt32(-1) shl (32 - Shift)))
-        else
-          Result := Value shr Shift;
-      end
-    else Result := Value;
-  end;
-
 var
-  PowerExp:     Integer;
+  PowerExp:     Int32;
   PredDivisor:  Int32;
 begin
 PowerExp := iIntLog2(Divisor);
@@ -3311,7 +3395,7 @@ If PowerExp >= 0 then
     If Dividend < 0 then
       begin
         PredDivisor := Pred(Divisor);
-        Quotient := Int32(SAR(UInt32(Dividend + PredDivisor),PowerExp));
+        Quotient := Int32(SAR_32(UInt32(Dividend + PredDivisor),PowerExp));
         Remainder := Dividend and PredDivisor;
         If Remainder <> 0 then
           Remainder := Remainder or Int32(UInt32(-1) shl PowerExp);
@@ -3634,21 +3718,8 @@ asm
 {$ENDIF}
 end;
 {$ELSE}
-
-  Function SAR(Value: UInt64; Shift: Integer): UInt64;
-  begin
-    If Shift <> 0 then
-      begin
-        If (Value and $8000000000000000) <> 0 then
-          Result := UInt64((Value shr Shift) or (UInt64(-1) shl (64 - Shift)))
-        else
-          Result := Value shr Shift;
-      end
-    else Result := Value;
-  end;
-
 var
-  PowerExp:     Integer;
+  PowerExp:     Int32;
   PredDivisor:  Int64;
 begin
 PowerExp := iIntLog2(Divisor);
@@ -3656,8 +3727,8 @@ If PowerExp >= 0 then
   begin
     If Dividend < 0 then
       begin
-        PredDivisor := Pred(Divisor);
-        Quotient := Int64(SAR(UInt64(Dividend + PredDivisor),PowerExp));
+        PredDivisor := (Divisor - 1);
+        Quotient := Int64(SAR_64(UInt64(Dividend + PredDivisor),PowerExp));
         Remainder := Dividend and PredDivisor;
         If Remainder <> 0 then
           Remainder := Remainder or Int64(UInt64(-1) shl PowerExp);
@@ -3665,7 +3736,7 @@ If PowerExp >= 0 then
     else
       begin
         Quotient := Dividend shr PowerExp;
-        Remainder := Dividend and Pred(Divisor);
+        Remainder := Dividend and (Divisor - 1);
       end;
     Result := True;
   end
@@ -4272,6 +4343,1195 @@ Function TryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): 
 begin
 Result := iTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+               Combined division and modulo by integer power of 2              
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iDivModPow2 - signed integers
+-------------------------------------------------------------------------------}
+
+Function iDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
+begin
+If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    iDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
+begin
+If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    iDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
+begin
+If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    iDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
+begin
+If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    iDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+{-------------------------------------------------------------------------------
+    uDivModPow2 - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
+begin
+If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    uDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
+begin
+If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    uDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
+begin
+If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    uDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
+begin
+If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
+  begin
+    uDivMod(Dividend,Divisor,Quotient,Remainder);
+    Result := False;
+  end
+else Result := True;
+end;
+
+{-------------------------------------------------------------------------------
+    DivModPow2 - alias functions
+-------------------------------------------------------------------------------}
+
+Function DivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
+begin
+Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
+begin
+Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
+begin
+Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
+begin
+Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+         Combined division and modulo by integer power of 2 (no checks)          
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    DivModPow2NoCheck - internal functions
+-------------------------------------------------------------------------------}
+
+{$IFDEF PurePascal}
+
+Function BSF_8(N: UInt8): Integer;
+var
+  i:  Integer;
+begin
+Result := -1;
+If N <> 0 then
+  For i := 0 to 7 do
+    If ((N shr i) and 1) <> 0 then
+      begin
+        Result := i;
+        Break{For i};
+      end;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function BSF_16(N: UInt16): Integer;
+var
+  i:  Integer;
+begin
+Result := -1;
+If N <> 0 then
+  For i := 0 to 15 do
+    If ((N shr i) and 1) <> 0 then
+      begin
+        Result := i;
+        Break{For i};
+      end;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function BSF_32(N: UInt32): Integer;
+var
+  i:  Integer;
+begin
+Result := -1;
+If N <> 0 then
+  For i := 0 to 31 do
+    If ((N shr i) and 1) <> 0 then
+      begin
+        Result := i;
+        Break{For i};
+      end;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function BSF_64(N: UInt64): Integer;
+var
+  i:  Integer;
+begin
+Result := -1;
+If N <> 0 then
+  For i := 0 to 63 do
+    If ((N shr i) and 1) <> 0 then
+      begin
+        Result := i;
+        Break{For i};
+      end;
+end;
+
+{$ENDIF}
+
+{-------------------------------------------------------------------------------
+    iDivModPow2NoCheck - signed integers
+-------------------------------------------------------------------------------}
+
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend              AL              CL           DIL
+         Divisor              DL              DL           SIL
+        Quotient             ECX^             R8^          RDX^
+       Remainder          (EBP + 8)^          R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   AL, CL
+    AND   DX, $FF
+    BSF   CX, DX
+    DEC   DL
+
+    TEST  AL, AL
+    JNS   @PositiveDividend
+
+    MOV   R10B, AL
+    ADD   AL, DL
+    SAR   AL, CL
+
+    AND   DL, R10B
+    JZ    @StoreResults
+    MOV   R10B, -1
+    SHL   R10B, CL
+    OR    DL, R10B
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   DL, AL
+    SHR   AL, CL
+
+@StoreResults:
+
+    MOV   byte ptr [R8], AL
+    MOV   byte ptr [R9], DL
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    AND   SI, $FF
+    BSF   CX, SI
+    DEC   SIL
+
+    TEST  DIL, DIL
+    JNS   @PositiveDividend
+
+    MOV   R8B, DIL
+    ADD   DIL, SIL
+    SAR   DIL, CL
+
+    AND   SIL, R8B
+    JZ    @StoreResults
+    MOV   R8B, -1
+    SHL   R8B, CL
+    OR    SIL, R8B
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   SIL, DIL
+    SHR   DIL, CL
+
+@StoreResults:    
+
+    MOV   byte ptr [RDX], DIL
+    MOV   byte ptr [RAX], SIL
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  EBX
+    PUSH  ECX
+
+    AND   DX, $FF
+    BSF   CX, DX
+    DEC   DL
+
+    TEST  AL, AL
+    JNS   @PositiveDividend
+
+    MOV   BL, AL
+    ADD   AL, DL
+    SAR   AL, CL
+
+    AND   DL, BL
+    JZ    @StoreResults
+    MOV   BL, -1
+    SHL   BL, CL
+    OR    DL, BL
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   DL, AL
+    SHR   AL, CL
+
+@StoreResults:
+
+    POP   ECX
+    MOV   byte ptr [ECX], AL
+    MOV   ECX, dword ptr [Remainder]
+    MOV   byte ptr [ECX], DL
+
+    POP   EBX
+
+{$ENDIF}
+end;
+{$ELSE}
+var
+  PowerExp:     Int32;
+  PredDivisor:  Int8;
+begin
+PowerExp := BSF_8(UInt8(Divisor));
+If Dividend < 0 then
+  begin
+    PredDivisor := Pred(Divisor);
+    Quotient := Int8(SAR_8(UInt8(Dividend + PredDivisor),PowerExp));
+    Remainder := Dividend and PredDivisor;
+    If Remainder <> 0 then
+      Remainder := Remainder or Int8(UInt8(-1) shl PowerExp);
+  end
+else
+  begin
+    Quotient := Dividend shr PowerExp;
+    Remainder := Dividend and Pred(Divisor);
+  end;
+end;
+{$ENDIF}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend              AX              CX            DI
+         Divisor              DX              DX            SI
+        Quotient             ECX^             R8^          RDX^
+       Remainder          (EBP + 8)^          R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   AX, CX
+    BSF   CX, DX
+    DEC   DX
+
+    TEST  AX, AX
+    JNS   @PositiveDividend
+
+    MOV   R10W, AX
+    ADD   AX, DX
+    SAR   AX, CL
+
+    AND   DX, R10W
+    JZ    @StoreResults
+    MOV   R10W, -1
+    SHL   R10W, CL
+    OR    DX, R10W
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   DX, AX
+    SHR   AX, CL
+
+@StoreResults:
+
+    MOV   word ptr [R8], AX
+    MOV   word ptr [R9], DX
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    BSF   CX, SI
+    DEC   SI
+
+    TEST  DI, DI
+    JNS   @PositiveDividend
+
+    MOV   R8W, DI
+    ADD   DI, SI
+    SAR   DI, CL
+
+    AND   SI, R8W
+    JZ    @StoreResults
+    MOV   R8W, -1
+    SHL   R8W, CL
+    OR    SI, R8W
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   SI, DI
+    SHR   DI, CL
+
+@StoreResults:    
+
+    MOV   word ptr [RDX], DI
+    MOV   word ptr [RAX], SI
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  EBX
+    PUSH  ECX
+
+    BSF   CX, DX
+    DEC   DX
+
+    TEST  AX, AX
+    JNS   @PositiveDividend
+
+    MOV   BX, AX
+    ADD   AX, DX
+    SAR   AX, CL
+
+    AND   DX, BX
+    JZ    @StoreResults
+    MOV   BX, -1
+    SHL   BX, CL
+    OR    DX, BX
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   DX, AX
+    SHR   AX, CL
+
+@StoreResults:
+
+    POP   ECX
+    MOV   word ptr [ECX], AX
+    MOV   ECX, dword ptr [Remainder]
+    MOV   word ptr [ECX], DX
+
+    POP   EBX
+
+{$ENDIF}
+end;
+{$ELSE}
+var
+  PowerExp:     Int32;
+  PredDivisor:  Int16;
+begin
+PowerExp := BSF_16(UInt16(Divisor));
+If Dividend < 0 then
+  begin
+    PredDivisor := Pred(Divisor);
+    Quotient := Int16(SAR_16(UInt16(Dividend + PredDivisor),PowerExp));
+    Remainder := Dividend and PredDivisor;
+    If Remainder <> 0 then
+      Remainder := Remainder or Int16(UInt16(-1) shl PowerExp);
+  end
+else
+  begin
+    Quotient := Dividend shr PowerExp;
+    Remainder := Dividend and Pred(Divisor);
+  end;
+end;
+{$ENDIF}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend             EAX             ECX           EDI
+         Divisor             EDX             EDX           ESI
+        Quotient             ECX^             R8^          RDX^
+       Remainder          (EBP + 8)^          R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   EAX, ECX
+    BSF   ECX, EDX
+    DEC   EDX
+
+    TEST  EAX, EAX
+    JNS   @PositiveDividend
+
+    MOV   R10D, EAX
+    ADD   EAX, EDX
+    SAR   EAX, CL
+
+    AND   EDX, R10D
+    JZ    @StoreResults
+    MOV   R10D, -1
+    SHL   R10D, CL
+    OR    EDX, R10D
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   EDX, EAX
+    SHR   EAX, CL
+
+@StoreResults:
+
+    MOV   dword ptr [R8], EAX
+    MOV   dword ptr [R9], EDX
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    BSF   ECX, ESI
+    DEC   ESI
+
+    TEST  EDI, EDI
+    JNS   @PositiveDividend
+
+    MOV   R8D, EDI
+    ADD   EDI, ESI
+    SAR   EDI, CL
+
+    AND   ESI, R8D
+    JZ    @StoreResults
+    MOV   R8D, -1
+    SHL   R8D, CL
+    OR    ESI, R8D
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   ESI, EDI
+    SHR   EDI, CL
+
+@StoreResults:    
+
+    MOV   dword ptr [RDX], EDI
+    MOV   dword ptr [RAX], ESI
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  EBX
+    PUSH  ECX
+
+    BSF   ECX, EDX
+    DEC   EDX
+
+    TEST  EAX, EAX
+    JNS   @PositiveDividend
+
+    MOV   EBX, EAX
+    ADD   EAX, EDX
+    SAR   EAX, CL
+
+    AND   EDX, EBX
+    JZ    @StoreResults
+    MOV   EBX, -1
+    SHL   EBX, CL
+    OR    EDX, EBX
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   EDX, EAX
+    SHR   EAX, CL
+
+@StoreResults:
+
+    POP   ECX
+    MOV   dword ptr [ECX], EAX
+    MOV   ECX, dword ptr [Remainder]
+    MOV   dword ptr [ECX], EDX
+
+    POP   EBX
+
+{$ENDIF}
+end;
+{$ELSE}
+var
+  PowerExp:     Int32;
+  PredDivisor:  Int32;
+begin
+PowerExp := BSF_32(UInt32(Divisor));
+If Dividend < 0 then
+  begin
+    PredDivisor := Pred(Divisor);
+    Quotient := Int32(SAR_32(UInt32(Dividend + PredDivisor),PowerExp));
+    Remainder := Dividend and PredDivisor;
+    If Remainder <> 0 then
+      Remainder := Remainder or Int32(UInt32(-1) shl PowerExp);
+  end
+else
+  begin
+    Quotient := Dividend shr PowerExp;
+    Remainder := Dividend and Pred(Divisor);
+  end;
+end;
+{$ENDIF}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+procedure iDivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend          (EBP + 8)          RCX           RDI
+         Divisor          (EBP + 16)         RDX           RSI
+        Quotient             EAX^             R8^          RDX^
+       Remainder             EDX^             R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   RAX, RCX
+    BSF   RCX, RDX
+    DEC   RDX
+
+    TEST  RAX, RAX
+    JNS   @PositiveDividend
+
+    MOV   R10, RAX
+    ADD   RAX, RDX
+    SAR   RAX, CL
+
+    AND   RDX, R10
+    JZ    @StoreResults
+    MOV   R10, -1
+    SHL   R10, CL
+    OR    RDX, R10
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   RDX, RAX
+    SHR   RAX, CL
+
+@StoreResults:
+
+    MOV   qword ptr [R8], RAX
+    MOV   qword ptr [R9], RDX
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    BSF   RCX, RSI
+    DEC   RSI
+
+    TEST  RDI, RDI
+    JNS   @PositiveDividend
+
+    MOV   R8, RDI
+    ADD   RDI, RSI
+    SAR   RDI, CL
+
+    AND   RSI, R8
+    JZ    @StoreResults
+    MOV   R8, -1
+    SHL   R8, CL
+    OR    RSI, R8
+    JMP   @StoreResults
+
+@PositiveDividend:
+
+    AND   RSI, RDI
+    SHR   RDI, CL
+
+@StoreResults:    
+
+    MOV   qword ptr [RDX], RDI
+    MOV   qword ptr [RAX], RSI
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  EBX
+    PUSH  ESI
+    PUSH  EDI
+
+    PUSH  EAX
+    PUSH  EDX  
+
+    // load divisor
+    MOV   EDI, dword ptr [Divisor]
+    MOV   ESI, dword ptr [Divisor + 4]
+
+    // do bit scan
+    TEST  EDI, EDI
+    JZ    @DivisorScanHigh
+
+    BSF   ECX, EDI
+    JMP   @DividendCheckSign
+
+@DivisorScanHigh:
+
+    BSF   ECX, ESI
+    ADD   ECX, 32
+
+@DividendCheckSign:
+
+    SUB   EDI, 1
+    SBB   ESI, 0
+
+    // load dividend
+    MOV   EAX, dword ptr [Dividend]
+    MOV   EDX, dword ptr [Dividend + 4]
+
+    // it is enough to look at sign of higher dword of the dividend
+    TEST  EDX, EDX
+    JNS   @PositiveDividend
+
+    // negative dividend, calculate quotient
+    ADD   EAX, EDI
+    ADC   EDX, ESI
+
+    CMP   CL, 31
+    JA    @N_ShiftAbove31
+
+    // shift is 31 or below
+    SHRD  EAX, EDX, CL
+    SAR   EDX, CL
+
+    JMP   @N_StoreQuotient
+
+@N_ShiftAbove31:
+
+    MOV   EAX, EDX
+    
+    // fill the ESI with sign bit
+    TEST  EDX, EDX
+    SETNS DL
+    AND   EDX, 1
+    DEC   EDX
+
+    MOV   EBX, ECX    // preserve full shift, we will need it for remainder
+    AND   CL, 31
+    SAR   EAX, CL
+    MOV   ECX, EBX
+
+@N_StoreQuotient:
+
+    MOV   EBX, dword ptr [ESP + 4]
+    MOV   dword ptr [EBX], EAX
+    MOV   dword ptr [EBX + 4], EDX
+
+    // calculare remainder
+    AND   EDI, dword ptr [Dividend]
+    AND   ESI, dword ptr [Dividend + 4]
+    MOV   EBX, EDI
+    OR    EBX, ESI
+    JZ    @N_StoreRemainder
+
+    MOV   EDX, -1
+    CMP   CL, 31
+    JA    @N_MaskShiftAbove31
+    MOV   EAX, -1
+    SHL   EAX, CL
+    JMP   @N_ApplyRemainderMask
+
+@N_MaskShiftAbove31:
+
+    XOR   EAX, EAX
+    AND   CL, 31
+    SHL   EDX, CL
+
+@N_ApplyRemainderMask:
+
+    OR    EDI, EAX
+    OR    ESI, EDX
+
+@N_StoreRemainder:
+
+    MOV   EBX, dword ptr [ESP]
+    MOV   dword ptr [EBX], EDI
+    MOV   dword ptr [EBX + 4], ESI
+
+    JMP   @RoutineEnd
+
+@PositiveDividend:
+
+    // calculate remainder
+    AND   EDI, EAX
+    AND   ESI, EDX
+
+    //calculate quotient
+    CMP   CL, 31
+    JA    @P_ShiftAbove31
+
+    // shift is 31 or below
+    SHRD  EAX, EDX, CL
+    SHR   EDX, CL
+
+    JMP   @P_StoreResults
+
+@P_ShiftAbove31:
+
+    MOV   EAX, EDX
+    XOR   EDX, EDX
+    AND   CL, 31
+    SHR   EAX, CL
+
+@P_StoreResults:
+
+    // quotient
+    MOV   ECX, dword ptr [ESP + 4]
+    MOV   dword ptr [ECX], EAX
+    MOV   dword ptr [ECX + 4], EDX
+
+    // remainder
+    MOV   ECX, dword ptr [ESP]
+    MOV   dword ptr [ECX], EDI
+    MOV   dword ptr [ECX + 4], ESI
+
+@RoutineEnd:
+
+    ADD   ESP, 8
+    POP   EDI
+    POP   ESI
+    POP   EBX
+
+{$ENDIF}
+end;
+{$ELSE}
+var
+  PowerExp:     Int32;
+  PredDivisor:  Int64;
+begin
+PowerExp := BSF_64(UInt64(Divisor));
+If Dividend < 0 then
+  begin
+    PredDivisor := (Divisor - 1);
+    Quotient := Int64(SAR_64(UInt64(Dividend + PredDivisor),PowerExp));
+    Remainder := Dividend and PredDivisor;
+    If Remainder <> 0 then
+      Remainder := Remainder or Int64(UInt64(-1) shl PowerExp);
+  end
+else
+  begin
+    Quotient := Dividend shr PowerExp;
+    Remainder := Dividend and (Divisor - 1);
+  end;
+end;
+{$ENDIF}
+{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+
+{-------------------------------------------------------------------------------
+    uDivModPow2NoCheck - unsigned integers
+-------------------------------------------------------------------------------}
+
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend              AL              CL           DIL
+         Divisor              DL              DL           SIL
+        Quotient             ECX^             R8^          RDX^
+       Remainder          (EBP + 8)^          R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   AL, CL
+    AND   DX, $FF
+    BSF   CX, DX
+    DEC   DL
+    AND   DL, AL
+    SHR   AL, CL
+
+    MOV   byte ptr [R8], AL
+    MOV   byte ptr [R9], DL
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    AND   SI, $FF
+    BSF   CX, SI
+    DEC   SIL
+    AND   SIL, DIL
+    SHR   DIL, CL
+
+    MOV   byte ptr [RDX], DIL
+    MOV   byte ptr [RAX], SIL
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  ECX
+
+    AND   DX, $FF
+    BSF   CX, DX
+    DEC   DL
+    AND   DL, AL
+    SHR   AL, CL
+
+    POP   ECX
+    MOV   byte ptr [ECX], AL
+    MOV   ECX, dword ptr [Remainder]
+    MOV   byte ptr [ECX], DL
+
+{$ENDIF}
+end;
+{$ELSE}
+begin
+Quotient := Dividend shr BSF_8(Divisor);
+Remainder := Dividend and Pred(Divisor);
+end;
+{$ENDIF}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend              AX              CX            DI
+         Divisor              DX              DX            SI
+        Quotient             ECX^             R8^          RDX^
+       Remainder          (EBP + 8)^          R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   AX, CX
+    BSF   CX, DX
+    DEC   DX
+    AND   DX, AX
+    SHR   AX, CL
+
+    MOV   word ptr [R8], AX
+    MOV   word ptr [R9], DX
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    BSF   CX, SI
+    DEC   SI
+    AND   SI, DI
+    SHR   DI, CL
+
+    MOV   word ptr [RDX], DI
+    MOV   word ptr [RAX], SI
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  ECX
+
+    BSF   CX, DX
+    DEC   DX
+    AND   DX, AX
+    SHR   AX, CL
+
+    POP   ECX
+    MOV   word ptr [ECX], AX
+    MOV   ECX, dword ptr [Remainder]
+    MOV   word ptr [ECX], DX
+
+{$ENDIF}
+end;
+{$ELSE}
+begin
+Quotient := Dividend shr BSF_16(Divisor);
+Remainder := Dividend and Pred(Divisor);
+end;
+{$ENDIF}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend             EAX             ECX           EDI
+         Divisor             EDX             EDX           ESI
+        Quotient             ECX^             R8^          RDX^
+       Remainder          (EBP + 8)^          R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   EAX, ECX
+    BSF   ECX, EDX
+    DEC   EDX
+    AND   EDX, EAX
+    SHR   EAX, CL
+
+    MOV   dword ptr [R8], EAX
+    MOV   dword ptr [R9], EDX
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    BSF   ECX, ESI
+    DEC   ESI
+    AND   ESI, EDI
+    SHR   EDI, CL
+
+    MOV   dword ptr [RDX], EDI
+    MOV   dword ptr [RAX], ESI
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  ECX
+
+    BSF   ECX, EDX
+    DEC   EDX
+    AND   EDX, EAX
+    SHR   EAX, CL
+
+    POP   ECX
+    MOV   dword ptr [ECX], EAX
+    MOV   ECX, dword ptr [Remainder]
+    MOV   dword ptr [ECX], EDX
+
+{$ENDIF}
+end;
+{$ELSE}
+begin
+Quotient := Dividend shr BSF_32(Divisor);
+Remainder := Dividend and Pred(Divisor);
+end;
+{$ENDIF}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+procedure uDivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+{$IFNDEF PurePascal}
+asm
+{ --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+                        win32 & lin32       win64         lin64
+        Dividend          (EBP + 8)          RCX           RDI
+         Divisor          (EBP + 16)         RDX           RSI
+        Quotient             EAX^             R8^          RDX^
+       Remainder             EDX^             R9^          RCX^
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
+{$IFDEF x64}
+  {$IFDEF Windows}
+
+    MOV   RAX, RCX
+    BSF   RCX, RDX
+    DEC   RDX
+    AND   RDX, RAX
+    SHR   RAX, CL
+
+    MOV   qword ptr [R8], RAX
+    MOV   qword ptr [R9], RDX
+
+  {$ELSE}//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    MOV   RAX, RCX
+    BSF   RCX, RSI
+    DEC   RSI
+    AND   RSI, RDI
+    SHR   RDI, CL
+
+    MOV   qword ptr [RDX], RDI
+    MOV   qword ptr [RAX], RSI
+
+  {$ENDIF}
+{$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+
+    PUSH  EDI
+    PUSH  ESI
+
+    PUSH  EDX
+    PUSH  EAX
+
+    MOV   EDI, dword ptr [Divisor]
+    MOV   ESI, dword ptr [Divisor + 4]
+
+    TEST  EDI, EDI
+    JZ    @ScanDivisorHigh
+    BSF   ECX, EDI
+    JZ    @RoutineEnd       // error
+    JMP   @LoadDividend
+
+@ScanDivisorHigh:
+
+    BSF   ECX, ESI
+    JZ    @RoutineEnd       // error
+    ADD   ECX, 32
+
+@LoadDividend:
+
+    MOV   EAX, dword ptr [Dividend]
+    MOV   EDX, dword ptr [Dividend + 4]
+
+    SUB   EDI, 1
+    SBB   ESI, 0
+
+    AND   EDI, EAX
+    AND   ESI, EDX
+
+    CMP   CL, 31
+    JA    @DividendShiftAbove31
+    SHRD  EAX, EDX, CL
+    SHR   EDX, CL
+    JMP   @StoreResults
+
+@DividendShiftAbove31:
+
+    MOV   EAX, EDX
+    XOR   EDX, EDX
+    AND   CL, 31
+    SHR   EAX, CL
+
+@StoreResults:
+
+    MOV   ECX, dword ptr [ESP]
+    MOV   dword ptr [ECX], EAX
+    MOV   dword ptr [ECX + 4], EDX
+
+    MOV   ECX, dword ptr [ESP + 4]
+    MOV   dword ptr [ECX], EDI
+    MOV   dword ptr [ECX + 4], ESI
+
+@RoutineEnd:
+
+    ADD   ESP, 8
+    POP   ESI
+    POP   EDI
+
+{$ENDIF}
+end;
+{$ELSE}
+begin
+Quotient := Dividend shr BSF_64(Divisor);
+Remainder := Dividend and (Divisor - 1);
+end;
+{$ENDIF}
+{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+
+{-------------------------------------------------------------------------------
+    DivModPow2NoCheck - alias functions
+-------------------------------------------------------------------------------}
+
+procedure DivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
 
 {===============================================================================
 --------------------------------------------------------------------------------

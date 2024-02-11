@@ -39,8 +39,6 @@ unit AuxMath;
   {$IFNDEF PurePascal}
     {$ASMMODE Intel}
   {$ENDIF}
-  {$DEFINE FPC_DisableWarns}
-  {$MACRO ON}
 {$ELSE}
   {$IF CompilerVersion >= 17 then}  // Delphi 2005+
     {$DEFINE CanInline}
@@ -71,6 +69,29 @@ type
   EAMException = class(Exception);
 
   EAMInvalidOperation = class(EAMException);
+
+{===============================================================================
+    Public constants
+===============================================================================}
+const
+{
+  Highest and lowest value of Int64 that can be stored in 64bit floating point
+  number (Double) without losing any information.
+}
+  AM_I64_DBL_HI = 9007199254740992;    // $0020000000000000
+  AM_I64_DBL_LO = -9007199254740992;   // $FFE0000000000000
+
+{===============================================================================
+    Public auxiliary funtions - declaration
+===============================================================================}
+{
+  WARNING - following two functions (U64ToFloat, FloatToU64) are assuming type
+            Extended to be 10 bytes wide (double-extended float). If it is not,
+            they might produce unexpected (inprecise) results.
+}
+Function U64ToFloat(N: UInt64): Extended;
+
+Function FloatToU64(N: Extended): UInt64;
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -313,16 +334,78 @@ Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boo
 
 {===============================================================================
 --------------------------------------------------------------------------------
+           Combined division and ceiling (optimized for pow2 divisor)
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Performs division and Ceil as one operation while utilizing functions
+  optimized for integral power of two divisor.
+  The calculation does not use floating point unit/numbers, only integers.
+}
+
+Function iDivCeilPow2(Dividend,Divisor: Int8): Int8; overload;
+Function iDivCeilPow2(Dividend,Divisor: Int16): Int16; overload;
+Function iDivCeilPow2(Dividend,Divisor: Int32): Int32; overload;
+Function iDivCeilPow2(Dividend,Divisor: Int64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uDivCeilPow2(Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivCeilPow2(Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivCeilPow2(Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivCeilPow2(Dividend,Divisor: UInt64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function DivCeilPow2(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+            Combined division and floor (optimized for pow2 divisor)
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Performs division and Floor as one operation while utilizing functions
+  optimized for integral power of two divisor.
+  The calculation does not use floating point unit/numbers, only integers.
+}
+
+Function iDivFloorPow2(Dividend,Divisor: Int8): Int8; overload;
+Function iDivFloorPow2(Dividend,Divisor: Int16): Int16; overload;
+Function iDivFloorPow2(Dividend,Divisor: Int32): Int32; overload;
+Function iDivFloorPow2(Dividend,Divisor: Int64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uDivFloorPow2(Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivFloorPow2(Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivFloorPow2(Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivFloorPow2(Dividend,Divisor: UInt64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function DivFloorPow2(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
          Combined division and modulo by integer power of 2 (no checks)
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
   Performs highly optimized integer division and modulo, while assuming the
-  divisor is a positive integer power of 2. If the divisor is not a power of
-  two, then the results are completely undefined.
+  divisor is a positive integer power of 2.
 
     WARNING - it is caller's resposibility to ensure that the divisor is a
-              positive integral power of 2, as it is not checked.
+              positive integral power of 2, it is not checked. If the divisor
+              is not a power of two, then the results are completely undefined.
 }
 
 procedure iDivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
@@ -344,10 +427,144 @@ procedure DivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int
 procedure DivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
 procedure DivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+//------------------------------------------------------------------------------
+// shortened sliases
+
+procedure iDivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure iDivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure iDivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure iDivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+procedure uDivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure uDivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure uDivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure uDivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+procedure DivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                             Minimum of equal types
+      Combined division and ceiling (optimized for pow2 divisor, no checks)     
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Performs division and Ceil as one operation while utilizing functions
+  optimized for integral power of two divisor without checking.
+  The calculation does not use floating point unit/numbers.
+
+    WARNING - it is caller's resposibility to ensure that the divisor is a
+              positive integral power of 2, it is not checked. If the divisor
+              is not a power of two, then the result is completely undefined.
+}
+
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function iDivCeilPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivCeilPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivCeilPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivCeilPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function uDivCeilPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivCeilPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivCeilPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivCeilPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function DivCeilPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+       Combined division and floor (optimized for pow2 divisor, no checks)           
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Performs division and floor as one operation while utilizing functions
+  optimized for integral power of two divisor without checking.
+  The calculation does not use floating point unit/numbers.
+
+    WARNING - it is caller's resposibility to ensure that the divisor is a
+              positive integral power of 2, it is not checked. If the divisor
+              is not a power of two, then the result is completely undefined.
+}
+
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function iDivFloorPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivFloorPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivFloorPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivFloorPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function uDivFloorPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivFloorPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivFloorPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivFloorPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function DivFloorPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Minimum of same types
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
@@ -369,21 +586,20 @@ Function uMin(A,B: UInt64): UInt64; overload;
 //------------------------------------------------------------------------------
 
 Function fMin(A,B: Extended): Extended; overload;
-Function fMin(A,B: Currency): Currency; overload;
-Function fMin(A,B: TDateTime): TDateTime; overload;
-(*
+
+//------------------------------------------------------------------------------
+
 Function Min(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 Function Min(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A,B: Currency): Currency; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A,B: TDateTime): TDateTime; overload;{$IFDEF CanInline} inline;{$ENDIF}
-*)
+
+
 {===============================================================================
 --------------------------------------------------------------------------------
-                             Maximum of equal types
+                             Maximum of same types
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
@@ -406,16 +622,44 @@ Function uMax(A,B: UInt64): UInt64; overload;
 
 Function fMax(A,B: Extended): Extended; overload;
 
-Function fMax(A,B: Currency): Currency; overload;
+//------------------------------------------------------------------------------
 
-Function fMax(A,B: TDateTime): TDateTime; overload;
+Function Max(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                           Minimum of differing types                                                  
+                             Minimum of mixed types
 --------------------------------------------------------------------------------
 ===============================================================================}
-(*
+{
+  Returns smaller/lower of the two given values.
+
+  When the function cannot return proper value, then and EAMInvalidOperation
+  exception is raised. This can happen in following situations:
+
+    - value to be returned cannot fit into result
+
+    - negative value is to be returned, but the result type is unsigned integer
+
+    - large positive or negative integer needs to be converted to float of
+      limited precision (eg. on systems where type Extended is only an alias
+      for Double) for comparison, and the conversion would lead to loss
+      of information (see constants AM_I64_DBL_HI and AM_I64_DBL_LO for
+      applicable limits)
+
+    - floating point number needs to be returned in integer result, but it has
+      value beyond what the result type can store
+
+    - returned value is a floating point number with non-zero fraction but the
+      result type is integer
+}
+
 Function iiMin(A: Int8; B: Int16): Int8; overload;
 Function iiMin(A: Int8; B: Int32): Int8; overload;
 Function iiMin(A: Int8; B: Int64): Int8; overload;
@@ -432,7 +676,7 @@ Function iiMin(A: Int64; B: Int8): Int64; overload;
 Function iiMin(A: Int64; B: Int16): Int64; overload;
 Function iiMin(A: Int64; B: Int32): Int64; overload;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//------------------------------------------------------------------------------
 
 Function iuMin(A: Int8; B: UInt8): Int8; overload;
 Function iuMin(A: Int8; B: UInt16): Int8; overload;
@@ -476,7 +720,7 @@ Function uiMin(A: UInt64; B: Int16): UInt64; overload;
 Function uiMin(A: UInt64; B: Int32): UInt64; overload;
 Function uiMin(A: UInt64; B: Int64): UInt64; overload;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//------------------------------------------------------------------------------
 
 Function uuMin(A: UInt8; B: UInt16): UInt8; overload;
 Function uuMin(A: UInt8; B: UInt32): UInt8; overload;
@@ -501,17 +745,76 @@ Function fiMin(A: Extended; B: Int16): Extended; overload;
 Function fiMin(A: Extended; B: Int32): Extended; overload;
 Function fiMin(A: Extended; B: Int64): Extended; overload;
 
+//------------------------------------------------------------------------------
+
 Function fuMin(A: Extended; B: UInt8): Extended; overload;
 Function fuMin(A: Extended; B: UInt16): Extended; overload;
 Function fuMin(A: Extended; B: UInt32): Extended; overload;
 Function fuMin(A: Extended; B: UInt64): Extended; overload;
-*)
 
+//------------------------------------------------------------------------------
+
+Function ifMin(A: Int8; B: Extended): Int8; overload;
+Function ifMin(A: Int16; B: Extended): Int16; overload;
+Function ifMin(A: Int32; B: Extended): Int32; overload;
+Function ifMin(A: Int64; B: Extended): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufMin(A: UInt8; B: Extended): UInt8; overload;
+Function ufMin(A: UInt16; B: Extended): UInt16; overload;
+Function ufMin(A: UInt32; B: Extended): UInt32; overload;
+Function ufMin(A: UInt64; B: Extended): UInt64; overload;
+
+(*
+Function iIfThen(Value: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8;
+Function iIfThen(Value: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16;
+Function iIfThen(Value: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32;
+Function iIfThen(Value: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64;
+
+Function uIfThen(Value: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8;
+Function uIfThen(Value: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16;
+Function uIfThen(Value: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32;
+Function uIfThen(Value: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64;
+
+Function fIfThen(Value: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended;
+
+Function cIfThen(Value: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
+Function cIfThen(Value: Boolean; OnTrue: UTF8Char; OnFalse: UTF8Char = #0): UTF8Char;
+Function cIfThen(Value: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
+Function cIfThen(Value: Boolean; OnTrue: UnicodeChar; OnFalse: UnicodeChar = #0): UnicodeChar;
+Function cIfThen(Value: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
+Function cIfThen(Value: Boolean; OnTrue: Char; OnFalse: Char = #0): Char;
+
+Function sIfThen(Value: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
+Function sIfThen(Value: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''): AnsiString;
+Function sIfThen(Value: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''): UTF8String;
+Function sIfThen(Value: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''): WideString;
+Function sIfThen(Value: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''): UnicodeString;
+Function sIfThen(Value: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = ''): UCS4String;
+Function sIfThen(Value: Boolean; const OnTrue: String; const OnFalse: String = ''): String;
+
+Function pIfThen(Value: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
+procedure pIfThen(Value: Boolean; OnTrue,OnFalse: Pointer; Size: TMemSize; Result: Pointer);
+
+Function oIfThen(Value: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject;
+
+Function vIfThen(Value: Boolean; const OnTrue: Variant; const OnFalse: Variant = null): Variant;
+
+procedure bIfThen(Value: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
+
+Function gIfThen(Value: Boolean; const OnTrue: TGUID; const OnFalse: TGUID = ???): TGUID;
+*)
 implementation
+
+{$If (SizeOf(Extended) <> 10) and (SizeOf(Extended) <> 8)}
+  {$MESSAGE FATAL 'Unsupported size of type Extended.'}
+{$IFEND}
 
 {===============================================================================
     Internals
-===============================================================================}    
+===============================================================================}
+
 {$IF not Declared(NativeUInt64E)}
 type
   UInt64Rec = packed record
@@ -542,6 +845,56 @@ else
   end;
 end;
 {$IFEND}
+
+{===============================================================================
+    Public auxiliary funtions - implementation
+===============================================================================}
+
+Function U64ToFloat(N: UInt64): Extended;
+var
+  UTemp:  UInt32;
+  FTemp:  FLoat32 absolute UTemp;
+begin
+If (N and UInt64($8000000000000000)) <> 0 then
+  begin
+  {
+    Here we have to somehow store UInt64 that is bigger than High(Int64) into
+    Extended in a compiler that does not support it (there is no instruction
+    for this in x87 or SSE/AVX).
+
+    We let the integer to be loaded as signed and then add 2^64 (0x5F800000 as
+    single) to it, this will bring the float to a proper positive value.
+  }
+    UTemp := $5F800000;
+    Result := Int64(N) + FTemp;
+  end
+else Result := N;
+end;
+
+//------------------------------------------------------------------------------
+
+Function FloatToU64(N: Extended): UInt64;
+var
+  UTemp64:  UInt32;
+  FTemp64:  FLoat32 absolute UTemp64;
+  UTemp63:  UInt32;
+  FTemp63:  FLoat32 absolute UTemp63;
+begin
+UTemp64 := $5F800000; // 2^64
+UTemp63 := $5F000000; // 2^63
+If Frac(N) = 0.0 then
+  begin
+    If (N >= 0) and (N < FTemp64) then
+      begin
+        If N >= FTemp63 then
+          Result := UInt64(Trunc(N - FTemp64))
+        else
+          Result := Trunc(N);
+      end
+    else raise EAMInvalidOperation.CreateFmt('FloatToU64: Floating point value (%g) cannot fit into UInt64.',[N]);
+  end
+else raise EAMInvalidOperation.CreateFmt('FloatToU64: Floating point value (%g) cannot be stored in UInt64.',[N]);
+end;
 
 
 {===============================================================================
@@ -1366,7 +1719,7 @@ If Divisor <> 0 then
         UInt64Rec(Remainder).Hi := ShiftRegister[3];
       end;
   end
-// following is here only to raise a zero-division exception  
+// following is here only to raise a zero-division exception
 else Quotient := UInt32(Dividend) div UInt32(Divisor);
 end;
 {$IFEND}
@@ -4347,7 +4700,7 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-               Combined division and modulo by integer power of 2              
+               Combined division and modulo by integer power of 2
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
@@ -4478,6 +4831,256 @@ end;
 Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 begin
 Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+            Combined division and ceil (optimized for pow2 divisor)
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iDivCeilPow2 - signed integers
+-------------------------------------------------------------------------------}
+
+Function iDivCeilPow2(Dividend,Divisor: Int8): Int8;
+var
+  Remainder:  Int8;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2(Dividend,Divisor: Int16): Int16;
+var
+  Remainder:  Int16;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2(Dividend,Divisor: Int32): Int32;
+var
+  Remainder:  Int32;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2(Dividend,Divisor: Int64): Int64;
+var
+  Remainder:  Int64;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+{-------------------------------------------------------------------------------
+    uDivCeilPow2 - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uDivCeilPow2(Dividend,Divisor: UInt8): UInt8;
+var
+  Remainder:  UInt8;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivCeilPow2(Dividend,Divisor: UInt16): UInt16;
+var
+  Remainder:  UInt16;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivCeilPow2(Dividend,Divisor: UInt32): UInt32;
+var
+  Remainder:  UInt32;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+Function uDivCeilPow2(Dividend,Divisor: UInt64): UInt64;
+var
+  Remainder:  UInt64;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Result := Result + 1;
+end;
+{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+
+{-------------------------------------------------------------------------------
+    DivCeilPow2 - alias functions
+-------------------------------------------------------------------------------}
+
+Function DivCeilPow2(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivCeilPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivCeilPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivCeilPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivCeilPow2(Dividend,Divisor);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+            Combined division and floor (optimized for pow2 divisor)
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iDivFloorPow2 - signed integers
+-------------------------------------------------------------------------------}
+
+Function iDivFloorPow2(Dividend,Divisor: Int8): Int8;
+var
+  Remainder:  Int8;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2(Dividend,Divisor: Int16): Int16;
+var
+  Remainder:  Int16;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2(Dividend,Divisor: Int32): Int32;
+var
+  Remainder:  Int32;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2(Dividend,Divisor: Int64): Int64;
+var
+  Remainder:  Int64;
+begin
+iDivModPow2(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+{-------------------------------------------------------------------------------
+    uDivFloorPow2 - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uDivFloorPow2(Dividend,Divisor: UInt8): UInt8;
+var
+  Remainder:  UInt8;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2(Dividend,Divisor: UInt16): UInt16;
+var
+  Remainder:  UInt16;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2(Dividend,Divisor: UInt32): UInt32;
+var
+  Remainder:  UInt32;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2(Dividend,Divisor: UInt64): UInt64;
+var
+  Remainder:  UInt64;
+begin
+uDivModPow2(Dividend,Divisor,Result,Remainder);
+end;
+
+{-------------------------------------------------------------------------------
+    DivFloorPow2 - alias functions
+-------------------------------------------------------------------------------}
+
+Function DivFloorPow2(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivFloorPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivFloorPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivFloorPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivFloorPow2(Dividend,Divisor);
 end;
 
 
@@ -5532,10 +6135,518 @@ begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
+{-------------------------------------------------------------------------------
+    *DivModPow2NC - shortened sliases
+-------------------------------------------------------------------------------}
+
+procedure iDivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure iDivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure iDivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure iDivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+//------------------------------------------------------------------------------
+
+procedure uDivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure uDivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure uDivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure uDivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+//------------------------------------------------------------------------------
+
+procedure DivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                             Minimum of equal types
+      Combined division and ceiling (optimized for pow2 divisor, no checks)     
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iDivCeilPow2NoCheck - signed integers
+-------------------------------------------------------------------------------}
+
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8;
+var
+  Remainder:  Int8;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16;
+var
+  Remainder:  Int16;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32;
+var
+  Remainder:  Int32;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64;
+var
+  Remainder:  Int64;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result > 0) and (Remainder <> 0) then
+  Inc(Result);
+end;
+
+{-------------------------------------------------------------------------------
+    uDivCeilPow2NoCheck - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+var
+  Remainder:  UInt8;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Inc(Result);
+end;
+ 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+var
+  Remainder:  UInt16;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+var
+  Remainder:  UInt32;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Inc(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+var
+  Remainder:  UInt64;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If Remainder <> 0 then
+  Result := Result + 1;
+end;
+{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+
+{-------------------------------------------------------------------------------
+    DivCeilPow2NoCheck - alias functions
+-------------------------------------------------------------------------------}
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+{-------------------------------------------------------------------------------
+    *DivCeilPow2NC - shortened sliases
+-------------------------------------------------------------------------------}
+
+Function iDivCeilPow2NC(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2NC(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2NC(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivCeilPow2NC(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+//------------------------------------------------------------------------------
+
+Function uDivCeilPow2NC(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivCeilPow2NC(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivCeilPow2NC(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivCeilPow2NC(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+//------------------------------------------------------------------------------
+
+Function DivCeilPow2NC(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NC(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NC(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+       Combined division and floor (optimized for pow2 divisor, no checks)           
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iDivFloorPow2NoCheck - signed integers
+-------------------------------------------------------------------------------}
+
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8;
+var
+  Remainder:  Int8;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16;
+var
+  Remainder:  Int16;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32;
+var
+  Remainder:  Int32;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64;
+var
+  Remainder:  Int64;
+begin
+iDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+If (Result < 0) and (Remainder <> 0) then
+  Dec(Result);
+end;
+
+{-------------------------------------------------------------------------------
+    uDivFloorPow2NoCheck - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+var
+  Remainder:  UInt8;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+var
+  Remainder:  UInt16;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+var
+  Remainder:  UInt32;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+var
+  Remainder:  UInt64;
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
+end;
+
+{-------------------------------------------------------------------------------
+    DivFloorPow2NoCheck - alias functions
+-------------------------------------------------------------------------------}
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+{-------------------------------------------------------------------------------
+    *DivCeilPow2NC - shortened sliases
+-------------------------------------------------------------------------------}
+
+Function iDivFloorPow2NC(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2NC(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2NC(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iDivFloorPow2NC(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+//------------------------------------------------------------------------------
+
+Function uDivFloorPow2NC(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2NC(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2NC(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uDivFloorPow2NC(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+//------------------------------------------------------------------------------
+
+Function DivFloorPow2NC(Dividend,Divisor: Int8): Int8;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NC(Dividend,Divisor: Int16): Int16;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NC(Dividend,Divisor: Int32): Int32;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64;
+begin
+Result := iDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Minimum of same types
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
@@ -5638,30 +6749,47 @@ else
   Result := B;
 end;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+{-------------------------------------------------------------------------------
+    Min - alias functions
+-------------------------------------------------------------------------------}
 
-Function fMin(A,B: Currency): Currency;
+Function Min(A,B: Int8): Int8;
 begin
-If A < B then
-  Result := A
-else
-  Result := B;
+Result := iMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fMin(A,B: TDateTime): TDateTime;
+Function Min(A,B: Int16): Int16;
 begin
-If A < B then
-  Result := A
-else
-  Result := B;
+Result := iMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A,B: Int32): Int32;
+begin
+Result := iMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A,B: Int64): Int64;
+begin
+Result := iMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A,B: Extended): Extended;
+begin
+Result := fMin(A,B);
 end;
 
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                             Maximum of equal types
+                             Maximum of same types
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
@@ -5764,11 +6892,777 @@ else
   Result := B;
 end;
 
+{-------------------------------------------------------------------------------
+    Max - alias functions
+-------------------------------------------------------------------------------}
+
+Function Max(A,B: Int8): Int8;
+begin
+Result := iMax(A,B);
+end;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fMax(A,B: Currency): Currency;
+Function Max(A,B: Int16): Int16;
 begin
-If A > B then
+Result := iMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: Int32): Int32;
+begin
+Result := iMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: Int64): Int64;
+begin
+Result := iMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: Extended): Extended;
+begin
+Result := fMax(A,B);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Minimum of mixed types
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iiMin - signed integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function iiMin(A: Int8; B: Int16): Int8;
+begin
+If B >= Int16(Low(Int8)) then
+  begin
+    If Int16(A) < B then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMin: Value of B (Int16: %d) is too low for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int8; B: Int32): Int8;
+begin
+If B >= Int32(Low(Int8)) then
+  begin
+    If Int32(A) < B then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMin: Value of B (Int32: %d) is too low for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int8; B: Int64): Int8;
+begin
+If B >= Int64(Low(Int8)) then
+  begin
+    If Int64(A) < B then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMin: Value of B (Int64: %d) is too low for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int16; B: Int8): Int16;
+begin
+If A < Int16(B) then
+  Result := A
+else
+  Result := Int16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int16; B: Int32): Int16;
+begin
+If B >= Int32(Low(Int16)) then
+  begin
+    If Int32(A) < B then
+      Result := A
+    else
+      Result := Int16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMin: Value of B (Int32: %d) is too low for Int16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int16; B: Int64): Int16;
+begin
+If B >= Int64(Low(Int16)) then
+  begin
+    If Int64(A) < B then
+      Result := A
+    else
+      Result := Int16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMin: Value of B (Int64: %d) is too low for Int16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int32; B: Int8): Int32;
+begin
+If A < Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int32; B: Int16): Int32;
+begin
+If A < Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int32; B: Int64): Int32;
+begin
+If B >= Int64(Low(Int32)) then
+  begin
+    If Int64(A) < B then
+      Result := A
+    else
+      Result := Int32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMin: Value of B (Int64: %d) is too low for Int32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int64; B: Int8): Int64;
+begin
+If A < Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int64; B: Int16): Int64;
+begin
+If A < Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMin(A: Int64; B: Int32): Int64;
+begin
+If A < Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+{-------------------------------------------------------------------------------
+    iuMin - signed integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function iuMin(A: Int8; B: UInt8): Int8;
+begin
+If (A < 0) or (B > UInt8(High(Int8))) or (UInt8(A) < B) then
+  Result := A
+else
+  Result := Int8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int8; B: UInt16): Int8;
+begin
+If (A < 0) or (B > UInt16(High(Int8))) or (UInt16(A) < B) then
+  Result := A
+else
+  Result := Int8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int8; B: UInt32): Int8;
+begin
+If (A < 0) or (B > UInt32(High(Int8))) or (UInt32(A) < B) then
+  Result := A
+else
+  Result := Int8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int8; B: UInt64): Int8;
+begin
+{$IF Declared(NativeUInt64E)}
+If (A < 0) or (B > UInt64(High(Int8))) or (UInt64(A) < B) then
+{$ELSE}
+If (A < 0) or (CompareUInt64(B,UInt64(High(Int8))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
+{$IFEND}
+  Result := A
+else
+  Result := Int8(B);
+end;   
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int16; B: UInt8): Int16;
+begin
+// note - B can never be bigger than what result can accomodate
+If A < Int16(B) then
+  Result := A
+else
+  Result := Int16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int16; B: UInt16): Int16;
+begin
+If (A < 0) or (B > UInt16(High(Int16))) or (UInt16(A) < B) then
+  Result := A
+else
+  Result := Int16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int16; B: UInt32): Int16;
+begin
+If (A < 0) or (B > UInt32(High(Int16))) or (UInt32(A) < B) then
+  Result := A
+else
+  Result := Int16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int16; B: UInt64): Int16;
+begin
+{$IF Declared(NativeUInt64E)}
+If (A < 0) or (B > UInt64(High(Int16))) or (UInt64(A) < B) then
+{$ELSE}
+If (A < 0) or (CompareUInt64(B,UInt64(High(Int16))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
+{$IFEND}
+  Result := A
+else
+  Result := Int16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int32; B: UInt8): Int32;
+begin
+If A < Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int32; B: UInt16): Int32;
+begin
+If A < Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int32; B: UInt32): Int32;
+begin
+If (A < 0) or (B > UInt32(High(Int32))) or (UInt32(A) < B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int32; B: UInt64): Int32;
+begin
+{$IF Declared(NativeUInt64E)}
+If (A < 0) or (B > UInt64(High(Int32))) or (UInt64(A) < B) then
+{$ELSE}
+If (A < 0) or (CompareUInt64(B,UInt64(High(Int32))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
+{$IFEND}
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int64; B: UInt8): Int64;
+begin
+If A < Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int64; B: UInt16): Int64;
+begin
+If A < Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int64; B: UInt32): Int64;
+begin
+If A < Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMin(A: Int64; B: UInt64): Int64;
+begin
+{$IF Declared(NativeUInt64E)}
+If (A < 0) or (B > UInt64(High(Int64))) or (UInt64(A) < B) then
+{$ELSE}
+If (A < 0) or (CompareUInt64(B,UInt64(High(Int64))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
+{$IFEND}
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+{-------------------------------------------------------------------------------
+    uiMin - unsigned integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function uiMin(A: UInt8; B: Int8): UInt8;
+begin
+If B >= 0 then
+  begin
+    If A < UInt8(B) then
+      Result := A
+    else
+      Result := UInt8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int8: %d) is too low for UInt8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt8; B: Int16): UInt8;
+begin
+If B >= 0 then
+  begin
+    If (B > Int16(High(UInt8))) or (Int16(A) < B) then
+      Result := A
+    else
+      Result := UInt8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int16: %d) is too low for UInt8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt8; B: Int32): UInt8;
+begin
+If B >= 0 then
+  begin
+    If (B > Int32(High(UInt8))) or (Int32(A) < B) then
+      Result := A
+    else
+      Result := UInt8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int32: %d) is too low for UInt8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt8; B: Int64): UInt8;
+begin
+If B >= 0 then
+  begin
+    If (B > Int64(High(UInt8))) or (Int64(A) < B) then
+      Result := A
+    else
+      Result := UInt8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int64: %d) is too low for UInt8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt16; B: Int8): UInt16;
+begin
+If B >= 0 then
+  begin
+    If A < UInt16(B) then
+      Result := A
+    else
+      Result := UInt16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int8: %d) is too low for UInt16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt16; B: Int16): UInt16;
+begin
+If B >= 0 then
+  begin
+    If A < UInt16(B) then
+      Result := A
+    else
+      Result := UInt16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int16: %d) is too low for UInt16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt16; B: Int32): UInt16;
+begin
+If B >= 0 then
+  begin
+    If (B > Int32(High(UInt16))) or (Int32(A) < B) then
+      Result := A
+    else
+      Result := UInt16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int32: %d) is too low for UInt16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt16; B: Int64): UInt16;
+begin
+If B >= 0 then
+  begin
+    If (B > Int64(High(UInt16))) or (Int64(A) < B) then
+      Result := A
+    else
+      Result := UInt16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int64: %d) is too low for UInt16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt32; B: Int8): UInt32;
+begin
+If B >= 0 then
+  begin
+    If A < UInt32(B) then
+      Result := A
+    else
+      Result := UInt32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int8: %d) is too low for UInt32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt32; B: Int16): UInt32;
+begin
+If B >= 0 then
+  begin
+    If A < UInt32(B) then
+      Result := A
+    else
+      Result := UInt32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int16: %d) is too low for UInt32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt32; B: Int32): UInt32;
+begin
+If B >= 0 then
+  begin
+    If A < UInt32(B) then
+      Result := A
+    else
+      Result := UInt32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int32: %d) is too low for UInt32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt32; B: Int64): UInt32;
+begin
+If B >= 0 then
+  begin
+    If (B > Int64(High(UInt32))) or (Int64(A) < B) then
+      Result := A
+    else
+      Result := UInt32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int64: %d) is too low for UInt32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt64; B: Int8): UInt64;
+begin
+If B >= 0 then
+  begin
+  {$IF Declared(NativeUInt64E)}
+    If A < UInt64(B) then
+  {$ELSE}
+    If CompareUInt64(A,UInt64(B)) < 0 then
+  {$IFEND}
+      Result := A
+    else
+      Result := UInt64(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int8: %d) is too low for UInt64.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt64; B: Int16): UInt64;
+begin
+If B >= 0 then
+  begin
+  {$IF Declared(NativeUInt64E)}
+    If A < UInt64(B) then
+  {$ELSE}
+    If CompareUInt64(A,UInt64(B)) < 0 then
+  {$IFEND}
+      Result := A
+    else
+      Result := UInt64(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int16: %d) is too low for UInt64.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt64; B: Int32): UInt64;
+begin
+If B >= 0 then
+  begin
+  {$IF Declared(NativeUInt64E)}
+    If A < UInt64(B) then
+  {$ELSE}
+    If CompareUInt64(A,UInt64(B)) < 0 then
+  {$IFEND}
+      Result := A
+    else
+      Result := UInt64(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int32: %d) is too low for UInt64.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMin(A: UInt64; B: Int64): UInt64;
+begin
+If B >= 0 then
+  begin
+  {$IF Declared(NativeUInt64E)}
+    If A < UInt64(B) then
+  {$ELSE}
+    If CompareUInt64(A,UInt64(B)) < 0 then
+  {$IFEND}
+      Result := A
+    else
+      Result := UInt64(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int32: %d) is too low for UInt64.',[B]);
+end;
+
+{-------------------------------------------------------------------------------
+    uuMin - unsigned integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function uuMin(A: UInt8; B: UInt16): UInt8;
+begin
+{
+  No more comarisons and checks is needed here, if B is larger than High(UInt8),
+  then it cannot be returned as minimum.
+}
+If UInt16(A) < B then
+  Result := A
+else
+  Result := UInt8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt8; B: UInt32): UInt8;
+begin
+If UInt32(A) < B then
+  Result := A
+else
+  Result := UInt8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt8; B: UInt64): UInt8;
+begin
+{$IF Declared(NativeUInt64E)}
+If UInt64(A) < B then
+{$ELSE}
+If CompareUInt64(UInt64(A),B) < 0 then
+{$IFEND}
+  Result := A
+else
+  Result := UInt8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt16; B: UInt8): UInt16;
+begin
+If A < UInt16(B) then
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt16; B: UInt32): UInt16;
+begin
+If UInt32(A) < B then
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt16; B: UInt64): UInt16;
+begin
+{$IF Declared(NativeUInt64E)}
+If UInt64(A) < B then
+{$ELSE}
+If CompareUInt64(UInt64(A),B) < 0 then
+{$IFEND}
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt32; B: UInt8): UInt32;
+begin
+If A < UInt32(B) then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt32; B: UInt16): UInt32;
+begin
+If A < UInt32(B) then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt32; B: UInt64): UInt32;
+begin
+{$IF Declared(NativeUInt64E)}
+If UInt64(A) < B then
+{$ELSE}
+If CompareUInt64(UInt64(A),B) < 0 then
+{$IFEND}
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt64; B: UInt8): UInt64;
+begin
+{$IF Declared(NativeUInt64E)}
+If A < UInt64(B) then
+{$ELSE}
+If CompareUInt64(A,UInt64(B)) < 0 then
+{$IFEND}
+  Result := A
+else
+  Result := UInt64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt64; B: UInt16): UInt64;
+begin
+{$IF Declared(NativeUInt64E)}
+If A < UInt64(B) then
+{$ELSE}
+If CompareUInt64(A,UInt64(B)) < 0 then
+{$IFEND}
+  Result := A
+else
+  Result := UInt64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMin(A: UInt64; B: UInt32): UInt64;
+begin
+{$IF Declared(NativeUInt64E)}
+If A < UInt64(B) then
+{$ELSE}
+If CompareUInt64(A,UInt64(B)) < 0 then
+{$IFEND}
+  Result := A
+else
+  Result := UInt64(B);
+end;
+
+{-------------------------------------------------------------------------------
+    fiMin - float & signed integer
+-------------------------------------------------------------------------------}
+
+Function fiMin(A: Extended; B: Int8): Extended;
+begin
+{
+  [U]Int8 through [U]Int32 can be converted to Extended without losing
+  information, even when it is declared only as an alias for Double.
+}
+If A < B then
   Result := A
 else
   Result := B;
@@ -5776,12 +7670,276 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fMax(A,B: TDateTime): TDateTime;
+Function fiMin(A: Extended; B: Int16): Extended;
 begin
-If A > B then
+If A < B then
   Result := A
 else
   Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiMin(A: Extended; B: Int32): Extended;
+begin
+If A < B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiMin(A: Extended; B: Int64): Extended;
+begin
+{$If SizeOf(Extended) <> 10}
+If (B < AM_I64_DBL_LO) or (B > AM_I64_DBL_HI) then
+  raise EAMInvalidOperation.CreateFmt('fiMin: Value of B (Int64: %d) cannot be accurately converted to Extended.',[B])
+else
+{$IFEND}
+  begin
+    If A < B then
+      Result := A
+    else
+      Result := B;
+  end;
+end;
+
+{-------------------------------------------------------------------------------
+    fuMin - float & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function fuMin(A: Extended; B: UInt8): Extended;
+begin
+If A < B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuMin(A: Extended; B: UInt16): Extended;
+begin
+If A < B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuMin(A: Extended; B: UInt32): Extended;
+begin
+If A < B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuMin(A: Extended; B: UInt64): Extended;
+begin
+{$If SizeOf(Extended) = 10}
+If A < U64ToFloat(B) then
+  Result := A
+else
+  Result := U64ToFloat(B);
+{$ELSE}
+{$IF Declared(NativeUInt64E)}
+If B <= AM_I64_DBL_HI then
+{$ELSE}
+If CompareUInt64(B,AM_I64_DBL_HI) <= 0 then
+{$IFEND}
+  begin
+    If A < B then
+      Result := A
+    else
+      Result := B;
+  end
+else raise EAMInvalidOperation.CreateFmt('fuMin: Value of B (UInt64: %u) cannot be accurately converted to Extended.',[B])
+{$IFEND}
+end;
+
+{-------------------------------------------------------------------------------
+    ifMin - signed integer & float
+-------------------------------------------------------------------------------}
+
+Function ifMin(A: Int8; B: Extended): Int8;
+begin
+If B < A then
+  begin
+    If (B < Low(Int8)) or (B > High(Int8)) then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot fit into Int8.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int8.',[B])
+    else
+      Result := Int8(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifMin(A: Int16; B: Extended): Int16;
+begin
+If B < A then
+  begin
+    If (B < Low(Int16)) or (B > High(Int16)) then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot fit into Int16.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int16.',[B])
+    else
+      Result := Int16(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifMin(A: Int32; B: Extended): Int32;
+begin
+If B < A then
+  begin
+    If (B < Low(Int32)) or (B > High(Int32)) then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot fit into Int32.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int32.',[B])
+    else
+      Result := Int32(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifMin(A: Int64; B: Extended): Int64;
+begin
+{$If SizeOf(Extended) = 10}
+If B < A then
+  begin
+    If (B < Low(Int64)) or (B > High(Int64)) then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot fit into Int64.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int64.',[B])
+    else
+      Result := Int64(Trunc(B));
+  end
+else Result := A;
+{$ELSE}
+If (A < AM_I64_DBL_LO) or (A > AM_I64_DBL_HI) then
+  raise EAMInvalidOperation.CreateFmt('ifMin: Value of A (Int64: %d) cannot be accurately converted to Extended.',[A])
+else
+  begin
+    If B < A then
+      begin
+      {
+        Both constants AM_I64_DBL_LO and AM_I64_DBL_HI can be accurately
+        converted to double and therefore following comparison should be ok.
+      }
+        If (B < AM_I64_DBL_LO) or (B > AM_I64_DBL_HI) then
+          raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be accurately converted to Int64.',[B])
+        else If Frac(B) <> 0 then
+          raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int64.',[B])
+        else
+          Result := Int64(Trunc(B));
+      end
+    else Result := A;
+  end;
+{$IFEND}
+end;
+
+{-------------------------------------------------------------------------------
+    ufMin - unsigned integer & float
+-------------------------------------------------------------------------------}
+
+Function ufMin(A: UInt8; B: Extended): UInt8;
+begin
+If B < A then
+  begin
+    If (B < 0) or (B > High(UInt8)) then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt8.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot be stored in UInt8.',[B])
+    else
+      Result := UInt8(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufMin(A: UInt16; B: Extended): UInt16;
+begin
+If B < A then
+  begin
+    If (B < 0) or (B > High(UInt16)) then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt16.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot be stored in UInt16.',[B])
+    else
+      Result := UInt16(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufMin(A: UInt32; B: Extended): UInt32;
+begin
+If B < A then
+  begin
+    If (B < 0) or (B > High(UInt32)) then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt32.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot be stored in UInt32.',[B])
+    else
+      Result := UInt32(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufMin(A: UInt64; B: Extended): UInt64;
+begin
+{$If SizeOf(Extended) = 10}
+If B < U64ToFloat(A) then
+  begin
+    If (B < 0) or (B > U64ToFloat(UInt64($FFFFFFFFFFFFFFFF{yeah, I can put -1 here, but to be sure...}))) then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt64.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
+    else
+      Result := FloatToU64(B);
+  end
+else Result := A;
+{$ELSE}
+{$IF Declared(NativeUInt64E)}
+If A > AM_I64_DBL_HI then
+{$ELSE}
+If CompareUInt64(A,AM_I64_DBL_HI) > 0 then  
+{$IFEND}
+  raise EAMInvalidOperation.CreateFmt('ufMin: Value of A (UInt64: %u) cannot be accurately converted to Extended.',[A])
+else
+  begin
+  {
+    At this point, A is guaranteed to be less than High(Int64), so there is no
+    need for U64ToFloat.
+  }
+    If B < A then
+      begin
+        If (B < 0) or (B > AM_I64_DBL_HI) then
+          raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt64.',[B])
+        else If Frac(B) <> 0 then
+          raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
+        else
+          Result := Trunc(B); // B is below or equal to AM_I64_DBL_HI, so FloatToU64 is not needed here
+      end
+    else Result := A;
+  end;
+{$IFEND}
 end;
 
 end.

@@ -62,6 +62,27 @@ uses
   SysUtils,
   AuxTypes;
 
+const
+  DistinctOverloadUInt64 = {$IF Declared(NativeUInt64E)}True{$ELSE}False{$IFEND};
+  DistinctOverloadUInt64N = {$IF Declared(NativeUInt64E)}1{$ELSE}0{$IFEND};
+{$IF Declared(NativeUInt64E)}
+  DistinctOverloadUInt64E = True;
+{$IFEND}
+(*
+  DistinctUTF8Char = True;
+  DistinctUTF8String = True;
+*)
+  DistinctOverloadUnicodeChar = {$IF Declared(UnicodeIsWideE)}False{$ELSE}True{$IFEND};
+  DistinctOverloadUnicodeCharN = {$IF Declared(UnicodeIsWideE)}1{$ELSE}1{$IFEND};
+{$IF not Declared(UnicodeIsWideE)}
+  DistinctOverloadUnicodeCharE = True;
+{$IFEND}
+  DistinctOverloadUnicodeString = {$IF Declared(UnicodeIsWideE)}False{$ELSE}True{$IFEND};
+  DistinctOverloadUnicodeStringN = {$IF Declared(UnicodeIsWideE)}1{$ELSE}1{$IFEND};
+{$IF not Declared(UnicodeIsWideE)}
+  DistinctOverloadUnicodeStringE = True;
+{$IFEND}
+
 {===============================================================================
     Library-specific exceptions
 ===============================================================================}
@@ -122,6 +143,11 @@ procedure DivMod(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overlo
 procedure DivMod(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
 procedure DivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+procedure DivMod(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -152,6 +178,13 @@ Function DivCeil(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} in
 Function DivCeil(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeil(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+Function DivCeil(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivCeil(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -181,6 +214,13 @@ Function DivFloor(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inl
 Function DivFloor(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloor(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloor(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function DivFloor(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 
 {===============================================================================
@@ -232,6 +272,13 @@ Function IsPow2(N: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+Function IsPow2(N: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(N: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(N: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IsPow2(N: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -264,6 +311,13 @@ Function IntLog2(N: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IntLog2(N: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IntLog2(N: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+Function IntLog2(N: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(N: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(N: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IntLog2(N: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -295,6 +349,11 @@ Function TryDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Bo
 Function TryDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function TryDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function TryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function TryDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -331,6 +390,11 @@ Function DivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boo
 Function DivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+Function DivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -362,6 +426,13 @@ Function DivCeilPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline
 Function DivCeilPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+Function DivCeilPow2(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivCeilPow2(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -392,6 +463,13 @@ Function DivFloorPow2(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline}
 Function DivFloorPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function DivFloorPow2(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivFloorPow2(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 
 {===============================================================================
@@ -427,6 +505,11 @@ procedure DivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int
 procedure DivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
 procedure DivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 //------------------------------------------------------------------------------
 // shortened sliases
 
@@ -448,6 +531,11 @@ procedure DivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); ov
 procedure DivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
 procedure DivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
 procedure DivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+procedure DivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -484,6 +572,13 @@ Function DivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF Ca
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
 //------------------------------------------------------------------------------
 
 Function iDivCeilPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -504,6 +599,13 @@ Function DivCeilPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline
 Function DivCeilPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function DivCeilPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivCeilPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 
 {===============================================================================
@@ -540,6 +642,13 @@ Function DivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF C
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
 //------------------------------------------------------------------------------
 
 Function iDivFloorPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -560,6 +669,13 @@ Function DivFloorPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInlin
 Function DivFloorPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function DivFloorPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function DivFloorPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 
 {===============================================================================
@@ -593,6 +709,13 @@ Function Min(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Min(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
@@ -628,6 +751,13 @@ Function Max(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Max(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Max(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Max(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Max(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
@@ -766,6 +896,138 @@ Function ufMin(A: UInt16; B: Extended): UInt16; overload;
 Function ufMin(A: UInt32; B: Extended): UInt32; overload;
 Function ufMin(A: UInt64; B: Extended): UInt64; overload;
 
+//==============================================================================
+
+Function Min(A: Int8; B: Int16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int8; B: Int32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int8; B: Int64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(A: Int16; B: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int16; B: Int32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int16; B: Int64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(A: Int32; B: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int32; B: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int32; B: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(A: Int64; B: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int64; B: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int64; B: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Int8; B: UInt8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int8; B: UInt16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int8; B: UInt32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: Int8; B: UInt64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(A: Int16; B: UInt8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int16; B: UInt16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int16; B: UInt32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: Int16; B: UInt64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(A: Int32; B: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int32; B: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int32; B: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: Int32; B: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(A: Int64; B: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int64; B: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int64; B: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: Int64; B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: UInt8; B: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt8; B: Int16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt8; B: Int32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt8; B: Int64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(A: UInt16; B: Int8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt16; B: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt16; B: Int32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt16; B: Int64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(A: UInt32; B: Int8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt32; B: Int16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt32; B: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt32; B: Int64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: UInt64; B: Int8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt64; B: Int16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt64; B: Int32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt64; B: Int64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: UInt8; B: UInt16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt8; B: UInt32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: UInt8; B: UInt64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(A: UInt16; B: UInt8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt16; B: UInt32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: UInt16; B: UInt64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(A: UInt32; B: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt32; B: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: UInt32; B: UInt64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: UInt64; B: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt64; B: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt64; B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Extended; B: Int8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Extended; B: Int16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Extended; B: Int32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Extended; B: Int64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Extended; B: UInt8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Extended; B: UInt16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Extended; B: UInt32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: Extended; B: UInt64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Int8; B: Extended): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int16; B: Extended): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int32; B: Extended): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: Int64; B: Extended): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: UInt8; B: Extended): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt16; B: Extended): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(A: UInt32; B: Extended): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+
+//==============================================================================
 (*
 Function iIfThen(Value: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8;
 Function iIfThen(Value: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16;
@@ -795,13 +1057,14 @@ Function sIfThen(Value: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4St
 Function sIfThen(Value: Boolean; const OnTrue: String; const OnFalse: String = ''): String;
 
 Function pIfThen(Value: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
-procedure pIfThen(Value: Boolean; OnTrue,OnFalse: Pointer; Size: TMemSize; Result: Pointer);
 
 Function oIfThen(Value: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject;
+Function oIfThen(Value: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass;
 
 Function vIfThen(Value: Boolean; const OnTrue: Variant; const OnFalse: Variant = null): Variant;
 
 procedure bIfThen(Value: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
+procedure bIfThen(Value: Boolean; OnTrue,OnFalse: Pointer; Size: TMemSize; Result: Pointer);
 
 Function gIfThen(Value: Boolean; const OnTrue: TGUID; const OnFalse: TGUID = ???): TGUID;
 *)
@@ -849,11 +1112,13 @@ end;
 {===============================================================================
     Public auxiliary funtions - implementation
 ===============================================================================}
+const
+  TwoPow64: Single = 9223372036854775808.0;   // 2^64, $5F800000
+  TwoPow63: Single = 18446744073709551616.0;  // 2^63, $5F000000
+
+//------------------------------------------------------------------------------
 
 Function U64ToFloat(N: UInt64): Extended;
-var
-  UTemp:  UInt32;
-  FTemp:  FLoat32 absolute UTemp;
 begin
 If (N and UInt64($8000000000000000)) <> 0 then
   begin
@@ -865,8 +1130,7 @@ If (N and UInt64($8000000000000000)) <> 0 then
     We let the integer to be loaded as signed and then add 2^64 (0x5F800000 as
     single) to it, this will bring the float to a proper positive value.
   }
-    UTemp := $5F800000;
-    Result := Int64(N) + FTemp;
+    Result := Int64(N) + TwoPow64;
   end
 else Result := N;
 end;
@@ -874,20 +1138,13 @@ end;
 //------------------------------------------------------------------------------
 
 Function FloatToU64(N: Extended): UInt64;
-var
-  UTemp64:  UInt32;
-  FTemp64:  FLoat32 absolute UTemp64;
-  UTemp63:  UInt32;
-  FTemp63:  FLoat32 absolute UTemp63;
 begin
-UTemp64 := $5F800000; // 2^64
-UTemp63 := $5F000000; // 2^63
 If Frac(N) = 0.0 then
   begin
-    If (N >= 0) and (N < FTemp64) then
+    If (N >= 0) and (N < TwoPow64) then
       begin
-        If N >= FTemp63 then
-          Result := UInt64(Trunc(N - FTemp64))
+        If N >= TwoPow63 then
+          Result := UInt64(Trunc(N - TwoPow64))
         else
           Result := Trunc(N);
       end
@@ -1727,7 +1984,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    DivMod - alias functions
+    DivMod - common-name overloads
 -------------------------------------------------------------------------------}
 
 procedure DivMod(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
@@ -1754,6 +2011,34 @@ end;
 procedure DivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 begin
 iDivMod(Dividend,Divisor,Quotient,Remainder);
+end;
+
+//------------------------------------------------------------------------------
+
+procedure DivMod(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+begin
+uDivMod(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivMod(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+begin
+uDivMod(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivMod(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+begin
+uDivMod(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+begin
+uDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 
@@ -1860,7 +2145,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    DivCeil - alias functions
+    DivCeil - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function DivCeil(Dividend,Divisor: Int8): Int8;
@@ -1888,6 +2173,36 @@ Function DivCeil(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeil(Dividend,Divisor);
 end;
+
+//------------------------------------------------------------------------------
+
+Function DivCeil(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivCeil(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeil(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivCeil(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeil(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivCeil(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeil(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivCeil(Dividend,Divisor);
+end;
+{$IFEND}
 
 
 {===============================================================================
@@ -1980,7 +2295,7 @@ uDivMod(Dividend,Divisor,Result,Remainder);
 end;
 
 {-------------------------------------------------------------------------------
-    DivFloor - alias functions
+    DivFloor - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function DivFloor(Dividend,Divisor: Int8): Int8;
@@ -2008,6 +2323,36 @@ Function DivFloor(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloor(Dividend,Divisor);
 end;
+
+//------------------------------------------------------------------------------
+
+Function DivFloor(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivFloor(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloor(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivFloor(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloor(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivFloor(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloor(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivFloor(Dividend,Divisor);
+end;
+{$IFEND}
 
 
 {===============================================================================
@@ -2133,7 +2478,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    IsPow2 - alias functions
+    IsPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function IsPow2(N: Int8): Boolean;
@@ -2161,6 +2506,36 @@ Function IsPow2(N: Int64): Boolean;
 begin
 Result := iIsPow2(N);
 end;
+
+//------------------------------------------------------------------------------
+
+Function IsPow2(N: UInt8): Boolean;
+begin
+Result := uIsPow2(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IsPow2(N: UInt16): Boolean; 
+begin
+Result := uIsPow2(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IsPow2(N: UInt32): Boolean;   
+begin
+Result := uIsPow2(N);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IsPow2(N: UInt64): Boolean; 
+begin
+Result := uIsPow2(N);
+end;  
+{$IFEND}
 
 
 {===============================================================================
@@ -2992,7 +3367,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    IntLog2 - alias functions
+    IntLog2 - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function IntLog2(N: Int8): Int32;
@@ -3020,6 +3395,36 @@ Function IntLog2(N: Int64): Int32;
 begin
 Result := iIntLog2(N);
 end;
+
+//------------------------------------------------------------------------------
+
+Function IntLog2(N: UInt8): Int32;
+begin
+Result := uIntLog2(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IntLog2(N: UInt16): Int32;
+begin
+Result := uIntLog2(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IntLog2(N: UInt32): Int32;
+begin
+Result := uIntLog2(N);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IntLog2(N: UInt64): Int32;
+begin
+Result := uIntLog2(N);
+end;
+{$IFEND}
 
 
 {===============================================================================
@@ -4668,7 +5073,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    TryDivModPow2 - alias functions
+    TryDivModPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function TryDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
@@ -4695,6 +5100,34 @@ end;
 Function TryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 begin
 Result := iTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+//------------------------------------------------------------------------------
+
+Function TryDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
+begin
+Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function TryDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
+begin
+Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function TryDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
+begin
+Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function TryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
+begin
+Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 
@@ -4804,7 +5237,7 @@ else Result := True;
 end;
 
 {-------------------------------------------------------------------------------
-    DivModPow2 - alias functions
+    DivModPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function DivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
@@ -4831,6 +5264,34 @@ end;
 Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 begin
 Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+//------------------------------------------------------------------------------
+
+Function DivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
+begin
+Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
+begin
+Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
+begin
+Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
+begin
+Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 
@@ -4934,7 +5395,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    DivCeilPow2 - alias functions
+    DivCeilPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function DivCeilPow2(Dividend,Divisor: Int8): Int8;
@@ -4962,6 +5423,36 @@ Function DivCeilPow2(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2(Dividend,Divisor);
 end;
+
+//------------------------------------------------------------------------------
+
+Function DivCeilPow2(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivCeilPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivCeilPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivCeilPow2(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivCeilPow2(Dividend,Divisor);
+end;
+{$IFEND}
 
 
 {===============================================================================
@@ -5054,7 +5545,7 @@ uDivModPow2(Dividend,Divisor,Result,Remainder);
 end;
 
 {-------------------------------------------------------------------------------
-    DivFloorPow2 - alias functions
+    DivFloorPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function DivFloorPow2(Dividend,Divisor: Int8): Int8;
@@ -5082,6 +5573,36 @@ Function DivFloorPow2(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2(Dividend,Divisor);
 end;
+
+//------------------------------------------------------------------------------
+
+Function DivFloorPow2(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivFloorPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivFloorPow2(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivFloorPow2(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivFloorPow2(Dividend,Divisor);
+end;
+{$IFEND}
 
 
 {===============================================================================
@@ -6106,7 +6627,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    DivModPow2NoCheck - alias functions
+    DivModPow2NoCheck - common-name overloads
 -------------------------------------------------------------------------------}
 
 procedure DivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
@@ -6133,6 +6654,34 @@ end;
 procedure DivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+//------------------------------------------------------------------------------
+
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 {-------------------------------------------------------------------------------
@@ -6219,6 +6768,34 @@ end;
 procedure DivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure DivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+begin
+uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 
@@ -6322,7 +6899,7 @@ end;
 {$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
-    DivCeilPow2NoCheck - alias functions
+    DivCeilPow2NoCheck - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8;
@@ -6350,6 +6927,36 @@ Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
+
+//------------------------------------------------------------------------------
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+{$IFEND}
 
 {-------------------------------------------------------------------------------
     *DivCeilPow2NC - shortened sliases
@@ -6436,6 +7043,36 @@ Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NC(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NC(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NC(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivCeilPow2NC(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivCeilPow2NoCheck(Dividend,Divisor);
+end;
+{$IFEND}
 
 
 {===============================================================================
@@ -6528,7 +7165,7 @@ uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
 end;
 
 {-------------------------------------------------------------------------------
-    DivFloorPow2NoCheck - alias functions
+    DivFloorPow2NoCheck - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8;
@@ -6556,6 +7193,36 @@ Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
+
+//------------------------------------------------------------------------------
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+{$IFEND}
 
 {-------------------------------------------------------------------------------
     *DivCeilPow2NC - shortened sliases
@@ -6642,6 +7309,36 @@ Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NC(Dividend,Divisor: UInt8): UInt8;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NC(Dividend,Divisor: UInt16): UInt16;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NC(Dividend,Divisor: UInt32): UInt32;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function DivFloorPow2NC(Dividend,Divisor: UInt64): UInt64;
+begin
+Result := uDivFloorPow2NoCheck(Dividend,Divisor);
+end;
+{$IFEND}
 
 
 {===============================================================================
@@ -6750,7 +7447,7 @@ else
 end;
 
 {-------------------------------------------------------------------------------
-    Min - alias functions
+    Min - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function Min(A,B: Int8): Int8;
@@ -6779,7 +7476,37 @@ begin
 Result := iMin(A,B);
 end;
 
+//------------------------------------------------------------------------------
+
+Function Min(A,B: UInt8): UInt8;
+begin
+Result := uMin(A,B);
+end;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A,B: UInt16): UInt16;
+begin
+Result := uMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A,B: UInt32): UInt32;
+begin
+Result := uMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A,B: UInt64): UInt64;
+begin
+Result := uMin(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
 
 Function Min(A,B: Extended): Extended;
 begin
@@ -6893,7 +7620,7 @@ else
 end;
 
 {-------------------------------------------------------------------------------
-    Max - alias functions
+    Max - common-name overloads
 -------------------------------------------------------------------------------}
 
 Function Max(A,B: Int8): Int8;
@@ -6922,7 +7649,37 @@ begin
 Result := iMax(A,B);
 end;
 
+//------------------------------------------------------------------------------
+
+Function Max(A,B: UInt8): UInt8;
+begin
+Result := uMax(A,B);
+end;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: UInt16): UInt16;
+begin
+Result := uMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: UInt32): UInt32;
+begin
+Result := uMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: UInt64): UInt64;
+begin
+Result := uMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
 
 Function Max(A,B: Extended): Extended;
 begin
@@ -7941,6 +8698,532 @@ else
   end;
 {$IFEND}
 end;
+
+{-------------------------------------------------------------------------------
+    Min - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function Min(A: Int8; B: Int16): Int8;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int8; B: Int32): Int8;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int8; B: Int64): Int8;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: Int8): Int16;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: Int32): Int16;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: Int64): Int16;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: Int8): Int32;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: Int16): Int32;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: Int64): Int32;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: Int8): Int64;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: Int16): Int64;
+begin
+Result := iiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: Int32): Int64;
+begin
+Result := iiMin(A,B);
+end;
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Int8; B: UInt8): Int8;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int8; B: UInt16): Int8;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int8; B: UInt32): Int8;
+begin
+Result := iuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int8; B: UInt64): Int8;
+begin
+Result := iuMin(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: UInt8): Int16;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: UInt16): Int16;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: UInt32): Int16;
+begin
+Result := iuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: UInt64): Int16;
+begin
+Result := iuMin(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: UInt8): Int32;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: UInt16): Int32;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: UInt32): Int32;
+begin
+Result := iuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: UInt64): Int32; 
+begin
+Result := iuMin(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: UInt8): Int64;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: UInt16): Int64;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: UInt32): Int64;
+begin
+Result := iuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: UInt64): Int64;
+begin
+Result := iuMin(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: UInt8; B: Int8): UInt8;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt8; B: Int16): UInt8;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt8; B: Int32): UInt8;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt8; B: Int64): UInt8;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: Int8): UInt16;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: Int16): UInt16;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: Int32): UInt16;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: Int64): UInt16;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: Int8): UInt32;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: Int16): UInt32;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: Int32): UInt32;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: Int64): UInt32;
+begin
+Result := uiMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: Int8): UInt64;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: Int16): UInt64;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: Int32): UInt64;
+begin
+Result := uiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: Int64): UInt64;
+begin
+Result := uiMin(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: UInt8; B: UInt16): UInt8;
+begin
+Result := uuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt8; B: UInt32): UInt8; 
+begin
+Result := uuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt8; B: UInt64): UInt8;  
+begin
+Result := uuMin(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: UInt8): UInt16;  
+begin
+Result := uuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: UInt32): UInt16; 
+begin
+Result := uuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: UInt64): UInt16; 
+begin
+Result := uuMin(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: UInt8): UInt32;
+begin
+Result := uuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: UInt16): UInt32;
+begin
+Result := uuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: UInt64): UInt32;
+begin
+Result := uuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: UInt8): UInt64; 
+begin
+Result := uuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: UInt16): UInt64;
+begin
+Result := uuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: UInt32): UInt64;
+begin
+Result := uuMin(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Extended; B: Int8): Extended;
+begin
+Result := fiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Extended; B: Int16): Extended;
+begin
+Result := fiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Extended; B: Int32): Extended;
+begin
+Result := fiMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Extended; B: Int64): Extended;
+begin
+Result := fiMin(A,B);
+end;
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Extended; B: UInt8): Extended;
+begin
+Result := fuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Extended; B: UInt16): Extended;
+begin
+Result := fuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Extended; B: UInt32): Extended;
+begin
+Result := fuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Extended; B: UInt64): Extended;
+begin
+Result := fuMin(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(A: Int8; B: Extended): Int8;
+begin
+Result := ifMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int16; B: Extended): Int16;
+begin
+Result := ifMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int32; B: Extended): Int32;
+begin
+Result := ifMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: Int64; B: Extended): Int64;
+begin
+Result := ifMin(A,B);
+end;
+
+//------------------------------------------------------------------------------
+
+Function Min(A: UInt8; B: Extended): UInt8;
+begin
+Result := ufMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt16; B: Extended): UInt16;
+begin
+Result := ufMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt32; B: Extended): UInt32;
+begin
+Result := ufMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(A: UInt64; B: Extended): UInt64;
+begin
+Result := ufMin(A,B);
+end;
+{$IFEND}
 
 end.
 

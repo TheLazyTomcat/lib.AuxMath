@@ -90,25 +90,37 @@ type
   EAMException = class(Exception);
 
   EAMInvalidOperation = class(EAMException);
+  EAMInvalidValue     = class(EAMException);
 
 {===============================================================================
     Public constants
 ===============================================================================}
 const
 {
-  Highest and lowest value of Int64 that can be stored in 64bit floating point
-  number (Double) without losing any information.
+  Highest and lowest integral value that can be stored in 64bit floating point
+  number (Double) without losing any information (the numbers have the same
+  magnitude, so negated positive limit can be used as low value, but for the
+  sake of clarity, both are provided).
 }
-  AM_I64_DBL_HI = 9007199254740992;    // $0020000000000000
-  AM_I64_DBL_LO = -9007199254740992;   // $FFE0000000000000
+  AM_INT_DBL_HI = 9007199254740992;    // $0020000000000000
+  AM_INT_DBL_LO = -9007199254740992;   // $FFE0000000000000
 
 {===============================================================================
     Public auxiliary funtions - declaration
 ===============================================================================}
 {
-  WARNING - following two functions (U64ToFloat, FloatToU64) are assuming type
-            Extended to be 10 bytes wide (double-extended float). If it is not,
-            they might produce unexpected (inprecise) results.
+  Use following functions to transfer unsigned 64bit integer value to and from
+  floating point number. Newer compilers can do it, but older ones (those
+  without full support for type UInt64) might not be capable of doing it.
+
+  In U64ToFloat, if the type Extended is declared only as an alias for Double
+  (Win64), the limits for transfer (AM_INT_DBL_HI, AM_INT_DBL_LO) are in effect
+  (an exception of class EAMInvalidOperation can be raised if limits are
+  exceeded).
+
+  For FloatToU64, the floating point number must not have non-zero fraction,
+  must be greater or equal to zero and at the same time smaller than 2^64,
+  otherwise an exception of class EAMInvalidOperation is raised.
 }
 Function U64ToFloat(N: UInt64): Extended;
 
@@ -176,7 +188,9 @@ Function uDivCeil(Dividend,Divisor: UInt64): UInt64; overload;
 Function DivCeil(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeil(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeil(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivCeil(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivCeil(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeil(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -213,7 +227,9 @@ Function uDivFloor(Dividend,Divisor: UInt64): UInt64; overload;
 Function DivFloor(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloor(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloor(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivFloor(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivFloor(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloor(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -270,7 +286,9 @@ Function uIsPow2(N: UInt64): Boolean; overload;
 Function IsPow2(N: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function IsPow2(N: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function IsPow2(N: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IsPow2(N: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -309,7 +327,9 @@ Function uIntLog2(N: UInt64): Int32; overload;{$IFNDEF PurePascal} register; ass
 Function IntLog2(N: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IntLog2(N: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IntLog2(N: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function IntLog2(N: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function IntLog2(N: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IntLog2(N: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -424,7 +444,9 @@ Function uDivCeilPow2(Dividend,Divisor: UInt64): UInt64; overload;
 Function DivCeilPow2(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivCeilPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivCeilPow2(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -462,7 +484,9 @@ Function uDivFloorPow2(Dividend,Divisor: UInt64): UInt64; overload;
 Function DivFloorPow2(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivFloorPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivFloorPow2(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -570,7 +594,9 @@ Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -598,7 +624,9 @@ Function uDivCeilPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanI
 Function DivCeilPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivCeilPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivCeilPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -640,7 +668,9 @@ Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -668,7 +698,9 @@ Function uDivFloorPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF Can
 Function DivFloorPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function DivFloorPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function DivFloorPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -708,7 +740,9 @@ Function fMin(A,B: Extended): Extended; overload;
 Function Min(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Min(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -750,7 +784,9 @@ Function fMax(A,B: Extended): Extended; overload;
 Function Max(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Max(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Max(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Max(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Max(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Max(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -770,23 +806,26 @@ Function Max(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDI
 {
   Returns smaller/lower of the two given values.
 
-  When the function cannot return proper value, then and EAMInvalidOperation
-  exception is raised. This can happen in following situations:
+  When the function cannot select or return proper value, then an exception of 
+  class EAMInvalidOperation is raised. This can happen in following situations:
 
-    - value to be returned cannot fit into result
+    - value to be returned cannot fit into result (eg. when comparing Int16 and
+      Int8 where 16bit value is -300 and result is of type Int8 - such number 
+      simply cannot be stored in signed 8bit integer)
 
     - negative value is to be returned, but the result type is unsigned integer
 
     - large positive or negative integer needs to be converted to float of
       limited precision (eg. on systems where type Extended is only an alias
       for Double) for comparison, and the conversion would lead to loss
-      of information (see constants AM_I64_DBL_HI and AM_I64_DBL_LO for
+      of information (see constants AM_INT_DBL_HI and AM_INT_DBL_LO for
       applicable limits)
 
     - floating point number needs to be returned in integer result, but it has
-      value beyond what the result type can store
+      value beyond what the result type can store (floats can store, though in 
+      lower precision, much higher numbers than any integer can)
 
-    - returned value is a floating point number with non-zero fraction but the
+    - selected value is a floating point number with non-zero fraction but the
       result type is integer
 }
 
@@ -900,19 +939,25 @@ Function ufMin(A: UInt64; B: Extended): UInt64; overload;
 
 Function Min(A: Int8; B: Int16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int8; B: Int32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: Int8; B: Int64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Min(A: Int16; B: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int16; B: Int32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: Int16; B: Int64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Min(A: Int32; B: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int32; B: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: Int32; B: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 Function Min(A: Int64; B: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int64; B: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int64; B: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -935,12 +980,10 @@ Function Min(A: Int32; B: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$E
 Function Min(A: Int32; B: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: Int32; B: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
 
 Function Min(A: Int64; B: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int64; B: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int64; B: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: Int64; B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
@@ -949,19 +992,23 @@ Function Min(A: Int64; B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$E
 Function Min(A: UInt8; B: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt8; B: Int16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt8; B: Int32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: UInt8; B: Int64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Min(A: UInt16; B: Int8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt16; B: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt16; B: Int32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: UInt16; B: Int64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 Function Min(A: UInt32; B: Int8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt32; B: Int16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt32; B: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: UInt32; B: Int64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: UInt64; B: Int8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt64; B: Int16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt64; B: Int32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -986,9 +1033,7 @@ Function Min(A: UInt32; B: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$
 Function Min(A: UInt32; B: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: UInt32; B: UInt64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
 
-{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: UInt64; B: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt64; B: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: UInt64; B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -999,7 +1044,9 @@ Function Min(A: UInt64; B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{
 Function Min(A: Extended; B: Int8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Extended; B: Int16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Extended; B: Int32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: Extended; B: Int64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -1015,7 +1062,9 @@ Function Min(A: Extended; B: UInt64): Extended; overload;{$IFDEF CanInline} inli
 Function Min(A: Int8; B: Extended): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int16; B: Extended): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function Min(A: Int32; B: Extended): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
 Function Min(A: Int64; B: Extended): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -1070,14 +1119,21 @@ Function gIfThen(Value: Boolean; const OnTrue: TGUID; const OnFalse: TGUID = ???
 *)
 implementation
 
-{$If (SizeOf(Extended) <> 10) and (SizeOf(Extended) <> 8)}
+{$IF (SizeOf(Extended) <> 10) and (SizeOf(Extended) <> 8)}
   {$MESSAGE FATAL 'Unsupported size of type Extended.'}
 {$IFEND}
 
 {===============================================================================
     Internals
 ===============================================================================}
+const
+  iTwoPow64: UInt32 = $5F800000;  // 18446744073709551616 (2^64)
+  iTwoPow63: UInt32 = $5F000000;  // 9223372036854775808  (2^63)
+var
+  TwoPow64: Single absolute iTwoPow64;
+  TwoPow63: Single absolute iTwoPow63;
 
+//------------------------------------------------------------------------------
 {$IF not Declared(NativeUInt64E)}
 type
   UInt64Rec = packed record
@@ -1087,11 +1143,19 @@ type
       2: (Words: array [0..3] of UInt16);
       3: (Bytes: array [0..7] of UInt8);
   end;
-
+{$IFEND}
 //------------------------------------------------------------------------------
 
 Function CompareUInt64(A,B: UInt64): Integer;
 begin
+{$IF Declared(NativeUInt64E)}
+If A > B then
+  Result := +1
+else If A < B then
+  Result := -1
+else
+  Result := 0;
+{$ELSE}
 If UInt64Rec(A).Hi > UInt64Rec(B).Hi then
   Result := +1
 else If UInt64Rec(A).Hi < UInt64Rec(B).Hi then
@@ -1106,33 +1170,32 @@ else
     else
       Result := 0;
   end;
-end;
 {$IFEND}
+end;
+
 
 {===============================================================================
     Public auxiliary funtions - implementation
 ===============================================================================}
-const
-  TwoPow64: Single = 9223372036854775808.0;   // 2^64, $5F800000
-  TwoPow63: Single = 18446744073709551616.0;  // 2^63, $5F000000
-
-//------------------------------------------------------------------------------
 
 Function U64ToFloat(N: UInt64): Extended;
 begin
-If (N and UInt64($8000000000000000)) <> 0 then
-  begin
-  {
-    Here we have to somehow store UInt64 that is bigger than High(Int64) into
-    Extended in a compiler that does not support it (there is no instruction
-    for this in x87 or SSE/AVX).
+{
+  Here we assume that the compiler cannot properly transfer integer bigger than
+  High(Int64) into floating point number (note the modern compilers can do it).
 
-    We let the integer to be loaded as signed and then add 2^64 (0x5F800000 as
-    single) to it, this will bring the float to a proper positive value.
-  }
-    Result := Int64(N) + TwoPow64;
-  end
-else Result := N;
+  We let the integer to be loaded as if it was signed and then, if it is
+  negative, add 2^64 to it, which will bring the float to a proper positive
+  value.
+}
+{$IF SizeOf(Extended) <> 10}
+If CompareUInt64(N,AM_INT_DBL_HI) > 0 then
+  raise EAMInvalidOperation.CreateFmt('U64ToFloat: Integer value (%u) cannot be accurately converted to Extended.',[N]);
+{$IFEND}
+If (N and UInt64($8000000000000000)) <> 0 then
+  Result := Int64(N) + TwoPow64
+else
+  Result := N;
 end;
 
 //------------------------------------------------------------------------------
@@ -1336,7 +1399,6 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 procedure iDivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 {$IFNDEF PurePascal}
 asm
@@ -1398,8 +1460,8 @@ asm
 
 @CheckOverflow:
 
+{$IFDEF AM_OverflowChecks}
     // catch overflows (low(int64) div -1)
-
     MOV     EBP, EBX
     AND     EBP, ECX
     CMP     EBP, dword(-1)
@@ -1413,6 +1475,7 @@ asm
     MOV     EBP, $80000000
     DEC     EBP   // sets OF
     INTO          // raises overflow
+{$ENDIF}
 
 @Full64BitDivision:
   {
@@ -1558,17 +1621,29 @@ asm
 {$ENDIF}
 end;
 {$ELSE}
+{$IFNDEF FPC}{$IF Defined(AM_OverflowChecks) and (CompilerVersion < 18)}{$Q-}
+  procedure iDivMod_CalcRemainder;
+  begin
+    Remainder := Dividend - (Quotient * Divisor);
+  end;
+{$Q+}{$IFEND}{$ENDIF}
 begin
 Quotient := Dividend div Divisor;
 {
   Following (the multiplication) sometimes signals overflow even when it should
-  not (in D7 at least, where __llmulo is called), therefore the overflows are
-  explicitly disabled here to prevent problems
+  not (in D7 at least, where __llmulo is called), therefore, in Delphi older
+  than 2006 (because I have no idea when it was corrected, but newer versions
+  have full support for UInt64, so I assume it is corrected there already), we
+  call nested function where the overflows are explicitly disabled to prevent
+  problems.
 }
+{$IF Declared(iDivMod_CalcRemainder)}
+iDivMod_CalcRemainder;
+{$ELSE}
 Remainder := Dividend - (Quotient * Divisor);
+{$IFEND}
 end;
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
     uDivMod - unsigned integers
@@ -1742,7 +1817,7 @@ end;
 begin
 Quotient := Dividend div Divisor;
 {$IFDEF CPU64bit}
-Remainder := Dividend - (Quotient * Divisor);
+Remainder := Dividend - UInt32(Quotient * Divisor);
 {$ELSE}
 Remainder := UInt32(Dividend - (Int64(Quotient) * Divisor));
 {$ENDIF}
@@ -1751,7 +1826,6 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 procedure uDivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 {$IFNDEF PurePascal}
 asm
@@ -1928,6 +2002,7 @@ var
   ShiftRegister:  array[0..3] of UInt32;
   i:              Integer;
   Carry:          Boolean;
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}  
 begin
 If Divisor <> 0 then
   begin
@@ -1979,9 +2054,9 @@ If Divisor <> 0 then
 // following is here only to raise a zero-division exception
 else Quotient := UInt32(Dividend) div UInt32(Divisor);
 end;
+{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 {$IFEND}
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
     DivMod - common-name overloads
@@ -2130,10 +2205,10 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 {
-  The line "Result := Result + 1" can, in theory, produce overflow if UInt64 is
-  declared only as an alias to Int64.
+  The line "Result := Result + 1" can produce overflow if UInt64 is declared
+  only as an alias to Int64.
 }
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Result + 1 can overflow
 Function uDivCeil(Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
@@ -2142,7 +2217,7 @@ uDivMod(Dividend,Divisor,Result,Remainder);
 If Remainder <> 0 then
   Result := Result + 1;
 end;
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q+}{$IFEND}
 
 {-------------------------------------------------------------------------------
     DivCeil - common-name overloads
@@ -2167,12 +2242,14 @@ begin
 Result := iDivCeil(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivCeil(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeil(Dividend,Divisor);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -2317,12 +2394,14 @@ begin
 Result := iDivFloor(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivFloor(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloor(Dividend,Divisor);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -2463,19 +2542,15 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // N - 1 can overflow
 Function uIsPow2(N: UInt64): Boolean;
 begin
-{$IF Declared(NativeUInt64E)}
-If N > 0 then
-{$ELSE}
 If CompareUInt64(N,0) > 0 then
-{$IFEND}
   Result := N and (N - 1) = 0
 else
   Result := False;
 end;
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q+}{$IFEND}
 
 {-------------------------------------------------------------------------------
     IsPow2 - common-name overloads
@@ -2500,12 +2575,14 @@ begin
 Result := iIsPow2(N);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function IsPow2(N: Int64): Boolean;
 begin
 Result := iIsPow2(N);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -3241,7 +3318,6 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 Function uIntLog2(N: UInt64): Int32;
 {$IFNDEF PurePascal}
 asm
@@ -3352,6 +3428,7 @@ end;
 {$ELSE}
 var
   i:  Integer;
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // (N - 1) can overflow
 begin
 Result := -1;
 If N <> 0 then
@@ -3363,8 +3440,8 @@ If N <> 0 then
           Break{For i}
         end;
 end;
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q+}{$IFEND}
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
     IntLog2 - common-name overloads
@@ -3389,12 +3466,14 @@ begin
 Result := iIntLog2(N);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function IntLog2(N: Int64): Int32;
 begin
 Result := iIntLog2(N);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -3498,7 +3577,6 @@ end;
     iTryDivModPow2 - signed integers
 -------------------------------------------------------------------------------}
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 Function iTryDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
 {$IFNDEF PurePascal}
 asm
@@ -3713,7 +3791,11 @@ If PowerExp >= 0 then
       begin
         // both Q and R are negative
         PredDivisor := Pred(Divisor);
-        // Dividend + PredDivisor can and will overflow
+      {
+        Dividend + PredDivisor cannot overflow. Dividend cannot be bigger than
+        -1 (because we are in a negative-dividend branch) and PredDivisor is
+        always positive and never bigger than 63 (0x3F).
+      }
         Quotient := Int8(SAR_8(UInt8(Dividend + PredDivisor),PowerExp));
         Remainder := Dividend and PredDivisor;
         If Remainder <> 0 then
@@ -3730,11 +3812,9 @@ If PowerExp >= 0 then
 else Result := False;
 end;
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 Function iTryDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
 {$IFNDEF PurePascal}
 asm
@@ -3949,11 +4029,9 @@ If PowerExp >= 0 then
 else Result := False;
 end;
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 Function iTryDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
 {$IFNDEF PurePascal}
 asm
@@ -4168,11 +4246,9 @@ If PowerExp >= 0 then
 else Result := False;
 end;
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 Function iTryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 {$IFNDEF PurePascal}
 asm
@@ -4501,7 +4577,6 @@ If PowerExp >= 0 then
 else Result := False;
 end;
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
     uTryDivModPow2 - unsigned integers
@@ -4879,7 +4954,6 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 Function uTryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
 {$IFNDEF PurePascal}
 asm
@@ -5059,6 +5133,7 @@ end;
 {$ELSE}
 var
   PowerExp: Int32;
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // (Divisor - 1) can overflow
 begin
 PowerExp := uIntLog2(Divisor);
 If PowerExp >= 0 then
@@ -5069,8 +5144,8 @@ If PowerExp >= 0 then
   end
 else Result := False;
 end;
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q+}{$IFEND}
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
     TryDivModPow2 - common-name overloads
@@ -5383,7 +5458,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Result + 1 can overflow 
 Function uDivCeilPow2(Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
@@ -5392,7 +5467,7 @@ uDivModPow2(Dividend,Divisor,Result,Remainder);
 If Remainder <> 0 then
   Result := Result + 1;
 end;
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q+}{$IFEND}
 
 {-------------------------------------------------------------------------------
     DivCeilPow2 - common-name overloads
@@ -5417,12 +5492,14 @@ begin
 Result := iDivCeilPow2(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivCeilPow2(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2(Dividend,Divisor);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -5567,12 +5644,14 @@ begin
 Result := iDivFloorPow2(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivFloorPow2(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2(Dividend,Divisor);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -6089,7 +6168,6 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 procedure iDivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;
 {$IFNDEF PurePascal}
 asm
@@ -6217,7 +6295,7 @@ asm
 
     MOV   EAX, EDX
     
-    // fill the ESI with sign bit
+    // fill EDX with sign bit
     TEST  EDX, EDX
     SETNS DL
     AND   EDX, 1
@@ -6332,7 +6410,6 @@ else
   end;
 end;
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
     uDivModPow2NoCheck - unsigned integers
@@ -6518,7 +6595,6 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 procedure uDivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 {$IFNDEF PurePascal}
 asm
@@ -6619,12 +6695,13 @@ asm
 {$ENDIF}
 end;
 {$ELSE}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Divisor - 1 can overflow
 begin
 Quotient := Dividend shr BSF_64(Divisor);
 Remainder := Dividend and (Divisor - 1);
 end;
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q+}{$IFEND}
 {$ENDIF}
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 
 {-------------------------------------------------------------------------------
     DivModPow2NoCheck - common-name overloads
@@ -6887,7 +6964,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Result + 1 can overflow
 Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
@@ -6896,7 +6973,7 @@ uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
 If Remainder <> 0 then
   Result := Result + 1;
 end;
-{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q+}{$IFEND}
 
 {-------------------------------------------------------------------------------
     DivCeilPow2NoCheck - common-name overloads
@@ -6921,12 +6998,14 @@ begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -7037,12 +7116,14 @@ begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
+{$IFEND}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -7187,12 +7268,14 @@ begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -7303,12 +7386,14 @@ begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
+{$IFEND}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -7424,11 +7509,7 @@ end;
 
 Function uMin(A,B: UInt64): UInt64;
 begin
-{$IF Declared(NativeUInt64E)}
-If A < B then
-{$ELSE}
 If CompareUInt64(A,B) < 0 then
-{$IFEND}
   Result := A
 else
   Result := B;
@@ -7469,12 +7550,14 @@ begin
 Result := iMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A,B: Int64): Int64;
 begin
 Result := iMin(A,B);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -7597,11 +7680,7 @@ end;
 
 Function uMax(A,B: UInt64): UInt64;
 begin
-{$IF Declared(NativeUInt64E)}
-If A > B then
-{$ELSE}
 If CompareUInt64(A,B) > 0 then
-{$IFEND}
   Result := A
 else
   Result := B;
@@ -7642,12 +7721,14 @@ begin
 Result := iMax(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Max(A,B: Int64): Int64;
 begin
 Result := iMax(A,B);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -7874,11 +7955,7 @@ end;
 
 Function iuMin(A: Int8; B: UInt64): Int8;
 begin
-{$IF Declared(NativeUInt64E)}
-If (A < 0) or (B > UInt64(High(Int8))) or (UInt64(A) < B) then
-{$ELSE}
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int8))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
-{$IFEND}
   Result := A
 else
   Result := Int8(B);
@@ -7919,11 +7996,7 @@ end;
 
 Function iuMin(A: Int16; B: UInt64): Int16;
 begin
-{$IF Declared(NativeUInt64E)}
-If (A < 0) or (B > UInt64(High(Int16))) or (UInt64(A) < B) then
-{$ELSE}
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int16))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
-{$IFEND}
   Result := A
 else
   Result := Int16(B);
@@ -7963,11 +8036,7 @@ end;
 
 Function iuMin(A: Int32; B: UInt64): Int32;
 begin
-{$IF Declared(NativeUInt64E)}
-If (A < 0) or (B > UInt64(High(Int32))) or (UInt64(A) < B) then
-{$ELSE}
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int32))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
-{$IFEND}
   Result := A
 else
   Result := Int32(B);
@@ -8007,11 +8076,7 @@ end;
 
 Function iuMin(A: Int64; B: UInt64): Int64;
 begin
-{$IF Declared(NativeUInt64E)}
-If (A < 0) or (B > UInt64(High(Int64))) or (UInt64(A) < B) then
-{$ELSE}
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int64))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
-{$IFEND}
   Result := A
 else
   Result := Int64(B);
@@ -8193,11 +8258,7 @@ Function uiMin(A: UInt64; B: Int8): UInt64;
 begin
 If B >= 0 then
   begin
-  {$IF Declared(NativeUInt64E)}
-    If A < UInt64(B) then
-  {$ELSE}
     If CompareUInt64(A,UInt64(B)) < 0 then
-  {$IFEND}
       Result := A
     else
       Result := UInt64(B);
@@ -8211,11 +8272,7 @@ Function uiMin(A: UInt64; B: Int16): UInt64;
 begin
 If B >= 0 then
   begin
-  {$IF Declared(NativeUInt64E)}
-    If A < UInt64(B) then
-  {$ELSE}
     If CompareUInt64(A,UInt64(B)) < 0 then
-  {$IFEND}
       Result := A
     else
       Result := UInt64(B);
@@ -8229,11 +8286,7 @@ Function uiMin(A: UInt64; B: Int32): UInt64;
 begin
 If B >= 0 then
   begin
-  {$IF Declared(NativeUInt64E)}
-    If A < UInt64(B) then
-  {$ELSE}
     If CompareUInt64(A,UInt64(B)) < 0 then
-  {$IFEND}
       Result := A
     else
       Result := UInt64(B);
@@ -8247,11 +8300,7 @@ Function uiMin(A: UInt64; B: Int64): UInt64;
 begin
 If B >= 0 then
   begin
-  {$IF Declared(NativeUInt64E)}
-    If A < UInt64(B) then
-  {$ELSE}
     If CompareUInt64(A,UInt64(B)) < 0 then
-  {$IFEND}
       Result := A
     else
       Result := UInt64(B);
@@ -8266,8 +8315,8 @@ end;
 Function uuMin(A: UInt8; B: UInt16): UInt8;
 begin
 {
-  No more comarisons and checks is needed here, if B is larger than High(UInt8),
-  then it cannot be returned as minimum.
+  No more comparisons and checks is needed here, if B is larger than 
+  High(UInt8), then it cannot be returned as minimum.
 }
 If UInt16(A) < B then
   Result := A
@@ -8289,11 +8338,7 @@ end;
 
 Function uuMin(A: UInt8; B: UInt64): UInt8;
 begin
-{$IF Declared(NativeUInt64E)}
-If UInt64(A) < B then
-{$ELSE}
 If CompareUInt64(UInt64(A),B) < 0 then
-{$IFEND}
   Result := A
 else
   Result := UInt8(B);
@@ -8323,11 +8368,7 @@ end;
 
 Function uuMin(A: UInt16; B: UInt64): UInt16;
 begin
-{$IF Declared(NativeUInt64E)}
-If UInt64(A) < B then
-{$ELSE}
 If CompareUInt64(UInt64(A),B) < 0 then
-{$IFEND}
   Result := A
 else
   Result := UInt16(B);
@@ -8357,11 +8398,7 @@ end;
 
 Function uuMin(A: UInt32; B: UInt64): UInt32;
 begin
-{$IF Declared(NativeUInt64E)}
-If UInt64(A) < B then
-{$ELSE}
 If CompareUInt64(UInt64(A),B) < 0 then
-{$IFEND}
   Result := A
 else
   Result := UInt32(B);
@@ -8371,11 +8408,7 @@ end;
 
 Function uuMin(A: UInt64; B: UInt8): UInt64;
 begin
-{$IF Declared(NativeUInt64E)}
-If A < UInt64(B) then
-{$ELSE}
 If CompareUInt64(A,UInt64(B)) < 0 then
-{$IFEND}
   Result := A
 else
   Result := UInt64(B);
@@ -8385,11 +8418,7 @@ end;
 
 Function uuMin(A: UInt64; B: UInt16): UInt64;
 begin
-{$IF Declared(NativeUInt64E)}
-If A < UInt64(B) then
-{$ELSE}
 If CompareUInt64(A,UInt64(B)) < 0 then
-{$IFEND}
   Result := A
 else
   Result := UInt64(B);
@@ -8399,11 +8428,7 @@ end;
 
 Function uuMin(A: UInt64; B: UInt32): UInt64;
 begin
-{$IF Declared(NativeUInt64E)}
-If A < UInt64(B) then
-{$ELSE}
 If CompareUInt64(A,UInt64(B)) < 0 then
-{$IFEND}
   Result := A
 else
   Result := UInt64(B);
@@ -8449,8 +8474,8 @@ end;
 
 Function fiMin(A: Extended; B: Int64): Extended;
 begin
-{$If SizeOf(Extended) <> 10}
-If (B < AM_I64_DBL_LO) or (B > AM_I64_DBL_HI) then
+{$IF SizeOf(Extended) <> 10}
+If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
   raise EAMInvalidOperation.CreateFmt('fiMin: Value of B (Int64: %d) cannot be accurately converted to Extended.',[B])
 else
 {$IFEND}
@@ -8498,17 +8523,13 @@ end;
 
 Function fuMin(A: Extended; B: UInt64): Extended;
 begin
-{$If SizeOf(Extended) = 10}
+{$IF SizeOf(Extended) = 10}
 If A < U64ToFloat(B) then
   Result := A
 else
   Result := U64ToFloat(B);
 {$ELSE}
-{$IF Declared(NativeUInt64E)}
-If B <= AM_I64_DBL_HI then
-{$ELSE}
-If CompareUInt64(B,AM_I64_DBL_HI) <= 0 then
-{$IFEND}
+If CompareUInt64(B,AM_INT_DBL_HI) <= 0 then
   begin
     If A < B then
       Result := A
@@ -8573,7 +8594,7 @@ end;
 
 Function ifMin(A: Int64; B: Extended): Int64;
 begin
-{$If SizeOf(Extended) = 10}
+{$IF SizeOf(Extended) = 10}
 If B < A then
   begin
     If (B < Low(Int64)) or (B > High(Int64)) then
@@ -8585,17 +8606,17 @@ If B < A then
   end
 else Result := A;
 {$ELSE}
-If (A < AM_I64_DBL_LO) or (A > AM_I64_DBL_HI) then
+If (A < AM_INT_DBL_LO) or (A > AM_INT_DBL_HI) then
   raise EAMInvalidOperation.CreateFmt('ifMin: Value of A (Int64: %d) cannot be accurately converted to Extended.',[A])
 else
   begin
     If B < A then
       begin
       {
-        Both constants AM_I64_DBL_LO and AM_I64_DBL_HI can be accurately
+        Both constants AM_INT_DBL_LO and AM_INT_DBL_HI can be accurately
         converted to double and therefore following comparison should be ok.
       }
-        If (B < AM_I64_DBL_LO) or (B > AM_I64_DBL_HI) then
+        If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
           raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be accurately converted to Int64.',[B])
         else If Frac(B) <> 0 then
           raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int64.',[B])
@@ -8661,7 +8682,7 @@ end;
 
 Function ufMin(A: UInt64; B: Extended): UInt64;
 begin
-{$If SizeOf(Extended) = 10}
+{$IF SizeOf(Extended) = 10}
 If B < U64ToFloat(A) then
   begin
     If (B < 0) or (B > U64ToFloat(UInt64($FFFFFFFFFFFFFFFF{yeah, I can put -1 here, but to be sure...}))) then
@@ -8673,11 +8694,7 @@ If B < U64ToFloat(A) then
   end
 else Result := A;
 {$ELSE}
-{$IF Declared(NativeUInt64E)}
-If A > AM_I64_DBL_HI then
-{$ELSE}
-If CompareUInt64(A,AM_I64_DBL_HI) > 0 then  
-{$IFEND}
+If CompareUInt64(A,AM_INT_DBL_HI) > 0 then
   raise EAMInvalidOperation.CreateFmt('ufMin: Value of A (UInt64: %u) cannot be accurately converted to Extended.',[A])
 else
   begin
@@ -8687,12 +8704,12 @@ else
   }
     If B < A then
       begin
-        If (B < 0) or (B > AM_I64_DBL_HI) then
+        If (B < 0) or (B > AM_INT_DBL_HI) then
           raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt64.',[B])
         else If Frac(B) <> 0 then
           raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
         else
-          Result := Trunc(B); // B is below or equal to AM_I64_DBL_HI, so FloatToU64 is not needed here
+          Result := Trunc(B); // B is below or equal to AM_INT_DBL_HI, so FloatToU64 is not needed here
       end
     else Result := A;
   end;
@@ -8715,12 +8732,14 @@ begin
 Result := iiMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: Int8; B: Int64): Int8;
 begin
 Result := iiMin(A,B);
 end;
+{$IFEND}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -8736,12 +8755,14 @@ begin
 Result := iiMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: Int16; B: Int64): Int16;
 begin
 Result := iiMin(A,B);
 end;
+{$IFEND}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -8757,6 +8778,7 @@ begin
 Result := iiMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: Int32; B: Int64): Int32;
@@ -8784,6 +8806,7 @@ Function Min(A: Int64; B: Int32): Int64;
 begin
 Result := iiMin(A,B);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -8873,7 +8896,6 @@ Function Min(A: Int32; B: UInt64): Int32;
 begin
 Result := iuMin(A,B);
 end;
-{$IFEND}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -8896,7 +8918,6 @@ begin
 Result := iuMin(A,B);
 end;
 
-{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: Int64; B: UInt64): Int64;
@@ -8926,12 +8947,14 @@ begin
 Result := uiMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: UInt8; B: Int64): UInt8;
 begin
 Result := uiMin(A,B);
 end;
+{$IFEND}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -8954,12 +8977,14 @@ begin
 Result := uiMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: UInt16; B: Int64): UInt16;
 begin
 Result := uiMin(A,B);
 end;
+{$IFEND}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -8982,6 +9007,7 @@ begin
 Result := uiMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: UInt32; B: Int64): UInt32;
@@ -8989,7 +9015,6 @@ begin
 Result := uiMin(A,B);
 end;
 
-{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: UInt64; B: Int8): UInt64;
@@ -9130,12 +9155,14 @@ begin
 Result := fiMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: Extended; B: Int64): Extended;
 begin
 Result := fiMin(A,B);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
@@ -9188,12 +9215,14 @@ begin
 Result := ifMin(A,B);
 end;
 
+{$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function Min(A: Int64; B: Extended): Int64;
 begin
 Result := ifMin(A,B);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 

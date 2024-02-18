@@ -47,6 +47,7 @@ unit AuxMath;
   {$IFEND}
 {$ENDIF}
 {$H+}
+{$J-} // typed constants are not writeable
 
 //------------------------------------------------------------------------------
 
@@ -90,20 +91,351 @@ type
   EAMException = class(Exception);
 
   EAMInvalidOperation = class(EAMException);
-  EAMInvalidValue     = class(EAMException);
 
 {===============================================================================
     Public constants
 ===============================================================================}
-const
 {
   Highest and lowest integral value that can be stored in 64bit floating point
   number (Double) without losing any information (the numbers have the same
   magnitude, so negated positive limit can be used as low value, but for the
   sake of clarity, both are provided).
 }
+const
   AM_INT_DBL_HI = 9007199254740992;    // $0020000000000000
   AM_INT_DBL_LO = -9007199254740992;   // $FFE0000000000000
+
+  // "nicer" alias (to get lower limit, just negate it)
+  Flt64MaxInt = AM_INT_DBL_HI;
+
+//==============================================================================
+{
+  Lowest and highest possible values of selected integer types. They can all be
+  obtained using stndard functions Low() and High(), but if anyone wants them
+  as constants, there they are...
+}
+const
+  MinInt8 = Int8($80);            // -128
+  MaxInt8 = Int8($7F);            // 127
+  MinShortInt = MinInt8;
+  MaxShortInt = MaxInt8;
+  MinShort = MinInt8;
+  MaxShort = MaxInt8;
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinUInt8 = UInt8(0);
+  MaxUInt8 = UInt8($FF);          // 255
+  MinByte = MinUInt8;
+  MaxByte = MaxUInt8;
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinInt16 = Int16($8000);        // -32768
+  MaxInt16 = Int16($7FFF);        // 32767
+  MinSmallInt = MinInt16;
+  MaxSmallInt = MaxInt16;
+  MinSmall = MinInt16;
+  MaxSmall = MaxInt16;
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinUInt16 = UInt16(0);
+  MaxUInt16 = UInt16($FFFF);      // 65535
+  MinWord = MinUInt16;
+  MaxWord = MaxUInt16;
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinInt32 = Int32($80000000);    // -2147483648
+  MaxInt32 = Int32($7FFFFFFF);    // 2147483647
+{$IF SizeOf(LongInt) = 4}
+  MinLongInt = MinInt32;
+  MaxLongInt = MaxInt32;
+  MinLong = MinInt32;
+  MaxLong = MaxInt32;
+{$IFEND}
+{$IF SizeOf(Integer) = 4}
+  MinInteger = MinInt32;
+  MaxInteger = MaxInt32;
+  MinInt = MinInt32;
+  MaxInt = MaxInt32;
+{$IFEND}
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinUInt32 = UInt32(0);
+  MaxUInt32 = UInt32($FFFFFFFF);  // 4294967295
+  MinDWord = MinUInt32;
+  MaxDWord = MaxUInt32;
+{$IF SizeOf(LongWord) = 4}
+  MinLongWord = MinUInt32;
+  MaxLongWord = MaxUInt32;
+{$IFEND}
+{$IF SizeOf(Cardinal) = 4}
+  MinCardinal = MinUInt32;
+  MaxCardinal = MaxUInt32;
+{$IFEND}
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinInt64 = Int64($8000000000000000);    // -9223372036854775808
+  MaxInt64 = Int64($7FFFFFFFFFFFFFFF);    // 9223372036854775807
+  MinQuadInt = MinInt64;
+  MaxQuadInt = MaxInt64;
+{$IF SizeOf(LongInt) = 8}
+  MinLongInt = MinInt64;
+  MaxLongInt = MaxInt64;
+  MinLong = MinInt64;
+  MaxLong = MaxInt64;
+{$IFEND}
+{$IF SizeOf(Integer) = 8}
+  MinInteger = MinInt64;
+  MaxInteger = MaxInt64;
+  MinInt = MinInt64;
+  MaxInt = MaxInt64;
+{$IFEND}
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinUInt64 = UInt64(0);
+  MaxUInt64 = UInt64($FFFFFFFFFFFFFFFF);  // 18446744073709551615
+  MinQuadWord = MinUInt64;
+  MaxQuadWord = MaxUInt64;
+  MinQWord = MinUInt64;
+  MaxQWord = MaxUInt64;
+{$IF SizeOf(LongWord) = 8}
+  MinLongWord = MinUInt64;
+  MaxLongWord = MaxUInt64;
+{$IFEND}
+{$IF SizeOf(Cardinal) = 8}
+  MinCardinal = MinUInt64;
+  MaxCardinal = MaxUInt64;
+{$IFEND}
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+
+  MinPtrInt = {$IF SizeOf(PtrInt) = 8}MinInt64{$ELSE}MinInt32{$IFEND};
+  MaxPtrInt = {$IF SizeOf(PtrInt) = 8}MaxInt64{$ELSE}MaxInt32{$IFEND};
+
+  MinPtrUInt = {$IF SizeOf(PtrUInt) = 8}MinUInt64{$ELSE}MinUInt32{$IFEND};
+  MaxPtrUInt = {$IF SizeOf(PtrUInt) = 8}MaxUInt64{$ELSE}MaxUInt32{$IFEND};
+
+//==============================================================================
+{
+  Special values for half-precision (16bit) floating point number types.
+
+  Since those types are not supported by compiler and mostly not even by
+  hardware, they are declared only as structured types of the right size.
+  This means, among others, that they cannot be directly used in arithmetics
+  or comparisons, and their assignments are not automatically checked for
+  invalid encodings and SNaN.
+}
+const
+  Float16Min:         Float16 = ($01,$00);  // 5.96046e-8
+  Float16Max:         Float16 = ($FF,$7B);  // 65504
+  Float16MinNormal:   Float16 = ($00,$04);  // 6.10351562500000e-5 (lowest possible normalized value)
+  Float16MaxDenormal: Float16 = ($FF,$03);  // 6.09755516052246e-5 (highest possible denormalized value)
+  Float16QNaN:        Float16 = ($FF,$7F);  // quiet NaN
+  Float16SNaN:        Float16 = ($FF,$7D);  // signaled NaN
+  Float16NaN:         Float16 = ($FF,$7F);  // quiet NaN
+  Float16Infinity:    Float16 = ($00,$7C);  // positive infinity
+  Float16Zero:        Float16 = ($00,$00);  // (+)0
+  Float16One:         Float16 = ($00,$3C);  // +1.0
+  Float16Indefinite:  Float16 = ($00,$FE);  // indefinite quiet NaN
+
+  MinFloat16: Float16 = ($01,$00);  // Float16Min
+  MaxFloat16: Float16 = ($FF,$7B);  // Float16Max
+
+  HalfMin:          Half = ($01,$00); // 5.96046e-8
+  HalfMax:          Half = ($FF,$7B); // 65504
+  HalfMinNormal:    Half = ($00,$04); // 6.10351562500000e-5
+  HalfMaxDenormal:  Half = ($FF,$03); // 6.09755516052246e-5
+  HalfQNaN:         Half = ($FF,$7F); // quiet NaN
+  HalfSNaN:         Half = ($FF,$7D); // signaled NaN
+  HalfNaN:          Half = ($FF,$7F); // quiet NaN
+  HalfInfinity:     Half = ($00,$7C); // positive infinity
+  HalfZero:         Half = ($00,$00); // (+)0
+  HalfOne:          Half = ($00,$3C); // +1.0
+  HalfIndefinite:   Half = ($00,$FE); // indefinite quiet NaN
+
+  MinHalf: Half = ($01,$00); // HalfMin
+  MaxHalf: Half = ($FF,$7B); // HalfMax
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+{
+  Special values for single-precision (32bit) floating point number types.
+
+  Note on the implementation...
+
+    It is implemented the way it is (ie. as a disgusting hack misusing the fact
+    that typed constants are stored in memory) because I know of no other way
+    how to put arbitrary bit pattern into float constant (or, in this case,
+    static variable). The only other way I am aware of is declaring the symbols
+    as functions and returning proper values, but call overhead is no-go for me
+    here (yeah inlining and such, but still, it does not always work and so on).
+
+    So, to be completely clear, the special values are declared as global
+    variables overlayed on typed constants. The compilers are smart enough
+    to recognize it and (when writeable constants option is off, which here it
+    explicitly is) treat the variables in code as constants (they cannot be
+    assigned to).
+}
+const
+  iFloat32Min:          UInt32 = $00000001; // 1.40129846432482e-45
+  iFloat32Max:          UInt32 = $7F7FFFFF; // 3.40282346638529e+38
+  iFloat32MinNormal:    UInt32 = $00800000; // 1.17549435082229e-38
+  iFloat32MaxDenormal:  UInt32 = $007FFFFF; // 1.17549421069244e-38
+  iFloat32QNaN:         UInt32 = $7FFFFFFF; // quiet NaN
+  iFloat32SNaN:         UInt32 = $7FBFFFFF; // signaled NaN
+  iFloat32NaN:          UInt32 = $7FFFFFFF; // quiet NaN
+  iFloat32Infinity:     UInt32 = $7F800000; // positive infinity
+  iFloat32Indefinite:   UInt32 = $FFC00000; // indefinite quiet NaN
+
+var
+  Float32Min:         Float32 absolute iFloat32Min;
+  Float32Max:         Float32 absolute iFloat32Max;
+  Float32MinNormal:   Float32 absolute iFloat32MinNormal;
+  Float32MaxDenormal: Float32 absolute iFloat32MaxDenormal;
+  Float32QNaN:        Float32 absolute iFloat32QNaN;
+  Float32SNaN:        Float32 absolute iFloat32SNaN;
+  Float32NaN:         Float32 absolute iFloat32NaN;
+  Float32Infinity:    Float32 absolute iFloat32Infinity;
+  Float32Indefinite:  Float32 absolute iFloat32Indefinite;
+
+  SingleMin:          Single absolute iFloat32Min;
+  SingleMax:          Single absolute iFloat32Max;
+  SingleMinNormal:    Single absolute iFloat32MinNormal;
+  SingleMaxDenormal:  Single absolute iFloat32MaxDenormal;
+  SingleQNaN:         Single absolute iFloat32QNaN;
+  SingleSNaN:         Single absolute iFloat32SNaN;
+  SingleNaN:          Single absolute iFloat32NaN;
+  SingleInfinity:     Single absolute iFloat32Infinity;
+  SingleIndefinite:   Single absolute iFloat32Indefinite;
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+{
+  Special values for double-precision (64bit) floating point number types.
+}
+const
+  iFloat64Min:          UInt64 = UInt64($0000000000000001); // 4.94065645841247e-324
+  iFloat64Max:          UInt64 = UInt64($7FEFFFFFFFFFFFFF); // 1.79769313486232e+308
+  iFloat64MinNormal:    UInt64 = UInt64($0010000000000000); // 2.2250738585072014e-308
+  iFloat64MaxDenormal:  UInt64 = UInt64($000FFFFFFFFFFFFF); // 2.2250738585072009e-308
+  iFloat64QNaN:         UInt64 = UInt64($7FFFFFFFFFFFFFFF); // quiet NaN
+  iFloat64SNaN:         UInt64 = UInt64($7FF7FFFFFFFFFFFF); // signaled NaN
+  iFloat64NaN:          UInt64 = UInt64($7FFFFFFFFFFFFFFF); // quiet NaN
+  iFloat64Infinity:     UInt64 = UInt64($7FF0000000000000); // positive infinity
+  iFloat64Indefinite:   UInt64 = UInt64($FFF8000000000000); // indefinite quiet NaN
+
+var
+  Float64Min:         Float64 absolute iFloat64Min;
+  Float64Max:         Float64 absolute iFloat64Max;
+  Float64MinNormal:   Float64 absolute iFloat64MinNormal;
+  Float64MaxDenormal: Float64 absolute iFloat64MaxDenormal;
+  Float64QNaN:        Float64 absolute iFloat64QNaN;
+  Float64SNaN:        Float64 absolute iFloat64SNaN;
+  Float64NaN:         Float64 absolute iFloat64NaN;
+  Float64Infinity:    Float64 absolute iFloat64Infinity;
+  Float64Indefinite:  Float64 absolute iFloat64Indefinite;
+
+  DoubleMin:          Double absolute iFloat64Min;
+  DoubleMax:          Double absolute iFloat64Max;
+  DoubleMinNormal:    Double absolute iFloat64MinNormal;
+  DoubleMaxDenormal:  Double absolute iFloat64MaxDenormal;
+  DoubleQNaN:         Double absolute iFloat64QNaN;
+  DoubleSNaN:         Double absolute iFloat64SNaN;
+  DoubleNaN:          Double absolute iFloat64NaN;
+  DoubleInfinity:     Double absolute iFloat64Infinity;
+  DoubleIndefinite:   Double absolute iFloat64Indefinite;
+
+//--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+{
+  Special values for double-extended-precision (80bit) floating point number
+  types.
+}
+type
+  TAMFloat80Overlay = packed record
+    Mantissa:      UInt64;
+    SignExponent:  UInt16;
+  end;
+
+const
+  iFloat80Min:          TAMFloat80Overlay = (Mantissa: UInt64($0000000000000001); SignExponent: $0000); // 3.64519953188247460253e-4951
+  iFloat80Max:          TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $7FFE); // 1.18973149535723176502e+4932
+  iFloat80MinNormal:    TAMFloat80Overlay = (Mantissa: UInt64($8000000000000000); SignExponent: $0001); // 3.36210314311209350626e-4932
+  iFloat80MaxDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $0000); // 6.72420628622418701216e-4932
+  iFloat80QNaN:         TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet NaN
+  iFloat80SNaN:         TAMFloat80Overlay = (Mantissa: UInt64($BFFFFFFFFFFFFFFF); SignExponent: $7FFF); // signaled NaN
+  iFloat80NaN:          TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet NaN
+  iFloat80Infinity:     TAMFloat80Overlay = (Mantissa: UInt64($8000000000000000); SignExponent: $7FFF); // positive infinity
+  iFloat80Indefinite:   TAMFloat80Overlay = (Mantissa: UInt64($C000000000000000); SignExponent: $FFFF); // indefinite quiet NaN
+
+{
+  Some super-special values pf 80bit floats.
+
+  They are not supported by modern hardware and usually produce an exception
+  when used (except for pseudo-denormals, they are silently converted). 
+}
+  iFloat80MaxPseudoDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $0000); // 6.72420628622418701216e-4932 (highest possible pseudo-denormal)
+  iFloat80MinPseudoDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($8000000000000000); SignExponent: $0000); // 3.36210314311209350626e-4932 (lowest possible pseudo-denormal)
+  iFloat80MaxUnnormal:        TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $7FFE); // highest possible unnormal
+  iFloat80MinUnnormal:        TAMFloat80Overlay = (Mantissa: UInt64($0000000000000000); SignExponent: $0001); // lowest possible unnormal
+  iFloat80PseudoQNaN:         TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet pseudo-NaN
+  iFloat80PseudoSNaN:         TAMFloat80Overlay = (Mantissa: UInt64($3FFFFFFFFFFFFFFF); SignExponent: $7FFF); // signaled pseudo-NaN
+  iFloat80PseudoNaN:          TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet pseudo-NaN
+  iFloat80PseudoInfinity:     TAMFloat80Overlay = (Mantissa: UInt64($0000000000000000); SignExponent: $7FFF); // pseudo-infinity
+
+var
+  Float80Min:         Float80 absolute iFloat80Min;
+  Float80Max:         Float80 absolute iFloat80Max;
+  Float80MinNormal:   Float80 absolute iFloat80MinNormal;
+  Float80MaxDenormal: Float80 absolute iFloat80MaxDenormal;
+  Float80QNaN:        Float80 absolute iFloat80QNaN;
+  Float80SNaN:        Float80 absolute iFloat80SNaN;
+  Float80NaN:         Float80 absolute iFloat80NaN;
+  Float80Infinity:    Float80 absolute iFloat80Infinity;
+  Float80Indefinite:  Float80 absolute iFloat80Indefinite;
+
+  Float80MaxPseudoDenormal: Float80 absolute iFloat80MaxPseudoDenormal;
+  Float80MinPseudoDenormal: Float80 absolute iFloat80MinPseudoDenormal;
+  Float80MaxUnnormal:       Float80 absolute iFloat80MaxUnnormal;
+  Float80MinUnnormal:       Float80 absolute iFloat80MinUnnormal;
+  Float80PseudoQNaN:        Float80 absolute iFloat80PseudoQNaN;
+  Float80PseudoSNaN:        Float80 absolute iFloat80PseudoSNaN;
+  Float80PseudoNaN:         Float80 absolute iFloat80PseudoNaN;
+  Float80PseudoInfinity:    Float80 absolute iFloat80PseudoInfinity;
+
+{$IF SizeOf(Extended) = 10}
+  ExtendedMin:          Extended absolute iFloat80Min;
+  ExtendedMax:          Extended absolute iFloat80Max;
+  ExtendedMinNormal:    Extended absolute iFloat80MinNormal;
+  ExtendedMaxDenormal:  Extended absolute iFloat80MaxDenormal;
+  ExtendedQNaN:         Extended absolute iFloat80QNaN;
+  ExtendedSNaN:         Extended absolute iFloat80SNaN;
+  ExtendedNaN:          Extended absolute iFloat80NaN;
+  ExtendedInfinity:     Extended absolute iFloat80Infinity;
+  ExtendedIndefinite:   Extended absolute iFloat80Indefinite;
+
+  ExtendedMaxPseudoDenormal:  Extended absolute iFloat80MaxPseudoDenormal;
+  ExtendedMinPseudoDenormal:  Extended absolute iFloat80MinPseudoDenormal;
+  ExtendedMaxUnnormal:        Extended absolute iFloat80MaxUnnormal;
+  ExtendedMinUnnormal:        Extended absolute iFloat80MinUnnormal;
+  ExtendedPseudoQNaN:         Extended absolute iFloat80PseudoQNaN;
+  ExtendedPseudoSNaN:         Extended absolute iFloat80PseudoSNaN;
+  ExtendedPseudoNaN:          Extended absolute iFloat80PseudoNaN;
+  ExtendedPseudoInfinity:     Extended absolute iFloat80PseudoInfinity;
+{$ELSE}
+  ExtendedMin:          Extended absolute iFloat64Min;
+  ExtendedMax:          Extended absolute iFloat64Max;
+  ExtendedMinNormal:    Extended absolute iFloat64MinNormal;
+  ExtendedMaxDenormal:  Extended absolute iFloat64MaxDenormal;
+  ExtendedQNaN:         Extended absolute iFloat64QNaN;
+  ExtendedSNaN:         Extended absolute iFloat64SNaN;
+  ExtendedNaN:          Extended absolute iFloat64NaN;
+  ExtendedInfinity:     Extended absolute iFloat64Infinity;
+  ExtendedIndefinite:   Extended absolute iFloat64Indefinite;
+{$IFEND}
 
 {===============================================================================
     Public auxiliary funtions - declaration
@@ -249,13 +581,18 @@ Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline}
   32bit numbers. Following functions are here for situations, where 64bit wide
   integers are required.
   
-  Note that Trunc already does return 64bit integer. 
+  Ceil64 and Floor64 are returning Int64, CeilU64 and FloorU64 are returning
+  UInt64.
 }
 
 Function Ceil64(N: Extended): Int64;
 
 Function Floor64(N: Extended): Int64;
 
+Function CeilU64(N: Extended): UInt64;
+
+Function FloorU64(N: Extended): UInt64;
+{$message 'write tests for unsigned, correct tests for signed'}
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -2454,6 +2791,32 @@ begin
 Result := Trunc(N);
 If Frac(N) < 0 then
   Result := Result - 1;
+end;
+
+//------------------------------------------------------------------------------
+
+Function CeilU64(N: Extended): UInt64;
+begin
+If N >= TwoPow63 then
+  Result := UInt64(Trunc(N - TwoPow64))
+else
+  Result := Trunc(N);
+If Frac(N) <> 0 then
+  Result := Result + 1;
+end;
+
+//------------------------------------------------------------------------------
+
+Function FloorU64(N: Extended): UInt64;
+begin
+If N >= TwoPow63 then
+  Result := UInt64(Trunc(N - TwoPow64))
+else
+  Result := Trunc(N);
+{
+  Since UInt64 cannot be negative, there is no point in checking fraction
+  (result will never be decremented).
+}
 end;
 
 

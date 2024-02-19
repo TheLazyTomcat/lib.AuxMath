@@ -1096,50 +1096,6 @@ Function Min(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDI
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                             Maximum of same types
---------------------------------------------------------------------------------
-===============================================================================}
-{
-  Returns bigger/higher of the two given values.
-}
-
-Function iMax(A,B: Int8): Int8; overload;
-Function iMax(A,B: Int16): Int16; overload;
-Function iMax(A,B: Int32): Int32; overload;
-Function iMax(A,B: Int64): Int64; overload;
-
-//------------------------------------------------------------------------------
-
-Function uMax(A,B: UInt8): UInt8; overload;
-Function uMax(A,B: UInt16): UInt16; overload;
-Function uMax(A,B: UInt32): UInt32; overload;
-Function uMax(A,B: UInt64): UInt64; overload;
-
-//------------------------------------------------------------------------------
-
-Function fMax(A,B: Extended): Extended; overload;
-
-//------------------------------------------------------------------------------
-
-Function Max(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Max(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Max(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-
-{===============================================================================
---------------------------------------------------------------------------------
                              Minimum of mixed types
 --------------------------------------------------------------------------------
 ===============================================================================}
@@ -1418,6 +1374,50 @@ Function Min(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline
 
 {===============================================================================
 --------------------------------------------------------------------------------
+                             Maximum of same types
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Returns bigger/higher of the two given values.
+}
+
+Function iMax(A,B: Int8): Int8; overload;
+Function iMax(A,B: Int16): Int16; overload;
+Function iMax(A,B: Int32): Int32; overload;
+Function iMax(A,B: Int64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uMax(A,B: UInt8): UInt8; overload;
+Function uMax(A,B: UInt16): UInt16; overload;
+Function uMax(A,B: UInt32): UInt32; overload;
+Function uMax(A,B: UInt64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function fMax(A,B: Extended): Extended; overload;
+
+//------------------------------------------------------------------------------
+
+Function Max(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
                              Maximum of mixed types
 --------------------------------------------------------------------------------
 ===============================================================================}
@@ -1676,6 +1676,165 @@ Function Max(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline
 {$IFEND}
 
 
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Smallest value in array
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Selects smallest value from an array, returns it in output parameter Minimum
+  and sets result to an index at which first occurence of this value vas found.
+
+  If the array is empty, then -1 is returned and value of Minimum is undefined.
+}
+
+Function iMinValue(const Values: array of Int8; out Minimum: Int8): Integer; overload;
+Function iMinValue(const Values: array of Int16; out Minimum: Int16): Integer; overload;
+Function iMinValue(const Values: array of Int32; out Minimum: Int32): Integer; overload;
+Function iMinValue(const Values: array of Int64; out Minimum: Int64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function uMinValue(const Values: array of UInt8; out Minimum: UInt8): Integer; overload;
+Function uMinValue(const Values: array of UInt16; out Minimum: UInt16): Integer; overload;
+Function uMinValue(const Values: array of UInt32; out Minimum: UInt32): Integer; overload;
+Function uMinValue(const Values: array of UInt64; out Minimum: UInt64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function fMinValue(const Values: array of Single; out Minimum: Single): Integer; overload;
+Function fMinValue(const Values: array of Double; out Minimum: Double): Integer; overload;
+{$IF SizeOf(Extended) = 10}
+Function fMinValue(const Values: array of Extended; out Minimum: Extended): Integer; overload;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function MinValue(const Values: array of Int8; out Minimum: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of Int16; out Minimum: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of Int32; out Minimum: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function MinValue(const Values: array of Int64; out Minimum: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function MinValue(const Values: array of UInt8; out Minimum: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of UInt16; out Minimum: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of UInt32; out Minimum: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function MinValue(const Values: array of UInt64; out Minimum: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function MinValue(const Values: array of Single; out Minimum: Single): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of Double; out Minimum: Double): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF SizeOf(Extended) = 10}
+Function MinValue(const Values: array of Extended; out Minimum: Extended): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Largest value in array
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Selects largest value from an array, returns it in output parameter Maximum
+  and sets result to an index at which first occurence of this value vas found.
+
+  If the array is empty, then -1 is returned and value of Maximum is undefined.
+}
+
+Function iMaxValue(const Values: array of Int8; out Maximum: Int8): Integer; overload;
+Function iMaxValue(const Values: array of Int16; out Maximum: Int16): Integer; overload;
+Function iMaxValue(const Values: array of Int32; out Maximum: Int32): Integer; overload;
+Function iMaxValue(const Values: array of Int64; out Maximum: Int64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function uMaxValue(const Values: array of UInt8; out Maximum: UInt8): Integer; overload;
+Function uMaxValue(const Values: array of UInt16; out Maximum: UInt16): Integer; overload;
+Function uMaxValue(const Values: array of UInt32; out Maximum: UInt32): Integer; overload;
+Function uMaxValue(const Values: array of UInt64; out Maximum: UInt64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function fMaxValue(const Values: array of Single; out Maximum: Single): Integer; overload;
+Function fMaxValue(const Values: array of Double; out Maximum: Double): Integer; overload;
+{$IF SizeOf(Extended) = 10}
+Function fMaxValue(const Values: array of Extended; out Maximum: Extended): Integer; overload;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function MaxValue(const Values: array of Int8; out Maximum: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of Int16; out Maximum: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of Int32; out Maximum: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function MaxValue(const Values: array of Int64; out Maximum: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function MaxValue(const Values: array of UInt8; out Maximum: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of UInt16; out Maximum: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of UInt32; out Maximum: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function MaxValue(const Values: array of UInt64; out Maximum: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function MaxValue(const Values: array of Single; out Maximum: Single): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of Double; out Maximum: Double): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF SizeOf(Extended) = 10}
+Function MaxValue(const Values: array of Extended; out Maximum: Extended): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                          Compare values of equal types
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  If A is larger than B, a positive number is returned. If A is smaller than B,
+  then negative number is returned. When the two values are equal, zero is
+  returned.
+}
+(*
+Function iCompareValue(A,B: Int8): Integer; overload;
+Function iCompareValue(A,B: Int16): Integer; overload;
+Function iCompareValue(A,B: Int32): Integer; overload;
+Function iCompareValue(A,B: Int64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function uCompareValue(A,B: UInt8): Integer; overload;
+Function uCompareValue(A,B: UInt16): Integer; overload;
+Function uCompareValue(A,B: UInt32): Integer; overload;
+Function uCompareValue(A,B: UInt64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function fCompareValue(A,B: Extended; Epsilon: Extended = 0): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A,B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A,B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A,B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A,B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A,B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A,B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A,B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A,B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A,B: Extended; Epsilon: Extended = 0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+*)
 //==============================================================================
 (*
 Function iCompareValue(A,B: Int8): Integer;
@@ -8259,177 +8418,6 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                             Maximum of same types
---------------------------------------------------------------------------------
-===============================================================================}
-{-------------------------------------------------------------------------------
-    iMax - signed integers
--------------------------------------------------------------------------------}
-
-Function iMax(A,B: Int8): Int8;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function iMax(A,B: Int16): Int16;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function iMax(A,B: Int32): Int32;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function iMax(A,B: Int64): Int64;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-{-------------------------------------------------------------------------------
-    uMax - unsigned integers
--------------------------------------------------------------------------------}
-
-Function uMax(A,B: UInt8): UInt8;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function uMax(A,B: UInt16): UInt16;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function uMax(A,B: UInt32): UInt32;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function uMax(A,B: UInt64): UInt64;
-begin
-If CompareUInt64(A,B) > 0 then
-  Result := A
-else
-  Result := B;
-end;
-
-{-------------------------------------------------------------------------------
-    fMax - real numbers
--------------------------------------------------------------------------------}
-
-Function fMax(A,B: Extended): Extended;
-begin
-If A > B then
-  Result := A
-else
-  Result := B;
-end;
-
-{-------------------------------------------------------------------------------
-    Max - common-name overloads
--------------------------------------------------------------------------------}
-
-Function Max(A,B: Int8): Int8;
-begin
-Result := iMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A,B: Int16): Int16;
-begin
-Result := iMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A,B: Int32): Int32;
-begin
-Result := iMax(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A,B: Int64): Int64;
-begin
-Result := iMax(A,B);
-end;
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Max(A,B: UInt8): UInt8;
-begin
-Result := uMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A,B: UInt16): UInt16;
-begin
-Result := uMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A,B: UInt32): UInt32;
-begin
-Result := uMax(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A,B: UInt64): UInt64;
-begin
-Result := uMax(A,B);
-end;
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Max(A,B: Extended): Extended;
-begin
-Result := fMax(A,B);
-end;
-
-
-{===============================================================================
---------------------------------------------------------------------------------
                              Minimum of mixed types
 --------------------------------------------------------------------------------
 ===============================================================================}
@@ -9917,6 +9905,177 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
+                             Maximum of same types
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iMax - signed integers
+-------------------------------------------------------------------------------}
+
+Function iMax(A,B: Int8): Int8;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMax(A,B: Int16): Int16;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMax(A,B: Int32): Int32;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMax(A,B: Int64): Int64;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+{-------------------------------------------------------------------------------
+    uMax - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uMax(A,B: UInt8): UInt8;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMax(A,B: UInt16): UInt16;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMax(A,B: UInt32): UInt32;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMax(A,B: UInt64): UInt64;
+begin
+If CompareUInt64(A,B) > 0 then
+  Result := A
+else
+  Result := B;
+end;
+
+{-------------------------------------------------------------------------------
+    fMax - real numbers
+-------------------------------------------------------------------------------}
+
+Function fMax(A,B: Extended): Extended;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+{-------------------------------------------------------------------------------
+    Max - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function Max(A,B: Int8): Int8;
+begin
+Result := iMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: Int16): Int16;
+begin
+Result := iMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: Int32): Int32;
+begin
+Result := iMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: Int64): Int64;
+begin
+Result := iMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A,B: UInt8): UInt8;
+begin
+Result := uMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: UInt16): UInt16;
+begin
+Result := uMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: UInt32): UInt32;
+begin
+Result := uMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A,B: UInt64): UInt64;
+begin
+Result := uMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A,B: Extended): Extended;
+begin
+Result := fMax(A,B);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
                              Maximum of mixed types
 --------------------------------------------------------------------------------
 ===============================================================================}
@@ -11381,6 +11540,732 @@ end;
 Function Max(A: UInt64; B: Extended): UInt64;
 begin
 Result := ufMax(A,B);
+end;
+{$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Smallest value in array
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iMinValue - signed integers
+-------------------------------------------------------------------------------}
+
+Function iMinValue(const Values: array of Int8; out Minimum: Int8): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: Int8;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMinValue(const Values: array of Int16; out Minimum: Int16): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: Int16;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMinValue(const Values: array of Int32; out Minimum: Int32): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: Int32;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMinValue(const Values: array of Int64; out Minimum: Int64): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: Int64;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+{-------------------------------------------------------------------------------
+    uMinValue - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uMinValue(const Values: array of UInt8; out Minimum: UInt8): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: UInt8;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMinValue(const Values: array of UInt16; out Minimum: UInt16): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: UInt16;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMinValue(const Values: array of UInt32; out Minimum: UInt32): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: UInt32;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMinValue(const Values: array of UInt64; out Minimum: UInt64): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: UInt64;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If CompareUInt64(Values[i],MinVal) < 0 then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+{-------------------------------------------------------------------------------
+    fMinValue - real numbers
+-------------------------------------------------------------------------------}
+
+Function fMinValue(const Values: array of Single; out Minimum: Single): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: Single;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fMinValue(const Values: array of Double; out Minimum: Double): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: Double;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+
+{$IF SizeOf(Extended) = 10}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fMinValue(const Values: array of Extended; out Minimum: Extended): Integer;
+var
+  i:      Integer;
+  MinIdx: Integer;
+  MinVal: Extended;
+begin
+If Length(Values) > 0 then
+  begin
+    MinIdx := Low(Values);
+    MinVal := Values[MinIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] < MinVal then
+        begin
+          MinIdx := i;
+          MinVal := Values[i];
+        end;
+    Minimum := MinVal;
+    Result := MinIdx;
+  end
+else Result := -1;
+end;
+{$IFEND}
+
+{-------------------------------------------------------------------------------
+    MinValue - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function MinValue(const Values: array of Int8; out Minimum: Int8): Integer;
+begin
+Result := iMinValue(Values,Minimum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of Int16; out Minimum: Int16): Integer;
+begin
+Result := iMinValue(Values,Minimum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of Int32; out Minimum: Int32): Integer;
+begin
+Result := iMinValue(Values,Minimum);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of Int64; out Minimum: Int64): Integer;
+begin
+Result := iMinValue(Values,Minimum);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of UInt8; out Minimum: UInt8): Integer;
+begin
+Result := uMinValue(Values,Minimum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of UInt16; out Minimum: UInt16): Integer;
+begin
+Result := uMinValue(Values,Minimum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of UInt32; out Minimum: UInt32): Integer;
+begin
+Result := uMinValue(Values,Minimum);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of UInt64; out Minimum: UInt64): Integer;
+begin
+Result := uMinValue(Values,Minimum);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of Single; out Minimum: Single): Integer;
+begin
+Result := fMinValue(Values,Minimum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of Double; out Minimum: Double): Integer;
+begin
+Result := fMinValue(Values,Minimum);
+end;
+
+{$IF SizeOf(Extended) = 10}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MinValue(const Values: array of Extended; out Minimum: Extended): Integer;
+begin
+Result := fMinValue(Values,Minimum);
+end;
+{$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Largest value in array
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iMaxValue - signed integers
+-------------------------------------------------------------------------------}
+
+Function iMaxValue(const Values: array of Int8; out Maximum: Int8): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: Int8;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMaxValue(const Values: array of Int16; out Maximum: Int16): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: Int16;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMaxValue(const Values: array of Int32; out Maximum: Int32): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: Int32;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iMaxValue(const Values: array of Int64; out Maximum: Int64): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: Int64;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+{-------------------------------------------------------------------------------
+    uMaxValue - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uMaxValue(const Values: array of UInt8; out Maximum: UInt8): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: UInt8;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMaxValue(const Values: array of UInt16; out Maximum: UInt16): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: UInt16;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMaxValue(const Values: array of UInt32; out Maximum: UInt32): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: UInt32;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uMaxValue(const Values: array of UInt64; out Maximum: UInt64): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: UInt64;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If CompareUInt64(Values[i],MaxVal) > 0 then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+{-------------------------------------------------------------------------------
+    fMaxValue - real numbers
+-------------------------------------------------------------------------------}
+
+Function fMaxValue(const Values: array of Single; out Maximum: Single): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: Single;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fMaxValue(const Values: array of Double; out Maximum: Double): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: Double;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+
+{$IF SizeOf(Extended) = 10}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fMaxValue(const Values: array of Extended; out Maximum: Extended): Integer;
+var
+  i:      Integer;
+  MaxIdx: Integer;
+  MaxVal: Extended;
+begin
+If Length(Values) > 0 then
+  begin
+    MaxIdx := Low(Values);
+    MaxVal := Values[MaxIdx];
+    For i := Succ(Low(Values)) to High(Values) do
+      If Values[i] > MaxVal then
+        begin
+          MaxIdx := i;
+          MaxVal := Values[i];
+        end;
+    Maximum := MaxVal;
+    Result := MaxIdx;
+  end
+else Result := -1;
+end;
+{$IFEND}
+
+{-------------------------------------------------------------------------------
+    MaxValue - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function MaxValue(const Values: array of Int8; out Maximum: Int8): Integer;
+begin
+Result := iMaxValue(Values,Maximum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of Int16; out Maximum: Int16): Integer;
+begin
+Result := iMaxValue(Values,Maximum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of Int32; out Maximum: Int32): Integer;
+begin
+Result := iMaxValue(Values,Maximum);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of Int64; out Maximum: Int64): Integer;
+begin
+Result := iMaxValue(Values,Maximum);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of UInt8; out Maximum: UInt8): Integer;
+begin
+Result := uMaxValue(Values,Maximum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of UInt16; out Maximum: UInt16): Integer;
+begin
+Result := uMaxValue(Values,Maximum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of UInt32; out Maximum: UInt32): Integer;
+begin
+Result := uMaxValue(Values,Maximum);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of UInt64; out Maximum: UInt64): Integer;
+begin
+Result := uMaxValue(Values,Maximum);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of Single; out Maximum: Single): Integer;
+begin
+Result := fMaxValue(Values,Maximum);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of Double; out Maximum: Double): Integer;
+begin
+Result := fMaxValue(Values,Maximum);
+end;
+
+{$IF SizeOf(Extended) = 10}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function MaxValue(const Values: array of Extended; out Maximum: Extended): Integer;
+begin
+Result := fMaxValue(Values,Maximum);
 end;
 {$IFEND}
 

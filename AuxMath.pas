@@ -12,17 +12,17 @@ unit AuxMath;
 {$ENDIF}
 {.$DEFINE PurePascal}
 
-{$IF defined(CPU64) or defined(CPU64BITS)}
+{$IF Defined(CPU64) or Defined(CPU64BITS)}
   {$DEFINE CPU64bit}
-{$ELSEIF defined(CPU16)}
+{$ELSEIF Defined(CPU16)}
   {$MESSAGE FATAL '16bit CPU not supported'}
 {$ELSE}
   {$DEFINE CPU32bit}
 {$IFEND}
 
-{$IF defined(CPUX86_64) or defined(CPUX64)}
+{$IF Defined(CPUX86_64) or Defined(CPUX64)}
   {$DEFINE x64}
-{$ELSEIF defined(CPU386)}
+{$ELSEIF Defined(CPU386)}
   {$DEFINE x86}
 {$ELSE}
   {$DEFINE PurePascal}
@@ -278,7 +278,7 @@ const
     So, to be completely clear, the special values are declared as global
     variables overlayed on typed constants. The compilers are smart enough
     to recognize it and (when writeable constants option is off, which here it
-    explicitly is) treat the variables in code as constants (they cannot be
+    explicitly is) treat the variables in code as constants (ie. they cannot be
     assigned to).
 }
 const
@@ -364,7 +364,7 @@ const
   iFloat80Min:          TAMFloat80Overlay = (Mantissa: UInt64($0000000000000001); SignExponent: $0000); // 3.64519953188247460253e-4951
   iFloat80Max:          TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $7FFE); // 1.18973149535723176502e+4932
   iFloat80MinNormal:    TAMFloat80Overlay = (Mantissa: UInt64($8000000000000000); SignExponent: $0001); // 3.36210314311209350626e-4932
-  iFloat80MaxDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $0000); // 6.72420628622418701216e-4932
+  iFloat80MaxDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $0000); // 3.36210314311209350590E-4932
   iFloat80QNaN:         TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet NaN
   iFloat80SNaN:         TAMFloat80Overlay = (Mantissa: UInt64($BFFFFFFFFFFFFFFF); SignExponent: $7FFF); // signaled NaN
   iFloat80NaN:          TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet NaN
@@ -377,10 +377,10 @@ const
   They are not supported by modern hardware and usually produce an exception
   when used (except for pseudo-denormals, they are silently converted). 
 }
-  iFloat80MaxPseudoDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $0000); // 6.72420628622418701216e-4932 (highest possible pseudo-denormal)
   iFloat80MinPseudoDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($8000000000000000); SignExponent: $0000); // 3.36210314311209350626e-4932 (lowest possible pseudo-denormal)
-  iFloat80MaxUnnormal:        TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $7FFE); // highest possible unnormal
+  iFloat80MaxPseudoDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $0000); // 6.72420628622418701216e-4932 (highest possible pseudo-denormal)
   iFloat80MinUnnormal:        TAMFloat80Overlay = (Mantissa: UInt64($0000000000000000); SignExponent: $0001); // lowest possible unnormal
+  iFloat80MaxUnnormal:        TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $7FFE); // highest possible unnormal
   iFloat80PseudoQNaN:         TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet pseudo-NaN
   iFloat80PseudoSNaN:         TAMFloat80Overlay = (Mantissa: UInt64($3FFFFFFFFFFFFFFF); SignExponent: $7FFF); // signaled pseudo-NaN
   iFloat80PseudoNaN:          TAMFloat80Overlay = (Mantissa: UInt64($7FFFFFFFFFFFFFFF); SignExponent: $7FFF); // quiet pseudo-NaN
@@ -397,10 +397,10 @@ var
   Float80Infinity:    Float80 absolute iFloat80Infinity;
   Float80Indefinite:  Float80 absolute iFloat80Indefinite;
 
-  Float80MaxPseudoDenormal: Float80 absolute iFloat80MaxPseudoDenormal;
   Float80MinPseudoDenormal: Float80 absolute iFloat80MinPseudoDenormal;
-  Float80MaxUnnormal:       Float80 absolute iFloat80MaxUnnormal;
+  Float80MaxPseudoDenormal: Float80 absolute iFloat80MaxPseudoDenormal;
   Float80MinUnnormal:       Float80 absolute iFloat80MinUnnormal;
+  Float80MaxUnnormal:       Float80 absolute iFloat80MaxUnnormal;
   Float80PseudoQNaN:        Float80 absolute iFloat80PseudoQNaN;
   Float80PseudoSNaN:        Float80 absolute iFloat80PseudoSNaN;
   Float80PseudoNaN:         Float80 absolute iFloat80PseudoNaN;
@@ -417,10 +417,10 @@ var
   ExtendedInfinity:     Extended absolute iFloat80Infinity;
   ExtendedIndefinite:   Extended absolute iFloat80Indefinite;
 
-  ExtendedMaxPseudoDenormal:  Extended absolute iFloat80MaxPseudoDenormal;
   ExtendedMinPseudoDenormal:  Extended absolute iFloat80MinPseudoDenormal;
-  ExtendedMaxUnnormal:        Extended absolute iFloat80MaxUnnormal;
+  ExtendedMaxPseudoDenormal:  Extended absolute iFloat80MaxPseudoDenormal;
   ExtendedMinUnnormal:        Extended absolute iFloat80MinUnnormal;
+  ExtendedMaxUnnormal:        Extended absolute iFloat80MaxUnnormal;
   ExtendedPseudoQNaN:         Extended absolute iFloat80PseudoQNaN;
   ExtendedPseudoSNaN:         Extended absolute iFloat80PseudoSNaN;
   ExtendedPseudoNaN:          Extended absolute iFloat80PseudoNaN;
@@ -573,7 +573,7 @@ Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline}
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                              64bit ceil and floor                             
+                              64bit ceil and floor
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
@@ -583,6 +583,10 @@ Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline}
   
   Ceil64 and Floor64 are returning Int64, CeilU64 and FloorU64 are returning
   UInt64.
+
+  Note that, if the N is beyond limits for UInt64, the CeilU64 and FloorU64
+  will raise an EAMInvalidOperation exception (in Ceil64 and Floor64 this is
+  manager by the compiler and the exception would be of class EInvalidOP).
 }
 
 Function Ceil64(N: Extended): Int64;
@@ -592,7 +596,6 @@ Function Floor64(N: Extended): Int64;
 Function CeilU64(N: Extended): UInt64;
 
 Function FloorU64(N: Extended): UInt64;
-{$message 'write tests for unsigned, correct tests for signed'}
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -1413,8 +1416,290 @@ Function Min(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline
 {$IFEND}
 
 
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Maximum of mixed types
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Returns bigger/higher of the two given values.
+
+  When the function cannot select or return proper value, then an exception of 
+  class EAMInvalidOperation is raised. Please refer to description of Min
+  operating on mixed types for information about when this can happen.
+}
+
+Function iiMax(A: Int8; B: Int16): Int8; overload;
+Function iiMax(A: Int8; B: Int32): Int8; overload;
+Function iiMax(A: Int8; B: Int64): Int8; overload;
+
+Function iiMax(A: Int16; B: Int8): Int16; overload;
+Function iiMax(A: Int16; B: Int32): Int16; overload;
+Function iiMax(A: Int16; B: Int64): Int16; overload;
+
+Function iiMax(A: Int32; B: Int8): Int32; overload;
+Function iiMax(A: Int32; B: Int16): Int32; overload;
+Function iiMax(A: Int32; B: Int64): Int32; overload;
+
+Function iiMax(A: Int64; B: Int8): Int64; overload;
+Function iiMax(A: Int64; B: Int16): Int64; overload;
+Function iiMax(A: Int64; B: Int32): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function iuMax(A: Int8; B: UInt8): Int8; overload;
+Function iuMax(A: Int8; B: UInt16): Int8; overload;
+Function iuMax(A: Int8; B: UInt32): Int8; overload;
+Function iuMax(A: Int8; B: UInt64): Int8; overload;
+
+Function iuMax(A: Int16; B: UInt8): Int16; overload;
+Function iuMax(A: Int16; B: UInt16): Int16; overload;
+Function iuMax(A: Int16; B: UInt32): Int16; overload;
+Function iuMax(A: Int16; B: UInt64): Int16; overload;
+
+Function iuMax(A: Int32; B: UInt8): Int32; overload;
+Function iuMax(A: Int32; B: UInt16): Int32; overload;
+Function iuMax(A: Int32; B: UInt32): Int32; overload;
+Function iuMax(A: Int32; B: UInt64): Int32; overload;
+
+Function iuMax(A: Int64; B: UInt8): Int64; overload;
+Function iuMax(A: Int64; B: UInt16): Int64; overload;
+Function iuMax(A: Int64; B: UInt32): Int64; overload;
+Function iuMax(A: Int64; B: UInt64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uiMax(A: UInt8; B: Int8): UInt8; overload;
+Function uiMax(A: UInt8; B: Int16): UInt8; overload;
+Function uiMax(A: UInt8; B: Int32): UInt8; overload;
+Function uiMax(A: UInt8; B: Int64): UInt8; overload;
+
+Function uiMax(A: UInt16; B: Int8): UInt16; overload;
+Function uiMax(A: UInt16; B: Int16): UInt16; overload;
+Function uiMax(A: UInt16; B: Int32): UInt16; overload;
+Function uiMax(A: UInt16; B: Int64): UInt16; overload;
+
+Function uiMax(A: UInt32; B: Int8): UInt32; overload;
+Function uiMax(A: UInt32; B: Int16): UInt32; overload;
+Function uiMax(A: UInt32; B: Int32): UInt32; overload;
+Function uiMax(A: UInt32; B: Int64): UInt32; overload;
+
+Function uiMax(A: UInt64; B: Int8): UInt64; overload;
+Function uiMax(A: UInt64; B: Int16): UInt64; overload;
+Function uiMax(A: UInt64; B: Int32): UInt64; overload;
+Function uiMax(A: UInt64; B: Int64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uuMax(A: UInt8; B: UInt16): UInt8; overload;
+Function uuMax(A: UInt8; B: UInt32): UInt8; overload;
+Function uuMax(A: UInt8; B: UInt64): UInt8; overload;
+
+Function uuMax(A: UInt16; B: UInt8): UInt16; overload;
+Function uuMax(A: UInt16; B: UInt32): UInt16; overload;
+Function uuMax(A: UInt16; B: UInt64): UInt16; overload;
+
+Function uuMax(A: UInt32; B: UInt8): UInt32; overload;
+Function uuMax(A: UInt32; B: UInt16): UInt32; overload;
+Function uuMax(A: UInt32; B: UInt64): UInt32; overload;
+
+Function uuMax(A: UInt64; B: UInt8): UInt64; overload;
+Function uuMax(A: UInt64; B: UInt16): UInt64; overload;
+Function uuMax(A: UInt64; B: UInt32): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function fiMax(A: Extended; B: Int8): Extended; overload;
+Function fiMax(A: Extended; B: Int16): Extended; overload;
+Function fiMax(A: Extended; B: Int32): Extended; overload;
+Function fiMax(A: Extended; B: Int64): Extended; overload;
+
+//------------------------------------------------------------------------------
+
+Function fuMax(A: Extended; B: UInt8): Extended; overload;
+Function fuMax(A: Extended; B: UInt16): Extended; overload;
+Function fuMax(A: Extended; B: UInt32): Extended; overload;
+Function fuMax(A: Extended; B: UInt64): Extended; overload;
+
+//------------------------------------------------------------------------------
+
+Function ifMax(A: Int8; B: Extended): Int8; overload;
+Function ifMax(A: Int16; B: Extended): Int16; overload;
+Function ifMax(A: Int32; B: Extended): Int32; overload;
+Function ifMax(A: Int64; B: Extended): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufMax(A: UInt8; B: Extended): UInt8; overload;
+Function ufMax(A: UInt16; B: Extended): UInt16; overload;
+Function ufMax(A: UInt32; B: Extended): UInt32; overload;
+Function ufMax(A: UInt64; B: Extended): UInt64; overload;
+
+//==============================================================================
+
+Function Max(A: Int8; B: Int16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int8; B: Int32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Int8; B: Int64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: Int16; B: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int16; B: Int32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Int16; B: Int64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: Int32; B: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int32; B: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Int32; B: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(A: Int64; B: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int64; B: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int64; B: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Int8; B: UInt8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int8; B: UInt16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int8; B: UInt32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Int8; B: UInt64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: Int16; B: UInt8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int16; B: UInt16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int16; B: UInt32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Int16; B: UInt64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: Int32; B: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int32; B: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int32; B: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Int32; B: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(A: Int64; B: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int64; B: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int64; B: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int64; B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: UInt8; B: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt8; B: Int16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt8; B: Int32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: UInt8; B: Int64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: UInt16; B: Int8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt16; B: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt16; B: Int32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: UInt16; B: Int64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: UInt32; B: Int8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt32; B: Int16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt32; B: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: UInt32; B: Int64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(A: UInt64; B: Int8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt64; B: Int16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt64; B: Int32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt64; B: Int64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: UInt8; B: UInt16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt8; B: UInt32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: UInt8; B: UInt64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: UInt16; B: UInt8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt16; B: UInt32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: UInt16; B: UInt64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(A: UInt32; B: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt32; B: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: UInt32; B: UInt64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(A: UInt64; B: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt64; B: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt64; B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Extended; B: Int8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Extended; B: Int16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Extended; B: Int32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Extended; B: Int64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Extended; B: UInt8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Extended; B: UInt16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Extended; B: UInt32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Extended; B: UInt64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Int8; B: Extended): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int16; B: Extended): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: Int32; B: Extended): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: Int64; B: Extended): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: UInt8; B: Extended): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt16; B: Extended): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(A: UInt32; B: Extended): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+
 //==============================================================================
 (*
+Function iCompareValue(A,B: Int8): Integer;
+...
+
+type
+  TCompareOperation = (
+    cmpEqual,cmpNotEqual,cmpLess,cmpNotLess,cmpLessOrEqual,cmpNotLessNorEqual,
+    cmpGreater,cmpNotGreater,cmpGreaterOrEqual,cmpNotGreaterNorEqual);
+
+Function iCompareValue(A,B: Int8; Operation: TCompareOperation): Boolean;
+begin
+case Operation of
+  cmpNotEqual:                    Result := iCompareValue(A,B) <> 0;
+  cmpLess,cmpNotGreaterNorEqual:  Result := iCompareValue(A,B) < 0;
+  cmpLessOrEqual,cmpNotGreater:   Result := iCompareValue(A,B) <= 0;
+  cmpGreater,cmpNotLessNorEqual:  Result := iCompareValue(A,B) > 0;
+  cmpGreaterOrEqual,cmpNotLess:   Result := iCompareValue(A,B) >= 0;
+else
+  {cmpEqual}
+  Result := iCompareValue(A,B) = 0;
+end;
+end;
+
 Function iIfThen(Value: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8;
 Function iIfThen(Value: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16;
 Function iIfThen(Value: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32;
@@ -1435,12 +1720,12 @@ Function cIfThen(Value: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4C
 Function cIfThen(Value: Boolean; OnTrue: Char; OnFalse: Char = #0): Char;
 
 Function sIfThen(Value: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
-Function sIfThen(Value: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''): AnsiString;
-Function sIfThen(Value: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''): UTF8String;
-Function sIfThen(Value: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''): WideString;
-Function sIfThen(Value: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''): UnicodeString;
-Function sIfThen(Value: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = ''): UCS4String;
-Function sIfThen(Value: Boolean; const OnTrue: String; const OnFalse: String = ''): String;
+Function sIfThen(Value: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False)): AnsiString;
+Function sIfThen(Value: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False)): UTF8String;
+Function sIfThen(Value: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False)): WideString;
+Function sIfThen(Value: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False)): UnicodeString;
+Function sIfThen(Value: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = ''; UniqueCopy: Boolean = False)): UCS4String;
+Function sIfThen(Value: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False)): String;
 
 Function pIfThen(Value: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
 
@@ -1453,6 +1738,9 @@ procedure bIfThen(Value: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Resu
 procedure bIfThen(Value: Boolean; OnTrue,OnFalse: Pointer; Size: TMemSize; Result: Pointer);
 
 Function gIfThen(Value: Boolean; const OnTrue: TGUID; const OnFalse: TGUID = ???): TGUID;
+
+InRange
+EnsureRange
 *)
 implementation
 
@@ -2779,6 +3067,7 @@ end;
 
 Function Ceil64(N: Extended): Int64;
 begin
+// no need to check limits, Trunc is doing that
 Result := Trunc(N);
 If Frac(N) > 0 then
   Result := Result + 1;
@@ -2797,26 +3086,34 @@ end;
 
 Function CeilU64(N: Extended): UInt64;
 begin
-If N >= TwoPow63 then
-  Result := UInt64(Trunc(N - TwoPow64))
-else
-  Result := Trunc(N);
-If Frac(N) <> 0 then
-  Result := Result + 1;
+If (N >= 0) and (N < TwoPow64) then
+  begin
+    If N >= TwoPow63 then
+      Result := UInt64(Trunc(N - TwoPow64))
+    else
+      Result := Trunc(N);
+    If Frac(N) <> 0 then
+      Result := Result + 1;
+  end
+else raise EAMInvalidOperation.Create('CeilU64: Number cannot fit into result.');
 end;
 
 //------------------------------------------------------------------------------
 
 Function FloorU64(N: Extended): UInt64;
 begin
-If N >= TwoPow63 then
-  Result := UInt64(Trunc(N - TwoPow64))
-else
-  Result := Trunc(N);
-{
-  Since UInt64 cannot be negative, there is no point in checking fraction
-  (result will never be decremented).
-}
+If (N >= 0) and (N < TwoPow64) then
+  begin
+    If N >= TwoPow63 then
+      Result := UInt64(Trunc(N - TwoPow64))
+    else
+      Result := Trunc(N);
+    {
+      Since UInt64 cannot be negative, there is no point in checking fraction
+      (result will never be decremented).
+    }
+  end
+else raise EAMInvalidOperation.Create('FloorU64: Number cannot fit into result.');
 end;
 
 
@@ -8318,7 +8615,7 @@ end;
 
 Function iuMin(A: Int8; B: UInt64): Int8;
 begin
-If (A < 0) or (CompareUInt64(B,UInt64(High(Int8))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
+If (A < 0) or (CompareUInt64(B,UInt64(High(Int8))) > 0) or (CompareUInt64(UInt64(UInt8(A)),B) < 0) then
   Result := A
 else
   Result := Int8(B);
@@ -8359,7 +8656,7 @@ end;
 
 Function iuMin(A: Int16; B: UInt64): Int16;
 begin
-If (A < 0) or (CompareUInt64(B,UInt64(High(Int16))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
+If (A < 0) or (CompareUInt64(B,UInt64(High(Int16))) > 0) or (CompareUInt64(UInt64(UInt16(A)),B) < 0) then
   Result := A
 else
   Result := Int16(B);
@@ -8399,7 +8696,7 @@ end;
 
 Function iuMin(A: Int32; B: UInt64): Int32;
 begin
-If (A < 0) or (CompareUInt64(B,UInt64(High(Int32))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
+If (A < 0) or (CompareUInt64(B,UInt64(High(Int32))) > 0) or (CompareUInt64(UInt64(UInt32(A)),B) < 0) then
   Result := A
 else
   Result := Int32(B);
@@ -8621,10 +8918,10 @@ Function uiMin(A: UInt64; B: Int8): UInt64;
 begin
 If B >= 0 then
   begin
-    If CompareUInt64(A,UInt64(B)) < 0 then
+    If CompareUInt64(A,UInt64(UInt8(B))) < 0 then
       Result := A
     else
-      Result := UInt64(B);
+      Result := UInt64(UInt8(B));
   end
 else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int8: %d) is too low for UInt64.',[B]);
 end;
@@ -8635,10 +8932,10 @@ Function uiMin(A: UInt64; B: Int16): UInt64;
 begin
 If B >= 0 then
   begin
-    If CompareUInt64(A,UInt64(B)) < 0 then
+    If CompareUInt64(A,UInt64(UInt16(B))) < 0 then
       Result := A
     else
-      Result := UInt64(B);
+      Result := UInt64(UInt16(B));
   end
 else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int16: %d) is too low for UInt64.',[B]);
 end;
@@ -8649,10 +8946,10 @@ Function uiMin(A: UInt64; B: Int32): UInt64;
 begin
 If B >= 0 then
   begin
-    If CompareUInt64(A,UInt64(B)) < 0 then
+    If CompareUInt64(A,UInt64(UInt32(B))) < 0 then
       Result := A
     else
-      Result := UInt64(B);
+      Result := UInt64(UInt32(B));
   end
 else raise EAMInvalidOperation.CreateFmt('uiMin: Value of B (Int32: %d) is too low for UInt64.',[B]);
 end;
@@ -9614,6 +9911,1476 @@ end;
 Function Min(A: UInt64; B: Extended): UInt64;
 begin
 Result := ufMin(A,B);
+end;
+{$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Maximum of mixed types
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iiMax - signed integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function iiMax(A: Int8; B: Int16): Int8;
+begin
+If B <= Int16(High(Int8)) then
+  begin
+    If Int16(A) > B then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMax: Value of B (Int16: %d) is too high for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int8; B: Int32): Int8;
+begin
+If B <= Int32(High(Int8)) then
+  begin
+    If Int32(A) > B then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMax: Value of B (Int32: %d) is too high for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int8; B: Int64): Int8;
+begin
+If B <= Int64(High(Int8)) then
+  begin
+    If Int64(A) > B then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMax: Value of B (Int64: %d) is too high for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int16; B: Int8): Int16;
+begin
+If A > Int16(B) then
+  Result := A
+else
+  Result := Int16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int16; B: Int32): Int16;
+begin
+If B <= Int32(High(Int16)) then
+  begin
+    If Int32(A) > B then
+      Result := A
+    else
+      Result := Int16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMax: Value of B (Int32: %d) is too high for Int16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int16; B: Int64): Int16;
+begin
+If B <= Int64(High(Int16)) then
+  begin
+    If Int64(A) > B then
+      Result := A
+    else
+      Result := Int16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMax: Value of B (Int64: %d) is too high for Int16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int32; B: Int8): Int32;
+begin
+If A > Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int32; B: Int16): Int32;
+begin
+If A > Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int32; B: Int64): Int32;
+begin
+If B <= Int64(High(Int32)) then
+  begin
+    If Int64(A) < B then
+      Result := A
+    else
+      Result := Int32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iiMax: Value of B (Int64: %d) is too high for Int32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int64; B: Int8): Int64;
+begin
+If A > Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int64; B: Int16): Int64;
+begin
+If A > Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiMax(A: Int64; B: Int32): Int64;
+begin
+If A > Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+{-------------------------------------------------------------------------------
+    iuMax - signed integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function iuMax(A: Int8; B: UInt8): Int8;
+begin
+If B <= UInt8(High(Int8)) then
+  begin
+    If A > Int8(B) then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt8: %u) is too high for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int8; B: UInt16): Int8;
+begin
+If B <= UInt16(High(Int8)) then
+  begin
+    If A > Int8(B) then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt16: %u) is too high for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int8; B: UInt32): Int8;
+begin
+If B <= UInt32(High(Int8)) then
+  begin
+    If A > Int8(B) then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int8; B: UInt64): Int8;
+begin
+If CompareUInt64(B,UInt64(High(Int8))) <= 0 then
+  begin
+    If A > Int8(B) then
+      Result := A
+    else
+      Result := Int8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %u) is too high for Int8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int16; B: UInt8): Int16;
+begin
+If A > Int16(B) then
+  Result := A
+else
+  Result := Int16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int16; B: UInt16): Int16;
+begin
+If B <= UInt16(High(Int16)) then
+  begin
+    If A > Int16(B) then
+      Result := A
+    else
+      Result := Int16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt16: %u) is too high for Int16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int16; B: UInt32): Int16;
+begin
+If B <= UInt32(High(Int16)) then
+  begin
+    If A > Int16(B) then
+      Result := A
+    else
+      Result := Int16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int16; B: UInt64): Int16;
+begin
+If CompareUInt64(B,UInt32(High(Int16))) <= 0 then
+  begin
+    If A > Int16(B) then
+      Result := A
+    else
+      Result := Int16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %u) is too high for Int16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int32; B: UInt8): Int32;
+begin
+If A > Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int32; B: UInt16): Int32;
+begin
+If A > Int32(B) then
+  Result := A
+else
+  Result := Int32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int32; B: UInt32): Int32;
+begin
+If B <= UInt32(High(Int32)) then
+  begin
+    If A > Int32(B) then
+      Result := A
+    else
+      Result := Int32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int32; B: UInt64): Int32;
+begin
+If CompareUInt64(B,UInt64(High(Int32))) <= 0 then
+  begin
+    If A > Int32(B) then
+      Result := A
+    else
+      Result := Int32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %u) is too high for Int32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int64; B: UInt8): Int64;
+begin
+If A > Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int64; B: UInt16): Int64;
+begin
+If A > Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int64; B: UInt32): Int64;
+begin
+If A > Int64(B) then
+  Result := A
+else
+  Result := Int64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuMax(A: Int64; B: UInt64): Int64;
+begin
+If CompareUInt64(B,UInt64(High(Int64))) <= 0 then
+  begin
+    If A > Int64(B) then
+      Result := A
+    else
+      Result := Int64(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %u) is too high for Int64.',[B]);
+end;
+
+{-------------------------------------------------------------------------------
+    uiMax - unsigned integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function uiMax(A: UInt8; B: Int8): UInt8;
+begin
+If (B < 0) or (A > UInt8(B)) then
+  Result := A
+else
+  Result := UInt8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt8; B: Int16): UInt8;
+begin
+If B <= Int16(High(UInt8)) then
+  begin
+    If Int16(A) > B then
+      Result := A
+    else
+      Result := UInt8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMax: Value of B (Int16: %d) is too high for UInt8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt8; B: Int32): UInt8;
+begin
+If B <= Int32(High(UInt8)) then
+  begin
+    If (B < 0) or (Int32(A) > B) then
+      Result := A
+    else
+      Result := UInt8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMax: Value of B (Int32: %d) is too high for UInt8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt8; B: Int64): UInt8;
+begin
+If B <= Int64(High(UInt8)) then
+  begin
+    If (B < 0) or (Int64(A) > B) then
+      Result := A
+    else
+      Result := UInt8(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMax: Value of B (Int64: %d) is too high for UInt8.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt16; B: Int8): UInt16;
+begin
+If (B < 0) or (A > UInt16(B)) then
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt16; B: Int16): UInt16;
+begin
+If (B < 0) or (A > UInt16(B)) then
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt16; B: Int32): UInt16;
+begin
+If B <= Int32(High(UInt16)) then
+  begin
+    If (B < 0) or (Int32(A) > B) then
+      Result := A
+    else
+      Result := UInt16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMax: Value of B (Int32: %d) is too high for UInt16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt16; B: Int64): UInt16;
+begin
+If B <= Int64(High(UInt16)) then
+  begin
+    If (B < 0) or (Int64(A) > B) then
+      Result := A
+    else
+      Result := UInt16(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMax: Value of B (Int64: %d) is too high for UInt16.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt32; B: Int8): UInt32;
+begin
+If (B < 0) or (A > UInt32(B)) then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt32; B: Int16): UInt32;
+begin
+If (B < 0) or (A > UInt32(B)) then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt32; B: Int32): UInt32;
+begin
+If (B < 0) or (A > UInt32(B)) then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt32; B: Int64): UInt32;
+begin
+If B <= Int64(High(UInt32)) then
+  begin
+    If (B < 0) or (Int64(A) > B) then
+      Result := A
+    else
+      Result := UInt32(B);
+  end
+else raise EAMInvalidOperation.CreateFmt('uiMax: Value of B (Int64: %d) is too high for UInt32.',[B]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt64; B: Int8): UInt64;
+begin
+If (B < 0) or (CompareUInt64(A,UInt64(UInt8(B))) > 0) then
+  Result := A
+else
+  Result := UInt64(UInt8(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt64; B: Int16): UInt64;
+begin
+If (B < 0) or (CompareUInt64(A,UInt64(UInt16(B))) > 0) then
+  Result := A
+else
+  Result := UInt64(UInt16(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt64; B: Int32): UInt64;
+begin
+If (B < 0) or (CompareUInt64(A,UInt64(UInt32(B))) > 0) then
+  Result := A
+else
+  Result := UInt64(UInt32(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiMax(A: UInt64; B: Int64): UInt64;
+begin
+If (B < 0) or (CompareUInt64(A,UInt64(B)) > 0) then
+  Result := A
+else
+  Result := UInt64(B);
+end;
+
+{-------------------------------------------------------------------------------
+    uuMax - unsigned integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function uuMax(A: UInt8; B: UInt16): UInt8;
+begin
+If UInt16(A) > B then
+  Result := A
+else
+  Result := UInt8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt8; B: UInt32): UInt8;
+begin
+If UInt32(A) > B then
+  Result := A
+else
+  Result := UInt8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt8; B: UInt64): UInt8;
+begin
+If CompareUInt64(UInt64(A),B) > 0 then
+  Result := A
+else
+  Result := UInt8(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt16; B: UInt8): UInt16;
+begin
+If A > UInt16(B) then
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt16; B: UInt32): UInt16;
+begin
+If UInt32(A) > B then
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt16; B: UInt64): UInt16;
+begin
+If CompareUInt64(UInt64(A),B) > 0 then
+  Result := A
+else
+  Result := UInt16(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt32; B: UInt8): UInt32;
+begin
+If A > UInt32(B) then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt32; B: UInt16): UInt32;
+begin
+If A > UInt32(B) then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt32; B: UInt64): UInt32;
+begin
+If CompareUInt64(UInt64(A),B) > 0 then
+  Result := A
+else
+  Result := UInt32(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt64; B: UInt8): UInt64;
+begin
+If CompareUInt64(A,UInt64(B)) > 0 then
+  Result := A
+else
+  Result := UInt64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt64; B: UInt16): UInt64;
+begin
+If CompareUInt64(A,UInt64(B)) > 0 then
+  Result := A
+else
+  Result := UInt64(B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuMax(A: UInt64; B: UInt32): UInt64;
+begin
+If CompareUInt64(A,UInt64(B)) > 0 then
+  Result := A
+else
+  Result := UInt64(B);
+end;
+
+{-------------------------------------------------------------------------------
+    fiMax - float & signed integer
+-------------------------------------------------------------------------------}
+
+Function fiMax(A: Extended; B: Int8): Extended;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiMax(A: Extended; B: Int16): Extended;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiMax(A: Extended; B: Int32): Extended;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiMax(A: Extended; B: Int64): Extended;
+begin
+{$IF SizeOf(Extended) <> 10}
+If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
+  raise EAMaxvalidOperation.CreateFmt('fiMax: Value of B (Int64: %d) cannot be accurately converted to Extended.',[B])
+else
+{$IFEND}
+  begin
+    If A > B then
+      Result := A
+    else
+      Result := B;
+  end;
+end;
+
+{-------------------------------------------------------------------------------
+    fuMax - float & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function fuMax(A: Extended; B: UInt8): Extended;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuMax(A: Extended; B: UInt16): Extended;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuMax(A: Extended; B: UInt32): Extended;
+begin
+If A > B then
+  Result := A
+else
+  Result := B;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuMax(A: Extended; B: UInt64): Extended;
+begin
+{$IF SizeOf(Extended) = 10}
+If A > U64ToFloat(B) then
+  Result := A
+else
+  Result := U64ToFloat(B);
+{$ELSE}
+If CompareUInt64(B,AM_INT_DBL_HI) <= 0 then
+  begin
+    If A > B then
+      Result := A
+    else
+      Result := B;
+  end
+else raise EAMaxvalidOperation.CreateFmt('fuMax: Value of B (UInt64: %u) cannot be accurately converted to Extended.',[B])
+{$IFEND}
+end;
+
+{-------------------------------------------------------------------------------
+    ifMax - signed integer & float
+-------------------------------------------------------------------------------}
+
+Function ifMax(A: Int8; B: Extended): Int8;
+begin
+If B > A then
+  begin
+    If (B < Low(Int8)) or (B > High(Int8)) then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot fit into Int8.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in Int8.',[B])
+    else
+      Result := Int8(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifMax(A: Int16; B: Extended): Int16;
+begin
+If B > A then
+  begin
+    If (B < Low(Int16)) or (B > High(Int16)) then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot fit into Int16.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in Int16.',[B])
+    else
+      Result := Int16(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifMax(A: Int32; B: Extended): Int32;
+begin
+If B > A then
+  begin
+    If (B < Low(Int32)) or (B > High(Int32)) then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot fit into Int32.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in Int32.',[B])
+    else
+      Result := Int32(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifMax(A: Int64; B: Extended): Int64;
+begin
+{$IF SizeOf(Extended) = 10}
+If B > A then
+  begin
+    If (B < Low(Int64)) or (B > High(Int64)) then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot fit into Int64.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in Int64.',[B])
+    else
+      Result := Int64(Trunc(B));
+  end
+else Result := A;
+{$ELSE}
+If (A < AM_INT_DBL_LO) or (A > AM_INT_DBL_HI) then
+  raise EAMInvalidOperation.CreateFmt('ifMax: Value of A (Int64: %d) cannot be accurately converted to Extended.',[A])
+else
+  begin
+    If B > A then
+      begin
+        If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
+          raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be accurately converted to Int64.',[B])
+        else If Frac(B) <> 0 then
+          raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in Int64.',[B])
+        else
+          Result := Int64(Trunc(B));
+      end
+    else Result := A;
+  end;
+{$IFEND}
+end;
+
+{-------------------------------------------------------------------------------
+    ufMax - unsigned integer & float
+-------------------------------------------------------------------------------}
+
+Function ufMax(A: UInt8; B: Extended): UInt8;
+begin
+If B > A then
+  begin
+    If (B < 0) or (B > High(UInt8)) then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt8.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt8.',[B])
+    else
+      Result := UInt8(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufMax(A: UInt16; B: Extended): UInt16;
+begin
+If B > A then
+  begin
+    If (B < 0) or (B > High(UInt16)) then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt16.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt16.',[B])
+    else
+      Result := UInt16(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufMax(A: UInt32; B: Extended): UInt32;
+begin
+If B > A then
+  begin
+    If (B < 0) or (B > High(UInt32)) then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt32.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt32.',[B])
+    else
+      Result := UInt32(Trunc(B));
+  end
+else Result := A;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufMax(A: UInt64; B: Extended): UInt64;
+begin
+{$IF SizeOf(Extended) = 10}
+If B > U64ToFloat(A) then
+  begin
+    If (B < 0) or (B > U64ToFloat(UInt64($FFFFFFFFFFFFFFFF{yeah, I can put -1 here, but to be sure...}))) then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt64.',[B])
+    else If Frac(B) <> 0 then
+      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
+    else
+      Result := FloatToU64(B);
+  end
+else Result := A;
+{$ELSE}
+If CompareUInt64(A,AM_INT_DBL_HI) > 0 then
+  raise EAMInvalidOperation.CreateFmt('ufMax: Value of A (UInt64: %u) cannot be accurately converted to Extended.',[A])
+else
+  begin
+    If B > A then
+      begin
+        If (B < 0) or (B > AM_INT_DBL_HI) then
+          raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt64.',[B])
+        else If Frac(B) <> 0 then
+          raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
+        else
+          Result := Trunc(B);
+      end
+    else Result := A;
+  end;
+{$IFEND}
+end;
+
+{-------------------------------------------------------------------------------
+    Max - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function Max(A: Int8; B: Int16): Int8;
+begin
+Result := iiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int8; B: Int32): Int8;
+begin
+Result := iiMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int8; B: Int64): Int8;
+begin
+Result := iiMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: Int8): Int16;
+begin
+Result := iiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: Int32): Int16;
+begin
+Result := iiMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: Int64): Int16;
+begin
+Result := iiMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: Int8): Int32;
+begin
+Result := iiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: Int16): Int32;
+begin
+Result := iiMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: Int64): Int32;
+begin
+Result := iiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: Int8): Int64;
+begin
+Result := iiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: Int16): Int64;
+begin
+Result := iiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: Int32): Int64;
+begin
+Result := iiMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Int8; B: UInt8): Int8;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int8; B: UInt16): Int8;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int8; B: UInt32): Int8;
+begin
+Result := iuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int8; B: UInt64): Int8;
+begin
+Result := iuMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: UInt8): Int16;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: UInt16): Int16;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: UInt32): Int16;
+begin
+Result := iuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: UInt64): Int16;
+begin
+Result := iuMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: UInt8): Int32;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: UInt16): Int32;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: UInt32): Int32;
+begin
+Result := iuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: UInt64): Int32; 
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: UInt8): Int64;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: UInt16): Int64;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: UInt32): Int64;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: UInt64): Int64;
+begin
+Result := iuMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: UInt8; B: Int8): UInt8;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt8; B: Int16): UInt8;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt8; B: Int32): UInt8;
+begin
+Result := uiMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt8; B: Int64): UInt8;
+begin
+Result := uiMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: Int8): UInt16;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: Int16): UInt16;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: Int32): UInt16;
+begin
+Result := uiMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: Int64): UInt16;
+begin
+Result := uiMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: Int8): UInt32;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: Int16): UInt32;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: Int32): UInt32;
+begin
+Result := uiMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: Int64): UInt32;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: Int8): UInt64;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: Int16): UInt64;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: Int32): UInt64;
+begin
+Result := uiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: Int64): UInt64;
+begin
+Result := uiMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: UInt8; B: UInt16): UInt8;
+begin
+Result := uuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt8; B: UInt32): UInt8; 
+begin
+Result := uuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt8; B: UInt64): UInt8;  
+begin
+Result := uuMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: UInt8): UInt16;  
+begin
+Result := uuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: UInt32): UInt16; 
+begin
+Result := uuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: UInt64): UInt16; 
+begin
+Result := uuMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: UInt8): UInt32;
+begin
+Result := uuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: UInt16): UInt32;
+begin
+Result := uuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: UInt64): UInt32;
+begin
+Result := uuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: UInt8): UInt64; 
+begin
+Result := uuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: UInt16): UInt64;
+begin
+Result := uuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: UInt32): UInt64;
+begin
+Result := uuMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Extended; B: Int8): Extended;
+begin
+Result := fiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Extended; B: Int16): Extended;
+begin
+Result := fiMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Extended; B: Int32): Extended;
+begin
+Result := fiMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Extended; B: Int64): Extended;
+begin
+Result := fiMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Extended; B: UInt8): Extended;
+begin
+Result := fuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Extended; B: UInt16): Extended;
+begin
+Result := fuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Extended; B: UInt32): Extended;
+begin
+Result := fuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Extended; B: UInt64): Extended;
+begin
+Result := fuMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: Int8; B: Extended): Int8;
+begin
+Result := ifMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int16; B: Extended): Int16;
+begin
+Result := ifMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int32; B: Extended): Int32;
+begin
+Result := ifMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: Int64; B: Extended): Int64;
+begin
+Result := ifMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(A: UInt8; B: Extended): UInt8;
+begin
+Result := ufMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt16; B: Extended): UInt16;
+begin
+Result := ufMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt32; B: Extended): UInt32;
+begin
+Result := ufMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(A: UInt64; B: Extended): UInt64;
+begin
+Result := ufMax(A,B);
 end;
 {$IFEND}
 

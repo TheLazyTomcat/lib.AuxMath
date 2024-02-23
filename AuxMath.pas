@@ -96,20 +96,6 @@ type
     Public constants
 ===============================================================================}
 {
-  Highest and lowest integral value that can be stored in 64bit floating point
-  number (Double) without losing any information (the numbers have the same
-  magnitude, so negated positive limit can be used as low value, but for the
-  sake of clarity, both are provided).
-}
-const
-  AM_INT_DBL_HI = 9007199254740992;    // $0020000000000000
-  AM_INT_DBL_LO = -9007199254740992;   // $FFE0000000000000
-
-  // "nicer" alias (to get lower limit, just negate it)
-  Flt64MaxInt = AM_INT_DBL_HI;
-
-//==============================================================================
-{
   Lowest and highest possible values of selected integer types. They can all be
   obtained using stndard functions Low() and High(), but if anyone wants them
   as constants, there they are...
@@ -437,26 +423,65 @@ var
   ExtendedIndefinite:   Extended absolute iFloat64Indefinite;
 {$IFEND}
 
+//==============================================================================
+const
+{
+  Highest and lowest integral value that can be stored in 64bit floating point
+  number (Double) without losing any information (the numbers have the same
+  magnitude, so negated positive limit can be used as low value, but for the
+  sake of clarity, both are provided).
+}
+  AM_INT_DBL_HI = 9007199254740992;    // $0020000000000000
+  AM_INT_DBL_LO = -9007199254740992;   // $FFE0000000000000
+
+  // "nicer" alias (to get lower limit, just negate it)
+  Flt64MaxInt = AM_INT_DBL_HI;
+
+{
+  Highest and lowest integral values that can be stored in Extended floating
+  point type, whatever its declaration might be, without losing infromation.
+}
+  AM_INT_EXT_HI = {$IF SizeOf(Extended) = 10}High(Int64){$ELSE}AM_INT_DBL_HI{$IFEND};
+  AM_INT_EXT_LO = {$IF SizeOf(Extended) = 10}Low(Int64){$ELSE}AM_INT_DBL_LO{$IFEND};
+
+  AM_UINT_EXT_HI = {$IF SizeOf(Extended) = 10}MaxUInt64{$ELSE}AM_INT_DBL_HI{$IFEND};
+
 {===============================================================================
     Public auxiliary funtions - declaration
 ===============================================================================}
 {
-  Use following functions to transfer unsigned 64bit integer value to and from
+  Use following two functions to transfer signed 64bit integer value to and
+  from floating point number. All compilers supporting type Int64 can do it
+  implicitly (or using Trunc), this functions are here to do controlled
+  conversion.
+
+  In Int64ToFloat, if the type Extended is declared only as an alias for
+  Double (Win64), the limits for transfer (AM_INT_DBL_LO,AM_INT_DBL_HI) are
+  in effect. The number must be within those limits otherwise an exception of
+  class EAMInvalidOperation is raised.
+
+  For FloatToInt64, the floating point number must not have non-zero fraction,
+  must be greater or equal to -2^63 and at the same time smaller than 2^63.
+  Also, when type extended is aliased to double, the number must lie within
+  limits for precise conversion to integer (must be within interval
+  [AM_INT_DBL_LO,AM_INT_DBL_HI]). If any mentioned rule is not observed, then
+  an exception of class EAMInvalidOperation is raised.
+}
+Function Int64ToFloat(N: Int64): Extended;
+
+Function FloatToInt64(N: Extended): Int64;
+
+{
+  Following functions transfer unsigned 64bit integer value to and from
   floating point number. Newer compilers can do it, but older ones (those
   without full support for type UInt64) might not be capable of doing it.
 
-  In U64ToFloat, if the type Extended is declared only as an alias for Double
-  (Win64), the limits for transfer (AM_INT_DBL_HI, AM_INT_DBL_LO) are in effect
-  (an exception of class EAMInvalidOperation can be raised if limits are
-  exceeded).
-
-  For FloatToU64, the floating point number must not have non-zero fraction,
-  must be greater or equal to zero and at the same time smaller than 2^64,
-  otherwise an exception of class EAMInvalidOperation is raised.
+  Note that both functions are doing the same checks as corresponding functions
+  for signed 64bit integers (of course here tweaked for unsigned).
 }
-Function U64ToFloat(N: UInt64): Extended;
+Function UInt64ToFloat(N: UInt64): Extended;
 
-Function FloatToU64(N: Extended): UInt64;
+Function FloatToUInt64(N: Extended): UInt64;
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -1710,24 +1735,24 @@ Function fMinValue(const Values: array of Extended; out Minimum: Extended): Inte
 
 //------------------------------------------------------------------------------
 
-Function MinValue(const Values: array of Int8; out Minimum: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MinValue(const Values: array of Int16; out Minimum: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MinValue(const Values: array of Int32; out Minimum: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of Int8; out Minimum: Int8): Integer; overload;
+Function MinValue(const Values: array of Int16; out Minimum: Int16): Integer; overload;
+Function MinValue(const Values: array of Int32; out Minimum: Int32): Integer; overload;
 {$IF Declared(DistinctOverloadUInt64E)}
-Function MinValue(const Values: array of Int64; out Minimum: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of Int64; out Minimum: Int64): Integer; overload;
 {$IFEND}
 
-Function MinValue(const Values: array of UInt8; out Minimum: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MinValue(const Values: array of UInt16; out Minimum: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MinValue(const Values: array of UInt32; out Minimum: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of UInt8; out Minimum: UInt8): Integer; overload;
+Function MinValue(const Values: array of UInt16; out Minimum: UInt16): Integer; overload;
+Function MinValue(const Values: array of UInt32; out Minimum: UInt32): Integer; overload;
 {$IF Declared(DistinctOverloadUInt64E)}
-Function MinValue(const Values: array of UInt64; out Minimum: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of UInt64; out Minimum: UInt64): Integer; overload;
 {$IFEND}
 
-Function MinValue(const Values: array of Single; out Minimum: Single): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MinValue(const Values: array of Double; out Minimum: Double): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of Single; out Minimum: Single): Integer; overload;
+Function MinValue(const Values: array of Double; out Minimum: Double): Integer; overload;
 {$IF SizeOf(Extended) = 10}
-Function MinValue(const Values: array of Extended; out Minimum: Extended): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MinValue(const Values: array of Extended; out Minimum: Extended): Integer; overload;
 {$IFEND}
 
 
@@ -1765,24 +1790,24 @@ Function fMaxValue(const Values: array of Extended; out Maximum: Extended): Inte
 
 //------------------------------------------------------------------------------
 
-Function MaxValue(const Values: array of Int8; out Maximum: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MaxValue(const Values: array of Int16; out Maximum: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MaxValue(const Values: array of Int32; out Maximum: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of Int8; out Maximum: Int8): Integer; overload;
+Function MaxValue(const Values: array of Int16; out Maximum: Int16): Integer; overload;
+Function MaxValue(const Values: array of Int32; out Maximum: Int32): Integer; overload;
 {$IF Declared(DistinctOverloadUInt64E)}
-Function MaxValue(const Values: array of Int64; out Maximum: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of Int64; out Maximum: Int64): Integer; overload;
 {$IFEND}
 
-Function MaxValue(const Values: array of UInt8; out Maximum: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MaxValue(const Values: array of UInt16; out Maximum: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MaxValue(const Values: array of UInt32; out Maximum: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of UInt8; out Maximum: UInt8): Integer; overload;
+Function MaxValue(const Values: array of UInt16; out Maximum: UInt16): Integer; overload;
+Function MaxValue(const Values: array of UInt32; out Maximum: UInt32): Integer; overload;
 {$IF Declared(DistinctOverloadUInt64E)}
-Function MaxValue(const Values: array of UInt64; out Maximum: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of UInt64; out Maximum: UInt64): Integer; overload;
 {$IFEND}
 
-Function MaxValue(const Values: array of Single; out Maximum: Single): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function MaxValue(const Values: array of Double; out Maximum: Double): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of Single; out Maximum: Single): Integer; overload;
+Function MaxValue(const Values: array of Double; out Maximum: Double): Integer; overload;
 {$IF SizeOf(Extended) = 10}
-Function MaxValue(const Values: array of Extended; out Maximum: Extended): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function MaxValue(const Values: array of Extended; out Maximum: Extended): Integer; overload;
 {$IFEND}
 
 
@@ -1795,8 +1820,10 @@ Function MaxValue(const Values: array of Extended; out Maximum: Extended): Integ
   If A is larger than B, a positive number is returned. If A is smaller than B,
   then negative number is returned. When the two values are equal, zero is
   returned.
+
+  Epsilon is maximal difference between two numbers where they can still be
+  considered equal.
 }
-(*
 Function iCompareValue(A,B: Int8): Integer; overload;
 Function iCompareValue(A,B: Int16): Integer; overload;
 Function iCompareValue(A,B: Int32): Integer; overload;
@@ -1811,7 +1838,7 @@ Function uCompareValue(A,B: UInt64): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function fCompareValue(A,B: Extended; Epsilon: Extended = 0): Integer; overload;
+Function fCompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer; overload;
 
 //------------------------------------------------------------------------------
 
@@ -1822,8 +1849,6 @@ Function CompareValue(A,B: Int32): Integer; overload;{$IFDEF CanInline} inline;{
 Function CompareValue(A,B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-//------------------------------------------------------------------------------
-
 Function CompareValue(A,B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function CompareValue(A,B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function CompareValue(A,B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -1831,10 +1856,133 @@ Function CompareValue(A,B: UInt32): Integer; overload;{$IFDEF CanInline} inline;
 Function CompareValue(A,B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
+Function CompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                        Compare values of differing types
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Returns positive number when A is bigger than B, negative number when A is
+  smaller than B, and zero when they equal.
+
+  For floats versus integers, when the integer cannot be accurately converted
+  to float for comparison, an exception of class EAMInvalidOperation will be
+  raised.
+
+    NOTE - I am fully aware that some overloads are superfluous and their
+           function can be achieved by just swapping arguments.
+}
+
+Function iiCompareValue(A: Int8; B: Int16): Integer; overload;
+Function iiCompareValue(A: Int8; B: Int32): Integer; overload;
+Function iiCompareValue(A: Int8; B: Int64): Integer; overload;
+
+Function iiCompareValue(A: Int16; B: Int8): Integer; overload;
+Function iiCompareValue(A: Int16; B: Int32): Integer; overload;
+Function iiCompareValue(A: Int16; B: Int64): Integer; overload;
+
+Function iiCompareValue(A: Int32; B: Int8): Integer; overload;
+Function iiCompareValue(A: Int32; B: Int16): Integer; overload;
+Function iiCompareValue(A: Int32; B: Int64): Integer; overload;
+
+Function iiCompareValue(A: Int64; B: Int8): Integer; overload;
+Function iiCompareValue(A: Int64; B: Int16): Integer; overload;
+Function iiCompareValue(A: Int64; B: Int32): Integer; overload;
+
 //------------------------------------------------------------------------------
 
-Function CompareValue(A,B: Extended; Epsilon: Extended = 0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-*)
+Function iuCompareValue(A: Int8; B: UInt8): Integer; overload;
+Function iuCompareValue(A: Int8; B: UInt16): Integer; overload;
+Function iuCompareValue(A: Int8; B: UInt32): Integer; overload;
+Function iuCompareValue(A: Int8; B: UInt64): Integer; overload;
+
+Function iuCompareValue(A: Int16; B: UInt8): Integer; overload;
+Function iuCompareValue(A: Int16; B: UInt16): Integer; overload;
+Function iuCompareValue(A: Int16; B: UInt32): Integer; overload;
+Function iuCompareValue(A: Int16; B: UInt64): Integer; overload;
+
+Function iuCompareValue(A: Int32; B: UInt8): Integer; overload;
+Function iuCompareValue(A: Int32; B: UInt16): Integer; overload;
+Function iuCompareValue(A: Int32; B: UInt32): Integer; overload;
+Function iuCompareValue(A: Int32; B: UInt64): Integer; overload;
+
+Function iuCompareValue(A: Int64; B: UInt8): Integer; overload;
+Function iuCompareValue(A: Int64; B: UInt16): Integer; overload;
+Function iuCompareValue(A: Int64; B: UInt32): Integer; overload;
+Function iuCompareValue(A: Int64; B: UInt64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function uiCompareValue(A: UInt8; B: Int8): Integer; overload;
+Function uiCompareValue(A: UInt8; B: Int16): Integer; overload;
+Function uiCompareValue(A: UInt8; B: Int32): Integer; overload;
+Function uiCompareValue(A: UInt8; B: Int64): Integer; overload;
+
+Function uiCompareValue(A: UInt16; B: Int8): Integer; overload;
+Function uiCompareValue(A: UInt16; B: Int16): Integer; overload;
+Function uiCompareValue(A: UInt16; B: Int32): Integer; overload;
+Function uiCompareValue(A: UInt16; B: Int64): Integer; overload;
+
+Function uiCompareValue(A: UInt32; B: Int8): Integer; overload;
+Function uiCompareValue(A: UInt32; B: Int16): Integer; overload;
+Function uiCompareValue(A: UInt32; B: Int32): Integer; overload;
+Function uiCompareValue(A: UInt32; B: Int64): Integer; overload;
+
+Function uiCompareValue(A: UInt64; B: Int8): Integer; overload;
+Function uiCompareValue(A: UInt64; B: Int16): Integer; overload;
+Function uiCompareValue(A: UInt64; B: Int32): Integer; overload;
+Function uiCompareValue(A: UInt64; B: Int64): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function uuCompareValue(A: UInt8; B: UInt16): Integer; overload;
+Function uuCompareValue(A: UInt8; B: UInt32): Integer; overload;
+Function uuCompareValue(A: UInt8; B: UInt64): Integer; overload;
+
+Function uuCompareValue(A: UInt16; B: UInt8): Integer; overload;
+Function uuCompareValue(A: UInt16; B: UInt32): Integer; overload;
+Function uuCompareValue(A: UInt16; B: UInt64): Integer; overload;
+
+Function uuCompareValue(A: UInt32; B: UInt8): Integer; overload;
+Function uuCompareValue(A: UInt32; B: UInt16): Integer; overload;
+Function uuCompareValue(A: UInt32; B: UInt64): Integer; overload;
+
+Function uuCompareValue(A: UInt64; B: UInt8): Integer; overload;
+Function uuCompareValue(A: UInt64; B: UInt16): Integer; overload;
+Function uuCompareValue(A: UInt64; B: UInt32): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function fiCompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer; overload;
+Function fiCompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer; overload;
+Function fiCompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer; overload;
+Function fiCompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function fuCompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer; overload;
+Function fuCompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer; overload;
+Function fuCompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer; overload;
+Function fuCompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function ifCompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function ifCompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function ifCompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function ifCompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufCompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function ufCompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function ufCompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function ufCompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+
+
 //==============================================================================
 (*
 Function iCompareValue(A,B: Int8): Integer;
@@ -1957,12 +2105,37 @@ else
 {$IFEND}
 end;
 
-
 {===============================================================================
     Public auxiliary funtions - implementation
 ===============================================================================}
 
-Function U64ToFloat(N: UInt64): Extended;
+Function Int64ToFloat(N: Int64): Extended;
+begin
+{$IF SizeOf(Extended) <> 10}
+If (N < AM_INT_DBL_LO) or (N > AM_INT_DBL_HI) then
+  raise EAMInvalidOperation.CreateFmt('Int64ToFloat: Integer value (%d) cannot be accurately converted to Extended.',[N]);
+{$IFEND}
+Result := N;
+end;
+
+//------------------------------------------------------------------------------
+
+Function FloatToInt64(N: Extended): Int64;
+begin
+If Frac(N) <> 0.0 then
+  raise EAMInvalidOperation.CreateFmt('FloatToInt64: Floating point value (%g) cannot be stored in Int64.',[N]);
+If (N < -TwoPow63) or (N >= TwoPow63) then
+  raise EAMInvalidOperation.CreateFmt('FloatToInt64: Floating point value (%g) cannot fit into Int64.',[N]);
+{$IF SizeOf(Extended) <> 10}
+If (N < AM_INT_DBL_LO) or (N > AM_INT_DBL_HI) then
+  raise EAMInvalidOperation.CreateFmt('FloatToInt64: Floating point value (%g) cannot be accurately converted to Int64.',[N]);
+{$IFEND}
+Result := Trunc(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function UInt64ToFloat(N: UInt64): Extended;
 begin
 {
   Here we assume that the compiler cannot properly transfer integer bigger than
@@ -1974,7 +2147,7 @@ begin
 }
 {$IF SizeOf(Extended) <> 10}
 If CompareUInt64(N,AM_INT_DBL_HI) > 0 then
-  raise EAMInvalidOperation.CreateFmt('U64ToFloat: Integer value (%u) cannot be accurately converted to Extended.',[N]);
+  raise EAMInvalidOperation.CreateFmt('UInt64ToFloat: Integer value (%u) cannot be accurately converted to Extended.',[N]);
 {$IFEND}
 If (N and UInt64($8000000000000000)) <> 0 then
   Result := Int64(N) + TwoPow64
@@ -1984,20 +2157,19 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function FloatToU64(N: Extended): UInt64;
+Function FloatToUInt64(N: Extended): UInt64;
 begin
-If Frac(N) = 0.0 then
-  begin
-    If (N >= 0) and (N < TwoPow64) then
-      begin
-        If N >= TwoPow63 then
-          Result := UInt64(Trunc(N - TwoPow64))
-        else
-          Result := Trunc(N);
-      end
-    else raise EAMInvalidOperation.CreateFmt('FloatToU64: Floating point value (%g) cannot fit into UInt64.',[N]);
-  end
-else raise EAMInvalidOperation.CreateFmt('FloatToU64: Floating point value (%g) cannot be stored in UInt64.',[N]);
+If Frac(N) <> 0.0 then
+  raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot be stored in UInt64.',[N]);
+If (N < 0) or (N >= TwoPow64) then
+  raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot fit into UInt64.',[N]);
+If N >= TwoPow63 then
+  N := N - TwoPow64;
+{$IF SizeOf(Extended) <> 10}
+If (N < AM_INT_DBL_LO) or (N > AM_INT_DBL_HI) then
+  raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot be accurately converted to UInt64.',[N]);
+{$IFEND}
+Result := Trunc(N);
 end;
 
 
@@ -9122,17 +9294,19 @@ end;
 
 Function fiMin(A: Extended; B: Int64): Extended;
 begin
-{$IF SizeOf(Extended) <> 10}
-If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
-  raise EAMInvalidOperation.CreateFmt('fiMin: Value of B (Int64: %d) cannot be accurately converted to Extended.',[B])
-else
-{$IFEND}
+{
+  By checking whether the float is smaller than the integer can ever be, we
+  can avoid potential exception in further code if B is out of limits for
+  accurate conversion to float.
+}
+If A >= -TwoPow63 then
   begin
-    If A < B then
+    If A < Int64ToFloat(B) then   // raises exception if B is out of limits
       Result := A
     else
-      Result := B;
-  end;
+      Result := B;  // if here, then B was already checked for limits
+  end
+else Result := A;
 end;
 
 {-------------------------------------------------------------------------------
@@ -9171,21 +9345,14 @@ end;
 
 Function fuMin(A: Extended; B: UInt64): Extended;
 begin
-{$IF SizeOf(Extended) = 10}
-If A < U64ToFloat(B) then
-  Result := A
-else
-  Result := U64ToFloat(B);
-{$ELSE}
-If CompareUInt64(B,AM_INT_DBL_HI) <= 0 then
+If A >= 0 then
   begin
-    If A < B then
+    If A < UInt64ToFloat(B) then
       Result := A
     else
-      Result := B;
+      Result := UInt64ToFloat(B);
   end
-else raise EAMInvalidOperation.CreateFmt('fuMin: Value of B (UInt64: %u) cannot be accurately converted to Extended.',[B])
-{$IFEND}
+else Result := A;
 end;
 
 {-------------------------------------------------------------------------------
@@ -9242,38 +9409,14 @@ end;
 
 Function ifMin(A: Int64; B: Extended): Int64;
 begin
-{$IF SizeOf(Extended) = 10}
-If B < A then
+If B < TwoPow63 then
   begin
-    If (B < Low(Int64)) or (B > High(Int64)) then
-      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot fit into Int64.',[B])
-    else If Frac(B) <> 0 then
-      raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int64.',[B])
+    If B < Int64ToFloat(A) then
+      Result := FloatToInt64(B) // does checks for fraction and limits
     else
-      Result := Int64(Trunc(B));
+      Result := A;
   end
 else Result := A;
-{$ELSE}
-If (A < AM_INT_DBL_LO) or (A > AM_INT_DBL_HI) then
-  raise EAMInvalidOperation.CreateFmt('ifMin: Value of A (Int64: %d) cannot be accurately converted to Extended.',[A])
-else
-  begin
-    If B < A then
-      begin
-      {
-        Both constants AM_INT_DBL_LO and AM_INT_DBL_HI can be accurately
-        converted to double and therefore following comparison should be ok.
-      }
-        If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
-          raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be accurately converted to Int64.',[B])
-        else If Frac(B) <> 0 then
-          raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in Int64.',[B])
-        else
-          Result := Int64(Trunc(B));
-      end
-    else Result := A;
-  end;
-{$IFEND}
 end;
 
 {-------------------------------------------------------------------------------
@@ -9330,38 +9473,14 @@ end;
 
 Function ufMin(A: UInt64; B: Extended): UInt64;
 begin
-{$IF SizeOf(Extended) = 10}
-If B < U64ToFloat(A) then
+If B < TwoPow64 then
   begin
-    If (B < 0) or (B > U64ToFloat(UInt64($FFFFFFFFFFFFFFFF{yeah, I can put -1 here, but to be sure...}))) then
-      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt64.',[B])
-    else If Frac(B) <> 0 then
-      raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
+    If B < UInt64ToFloat(A) then
+      Result := FloatToUInt64(B) // performs all checks
     else
-      Result := FloatToU64(B);
+      Result := A;
   end
 else Result := A;
-{$ELSE}
-If CompareUInt64(A,AM_INT_DBL_HI) > 0 then
-  raise EAMInvalidOperation.CreateFmt('ufMin: Value of A (UInt64: %u) cannot be accurately converted to Extended.',[A])
-else
-  begin
-  {
-    At this point, A is guaranteed to be less than High(Int64), so there is no
-    need for U64ToFloat.
-  }
-    If B < A then
-      begin
-        If (B < 0) or (B > AM_INT_DBL_HI) then
-          raise EAMInvalidOperation.CreateFmt('ufMin: Value of B (Extended: %g) cannot fit into UInt64.',[B])
-        else If Frac(B) <> 0 then
-          raise EAMInvalidOperation.CreateFmt('ifMin: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
-        else
-          Result := Trunc(B); // B is below or equal to AM_INT_DBL_HI, so FloatToU64 is not needed here
-      end
-    else Result := A;
-  end;
-{$IFEND}
 end;
 
 {-------------------------------------------------------------------------------
@@ -10266,7 +10385,7 @@ If B <= UInt32(High(Int8)) then
     else
       Result := Int8(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int8.',[B]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int8.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -10318,7 +10437,7 @@ If B <= UInt32(High(Int16)) then
     else
       Result := Int16(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int16.',[B]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int16.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -10366,7 +10485,7 @@ If B <= UInt32(High(Int32)) then
     else
       Result := Int32(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int32.',[B]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int32.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -10380,7 +10499,7 @@ If CompareUInt64(B,UInt64(High(Int32))) <= 0 then
     else
       Result := Int32(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %u) is too high for Int32.',[B]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %u) is too high for Int32.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -10771,17 +10890,14 @@ end;
 
 Function fiMax(A: Extended; B: Int64): Extended;
 begin
-{$IF SizeOf(Extended) <> 10}
-If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
-  raise EAMaxvalidOperation.CreateFmt('fiMax: Value of B (Int64: %d) cannot be accurately converted to Extended.',[B])
-else
-{$IFEND}
+If A < TwoPow63 then
   begin
-    If A > B then
+    If A > Int64ToFloat(B) then
       Result := A
     else
       Result := B;
-  end;
+  end
+else Result := A;
 end;
 
 {-------------------------------------------------------------------------------
@@ -10820,21 +10936,14 @@ end;
 
 Function fuMax(A: Extended; B: UInt64): Extended;
 begin
-{$IF SizeOf(Extended) = 10}
-If A > U64ToFloat(B) then
-  Result := A
-else
-  Result := U64ToFloat(B);
-{$ELSE}
-If CompareUInt64(B,AM_INT_DBL_HI) <= 0 then
+If A < TwoPow64 then
   begin
-    If A > B then
+    If A > UInt64ToFloat(B) then
       Result := A
     else
-      Result := B;
+      Result := UInt64ToFloat(B);
   end
-else raise EAMaxvalidOperation.CreateFmt('fuMax: Value of B (UInt64: %u) cannot be accurately converted to Extended.',[B])
-{$IFEND}
+else Result := A;
 end;
 
 {-------------------------------------------------------------------------------
@@ -10891,34 +11000,14 @@ end;
 
 Function ifMax(A: Int64; B: Extended): Int64;
 begin
-{$IF SizeOf(Extended) = 10}
-If B > A then
+If B >= -TwoPow63 then
   begin
-    If (B < Low(Int64)) or (B > High(Int64)) then
-      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot fit into Int64.',[B])
-    else If Frac(B) <> 0 then
-      raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in Int64.',[B])
+    If B > Int64ToFloat(A) then
+      Result := FloatToInt64(B)
     else
-      Result := Int64(Trunc(B));
+      Result := A;
   end
 else Result := A;
-{$ELSE}
-If (A < AM_INT_DBL_LO) or (A > AM_INT_DBL_HI) then
-  raise EAMInvalidOperation.CreateFmt('ifMax: Value of A (Int64: %d) cannot be accurately converted to Extended.',[A])
-else
-  begin
-    If B > A then
-      begin
-        If (B < AM_INT_DBL_LO) or (B > AM_INT_DBL_HI) then
-          raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be accurately converted to Int64.',[B])
-        else If Frac(B) <> 0 then
-          raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in Int64.',[B])
-        else
-          Result := Int64(Trunc(B));
-      end
-    else Result := A;
-  end;
-{$IFEND}
 end;
 
 {-------------------------------------------------------------------------------
@@ -10929,7 +11018,7 @@ Function ufMax(A: UInt8; B: Extended): UInt8;
 begin
 If B > A then
   begin
-    If (B < 0) or (B > High(UInt8)) then
+    If B > High(UInt8) then
       raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt8.',[B])
     else If Frac(B) <> 0 then
       raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt8.',[B])
@@ -10945,7 +11034,7 @@ Function ufMax(A: UInt16; B: Extended): UInt16;
 begin
 If B > A then
   begin
-    If (B < 0) or (B > High(UInt16)) then
+    If B > High(UInt16) then
       raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt16.',[B])
     else If Frac(B) <> 0 then
       raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt16.',[B])
@@ -10961,7 +11050,7 @@ Function ufMax(A: UInt32; B: Extended): UInt32;
 begin
 If B > A then
   begin
-    If (B < 0) or (B > High(UInt32)) then
+    If B > High(UInt32) then
       raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt32.',[B])
     else If Frac(B) <> 0 then
       raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt32.',[B])
@@ -10975,34 +11064,14 @@ end;
 
 Function ufMax(A: UInt64; B: Extended): UInt64;
 begin
-{$IF SizeOf(Extended) = 10}
-If B > U64ToFloat(A) then
+If B >= 0 then
   begin
-    If (B < 0) or (B > U64ToFloat(UInt64($FFFFFFFFFFFFFFFF{yeah, I can put -1 here, but to be sure...}))) then
-      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt64.',[B])
-    else If Frac(B) <> 0 then
-      raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
+    If B > UInt64ToFloat(A) then
+      Result := FloatToUInt64(B)
     else
-      Result := FloatToU64(B);
+      Result := A;
   end
 else Result := A;
-{$ELSE}
-If CompareUInt64(A,AM_INT_DBL_HI) > 0 then
-  raise EAMInvalidOperation.CreateFmt('ufMax: Value of A (UInt64: %u) cannot be accurately converted to Extended.',[A])
-else
-  begin
-    If B > A then
-      begin
-        If (B < 0) or (B > AM_INT_DBL_HI) then
-          raise EAMInvalidOperation.CreateFmt('ufMax: Value of B (Extended: %g) cannot fit into UInt64.',[B])
-        else If Frac(B) <> 0 then
-          raise EAMInvalidOperation.CreateFmt('ifMax: Value of B (Extended: %g) cannot be stored in UInt64.',[B])
-        else
-          Result := Trunc(B);
-      end
-    else Result := A;
-  end;
-{$IFEND}
 end;
 
 {-------------------------------------------------------------------------------
@@ -12268,6 +12337,861 @@ begin
 Result := fMaxValue(Values,Maximum);
 end;
 {$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                          Compare values of equal types
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iCompareValue - signed integers
+-------------------------------------------------------------------------------}
+
+Function iCompareValue(A,B: Int8): Integer;
+begin
+If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iCompareValue(A,B: Int16): Integer;
+begin
+If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iCompareValue(A,B: Int32): Integer;
+begin
+If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iCompareValue(A,B: Int64): Integer;
+begin
+If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+{-------------------------------------------------------------------------------
+    uCompareValue - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uCompareValue(A,B: UInt8): Integer;
+begin
+If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uCompareValue(A,B: UInt16): Integer;
+begin
+If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uCompareValue(A,B: UInt32): Integer;
+begin
+If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uCompareValue(A,B: UInt64): Integer;
+begin
+Result := CompareUInt64(A,B);
+end;
+
+{-------------------------------------------------------------------------------
+    fCompareValue - real numbers
+-------------------------------------------------------------------------------}
+
+Function fCompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+If Epsilon <> 0.0 then
+  begin
+    If Abs(A - B) <= Abs(Epsilon) then
+      Result := 0
+    else If A < B then
+      Result := -1
+    else
+      Result := +1;
+  end
+else If A > B then
+  Result := +1
+else If A < B  then
+  Result := -1
+else
+  Result := 0;
+end;
+
+{-------------------------------------------------------------------------------
+    CompareValue - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function CompareValue(A,B: Int8): Integer;
+begin
+Result := iCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: Int16): Integer;
+begin
+Result := iCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: Int32): Integer;
+begin
+Result := iCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: Int64): Integer;
+begin
+Result := iCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: UInt8): Integer;
+begin
+Result := uCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: UInt16): Integer;
+begin
+Result := uCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: UInt32): Integer;
+begin
+Result := uCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: UInt64): Integer;
+begin
+Result := uCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                        Compare values of differing types
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iiCompareValue - signed integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function iiCompareValue(A: Int8; B: Int16): Integer;
+begin
+Result := iCompareValue(Int16(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int8; B: Int32): Integer;
+begin
+Result := iCompareValue(Int32(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int8; B: Int64): Integer;
+begin
+Result := iCompareValue(Int64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int16; B: Int8): Integer;
+begin
+Result := iCompareValue(A,Int16(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int16; B: Int32): Integer;
+begin
+Result := iCompareValue(Int32(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int16; B: Int64): Integer;
+begin
+Result := iCompareValue(Int64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int32; B: Int8): Integer;
+begin
+Result := iCompareValue(A,Int32(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int32; B: Int16): Integer;
+begin
+Result := iCompareValue(A,Int32(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int32; B: Int64): Integer;
+begin
+Result := iCompareValue(Int64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int64; B: Int8): Integer;
+begin
+Result := iCompareValue(A,Int64(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int64; B: Int16): Integer;
+begin
+Result := iCompareValue(A,Int64(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValue(A: Int64; B: Int32): Integer;
+begin
+Result := iCompareValue(A,Int64(B));
+end;
+
+{-------------------------------------------------------------------------------
+    iuCompareValue - signed integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function iuCompareValue(A: Int8; B: UInt8): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt8(A),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int8; B: UInt16): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt16(A),B)
+else
+  Result := -1;
+end;
+ 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int8; B: UInt32): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt32(A),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int8; B: UInt64): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt64(UInt8(A)),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int16; B: UInt8): Integer;
+begin
+Result := iCompareValue(A,Int16(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int16; B: UInt16): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt16(A),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int16; B: UInt32): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt32(A),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int16; B: UInt64): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt64(UInt16(A)),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int32; B: UInt8): Integer;
+begin
+Result := iCompareValue(A,Int32(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int32; B: UInt16): Integer;
+begin
+Result := iCompareValue(A,Int32(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int32; B: UInt32): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt32(A),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int32; B: UInt64): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt64(UInt32(A)),B)
+else
+  Result := -1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int64; B: UInt8): Integer;
+begin
+Result := iCompareValue(A,Int64(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int64; B: UInt16): Integer;
+begin
+Result := iCompareValue(A,Int64(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int64; B: UInt32): Integer;
+begin
+Result := iCompareValue(A,Int64(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValue(A: Int64; B: UInt64): Integer;
+begin
+If A >= 0 then
+  Result := uCompareValue(UInt64(A),B)
+else
+  Result := -1;
+end;
+
+{-------------------------------------------------------------------------------
+    uiCompareValue - unsigned integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function uiCompareValue(A: UInt8; B: Int8): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt8(B))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt8; B: Int16): Integer;
+begin
+Result := iCompareValue(Int16(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt8; B: Int32): Integer;
+begin
+Result := iCompareValue(Int32(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt8; B: Int64): Integer;
+begin
+Result := iCompareValue(Int64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt16; B: Int8): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt16(B))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt16; B: Int16): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt16(B))
+else
+  Result := +1;
+end;
+ 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt16; B: Int32): Integer;
+begin
+Result := iCompareValue(Int32(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt16; B: Int64): Integer;
+begin
+Result := iCompareValue(Int64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt32; B: Int8): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt32(B))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt32; B: Int16): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt32(B))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt32; B: Int32): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt32(B))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt32; B: Int64): Integer;
+begin
+Result := iCompareValue(Int64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt64; B: Int8): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt64(UInt8(B)))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt64; B: Int16): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt64(UInt16(B)))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt64; B: Int32): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt64(UInt32(B)))
+else
+  Result := +1;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValue(A: UInt64; B: Int64): Integer;
+begin
+If B >= 0 then
+  Result := uCompareValue(A,UInt64(B))
+else
+  Result := +1;
+end;
+
+{-------------------------------------------------------------------------------
+    uuCompareValue - unsigned integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function uuCompareValue(A: UInt8; B: UInt16): Integer;
+begin
+Result := uCompareValue(UInt16(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt8; B: UInt32): Integer;
+begin
+Result := uCompareValue(UInt32(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt8; B: UInt64): Integer;
+begin
+Result := uCompareValue(UInt64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt16; B: UInt8): Integer;
+begin
+Result := uCompareValue(A,UInt16(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt16; B: UInt32): Integer;
+begin
+Result := uCompareValue(UInt32(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt16; B: UInt64): Integer;
+begin
+Result := uCompareValue(UInt64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt32; B: UInt8): Integer;
+begin
+Result := uCompareValue(A,UInt32(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt32; B: UInt16): Integer;
+begin
+Result := uCompareValue(A,UInt32(B));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt32; B: UInt64): Integer;
+begin
+Result := uCompareValue(UInt64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt64; B: UInt8): Integer;
+begin
+Result := uCompareValue(UInt64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt64; B: UInt16): Integer;
+begin
+Result := uCompareValue(UInt64(A),B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValue(A: UInt64; B: UInt32): Integer;
+begin
+Result := uCompareValue(UInt64(A),B);
+end;
+
+{-------------------------------------------------------------------------------
+    fiCompareValue - real number & signed integer
+-------------------------------------------------------------------------------}
+
+Function fiCompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer;
+begin
+{
+  Compare float with values the integer cannot ever have to avoid possible
+  exceptions raised in Int64ToFloat...
+}
+If Epsilon <> 0.0 then
+  begin
+    Epsilon := Abs(Epsilon);
+    If A >= (TwoPow63 + Epsilon) then
+      Result := +1
+    else If A < (-TwoPow63 - Epsilon) then
+      Result := -1
+    else
+      Result := fCompareValue(A,Int64ToFloat(B),Epsilon);
+  end
+else
+  begin
+    If A >= TwoPow63 then
+      Result := +1
+    else If A < -TwoPow63 then
+      Result := -1
+    else
+      Result := fCompareValue(A,Int64ToFloat(B));
+  end;
+end;
+
+{-------------------------------------------------------------------------------
+    fuCompareValue - real number & signed integer
+-------------------------------------------------------------------------------}
+
+Function fuCompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer;
+begin
+If Epsilon <> 0.0 then
+  begin
+    Epsilon := Abs(Epsilon);
+    If A >= (TwoPow64 + Epsilon) then
+      Result := +1
+    else If A < -Epsilon then
+      Result := -1
+    else
+      Result := fCompareValue(A,UInt64ToFloat(B),Epsilon);
+  end
+else
+  begin
+    If A >= TwoPow64 then
+      Result := +1
+    else If A < 0 then
+      Result := -1
+    else
+      Result := fCompareValue(A,UInt64ToFloat(B));
+  end;
+end;
+
+{-------------------------------------------------------------------------------
+    ifCompareValue - signed integer & real number
+-------------------------------------------------------------------------------}
+
+Function ifCompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+If Epsilon <> 0.0 then
+  begin
+    Epsilon := Abs(Epsilon);
+    If B >= (TwoPow63 + Epsilon) then
+      Result := -1
+    else If B < (-TwoPow63 - Epsilon) then
+      Result := +1
+    else
+      Result := fCompareValue(Int64ToFloat(A),B,Epsilon);
+  end
+else
+  begin
+    If B >= TwoPow63 then
+      Result := -1
+    else If B < -TwoPow63 then
+      Result := +1
+    else
+      Result := fCompareValue(Int64ToFloat(A),B);
+  end;
+end;
+
+{-------------------------------------------------------------------------------
+    ufCompareValue - unsigned integer & real number
+-------------------------------------------------------------------------------}
+
+Function ufCompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+If Epsilon <> 0.0 then
+  begin
+    Epsilon := Abs(Epsilon);
+    If B >= (TwoPow64 + Epsilon) then
+      Result := -1
+    else If B < -Epsilon then
+      Result := +1
+    else
+      Result := fCompareValue(UInt64ToFloat(A),B,Epsilon);
+  end
+else
+  begin
+    If B >= TwoPow64 then
+      Result := -1
+    else If B < 0 then
+      Result := +1
+    else
+      Result := fCompareValue(UInt64ToFloat(A),B);
+  end;
+end;
 
 end.
 

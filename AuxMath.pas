@@ -358,10 +358,16 @@ const
   iFloat80Indefinite:   TAMFloat80Overlay = (Mantissa: UInt64($C000000000000000); SignExponent: $FFFF); // indefinite quiet NaN
 
 {
-  Some super-special values pf 80bit floats.
+  Some super-special values for 80bit floats.
 
   They are not supported by modern hardware and usually produce an exception
-  when used (except for pseudo-denormals, they are silently converted). 
+  when used (except for pseudo-denormals, they are silently converted to
+  correct denormals or normalized values where possible).
+
+    pseudo-denormals ... denormals with integer bit (bit 63) in mantissa set to 1
+    unnormals        ... seemingly normalized numbers, but with zero integer bit
+    pseudo-NaN       ... values encoded as proper NaN, zero integer bit
+    pseudo-Infinity  ... encoded as proper infinity, zero integer bit
 }
   iFloat80MinPseudoDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($8000000000000000); SignExponent: $0000); // 3.36210314311209350626e-4932 (lowest possible pseudo-denormal)
   iFloat80MaxPseudoDenormal:  TAMFloat80Overlay = (Mantissa: UInt64($FFFFFFFFFFFFFFFF); SignExponent: $0000); // 6.72420628622418701216e-4932 (highest possible pseudo-denormal)
@@ -423,7 +429,9 @@ var
   ExtendedIndefinite:   Extended absolute iFloat64Indefinite;
 {$IFEND}
 
-//==============================================================================
+{===============================================================================
+    Public auxiliary constants
+===============================================================================}
 const
 {
   Highest and lowest integral value that can be stored in 64bit floating point
@@ -463,7 +471,7 @@ const
   For FloatToInt64, the floating point number must not have non-zero fraction,
   must be greater or equal to -2^63 and at the same time smaller than 2^63.
   Also, when type extended is aliased to double, the number must lie within
-  limits for precise conversion to integer (must be within interval
+  limits for loss-less conversion to integer (must be within interval
   [AM_INT_DBL_LO,AM_INT_DBL_HI]). If any mentioned rule is not observed, then
   an exception of class EAMInvalidOperation is raised.
 }
@@ -525,7 +533,8 @@ procedure DivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); over
 ===============================================================================}
 {
   Performs division and Ceil as one optimized operation (the calculation does
-  not use floating point unit/numbers, only integers). 
+  not use floating point unit/numbers, only integers, which ensures that no
+  information is lost due to precision problems in large float numbers).
 }
 
 Function iDivCeil(Dividend,Divisor: Int8): Int8; overload;
@@ -603,14 +612,14 @@ Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline}
 ===============================================================================}
 {
   Standard Ceil and Floor functions are returning only Integers - that is,
-  32bit numbers. Following functions are here for situations, where 64bit wide
+  32bit numbers. Following functions are here for situations where 64bit wide
   integers are required.
   
   Ceil64 and Floor64 are returning Int64, CeilU64 and FloorU64 are returning
   UInt64.
 
   Note that, if the N is beyond limits for UInt64, the CeilU64 and FloorU64
-  will raise an EAMInvalidOperation exception (in Ceil64 and Floor64 this is
+  will raise an EAMInvalidOperation exception (in Ceil64 and Floor64, this is
   manager by the compiler and the exception would be of class EInvalidOP).
 }
 
@@ -628,8 +637,8 @@ Function FloorU64(N: Extended): UInt64;
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
-  Returns true when given number is a positive integer power of 2, false
-  otherwise.     
+  Returns true when given number is a positive integer power of 2 (2^E, where E
+  is a positive integer), false otherwise.     
   Note that zero and negative numbers cannot be positive integer power of any
   base, therefore in those cases false is returned.
 }
@@ -669,8 +678,8 @@ Function IsPow2(N: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
-  If the given number is a positive integer power of 2, then [i/u]IntLog2 will
-  return the exponent.
+  If the given number is a positive integer power of 2, then IntLog2 will
+  return the exponent (effectively Log2(N)).
   If the number is zero, negative (for signed integers), or is generally not an
   integer power of 2, then it will return -1.
 }
@@ -871,7 +880,7 @@ Function DivFloorPow2(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInl
   divisor is a positive integer power of 2.
 
     WARNING - it is caller's resposibility to ensure that the divisor is a
-              positive integral power of 2, it is not checked. If the divisor
+              positive integral power of 2, this is not checked. If the divisor
               is not a power of two, then the results are completely undefined.
 }
 
@@ -938,7 +947,7 @@ procedure DivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64)
   The calculation does not use floating point unit/numbers.
 
     WARNING - it is caller's resposibility to ensure that the divisor is a
-              positive integral power of 2, it is not checked. If the divisor
+              positive integral power of 2, this is not checked. If the divisor
               is not a power of two, then the result is completely undefined.
 }
 
@@ -1012,7 +1021,7 @@ Function DivCeilPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanIn
   The calculation does not use floating point unit/numbers.
 
     WARNING - it is caller's resposibility to ensure that the divisor is a
-              positive integral power of 2, it is not checked. If the divisor
+              positive integral power of 2, this is not checked. If the divisor
               is not a power of two, then the result is completely undefined.
 }
 
@@ -1137,9 +1146,9 @@ Function Min(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDI
     - negative value is to be returned, but the result type is unsigned integer
 
     - large positive or negative integer needs to be converted to float of
-      limited precision (eg. on systems where type Extended is only an alias
-      for Double) for comparison, and the conversion would lead to loss
-      of information (see constants AM_INT_DBL_HI and AM_INT_DBL_LO for
+      limited precision for comparison (eg. on systems where type Extended is
+      only an alias for Double), and the conversion would lead to loss
+      of information (see constants AM_INT_DBL_LO and AM_INT_DBL_HI for
       applicable limits)
 
     - floating point number needs to be returned in integer result, but it has
@@ -1708,7 +1717,7 @@ Function Max(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline
 ===============================================================================}
 {
   Selects smallest value from an array, returns it in output parameter Minimum
-  and sets result to an index at which first occurence of this value vas found.
+  and sets result to an index at which first occurence of this value was found.
 
   If the array is empty, then -1 is returned and value of Minimum is undefined.
 }
@@ -1763,7 +1772,7 @@ Function MinValue(const Values: array of Extended; out Minimum: Extended): Integ
 ===============================================================================}
 {
   Selects largest value from an array, returns it in output parameter Maximum
-  and sets result to an index at which first occurence of this value vas found.
+  and sets result to an index at which first occurence of this value was found.
 
   If the array is empty, then -1 is returned and value of Maximum is undefined.
 }
@@ -1873,7 +1882,7 @@ Function CompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer; overload
   raised.
 
     NOTE - I am fully aware that some overloads are superfluous and their
-           function can be achieved by just swapping arguments.
+           functionality can be achieved by just swapping arguments.
 }
 
 Function iiCompareValue(A: Int8; B: Int16): Integer; overload;
@@ -1982,18 +1991,154 @@ Function ufCompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Intege
 Function ufCompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
 Function ufCompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
 
+//==============================================================================
+
+Function CompareValue(A: Int8; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int8; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Int8; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: Int16; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int16; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Int16; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: Int32; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int32; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Int32; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValue(A: Int64; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int64; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int64; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Int8; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int8; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int8; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Int8; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: Int16; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int16; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int16; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Int16; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: Int32; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int32; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int32; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Int32; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValue(A: Int64; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int64; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int64; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int64; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: UInt8; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt8; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt8; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: UInt8; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: UInt16; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt16; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt16; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: UInt16; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: UInt32; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt32; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt32; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: UInt32; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValue(A: UInt64; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt64; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt64; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt64; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: UInt8; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt8; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: UInt8; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: UInt16; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt16; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: UInt16; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(A: UInt32; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt32; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: UInt32; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValue(A: UInt64; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt64; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt64; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
 //==============================================================================
 (*
-Function iCompareValue(A,B: Int8): Integer;
-...
-
 type
   TCompareOperation = (
     cmpEqual,cmpNotEqual,cmpLess,cmpNotLess,cmpLessOrEqual,cmpNotLessNorEqual,
     cmpGreater,cmpNotGreater,cmpGreaterOrEqual,cmpNotGreaterNorEqual);
 
-Function iCompareValue(A,B: Int8; Operation: TCompareOperation): Boolean;
+Function iCompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 case Operation of
   cmpNotEqual:                    Result := iCompareValue(A,B) <> 0;
@@ -13192,6 +13337,544 @@ else
       Result := fCompareValue(UInt64ToFloat(A),B);
   end;
 end;
+
+{-------------------------------------------------------------------------------
+    CompareValue - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function CompareValue(A: Int8; B: Int16): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int8; B: Int32): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int8; B: Int64): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+{$IFEND}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: Int8): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: Int32): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: Int64): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: Int8): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: Int16): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: Int64): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: Int8): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: Int16): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: Int32): Integer;
+begin
+Result := iiCompareValue(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Int8; B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int8; B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int8; B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int8; B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: UInt8; B: Int8): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt8; B: Int16): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt8; B: Int32): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt8; B: Int64): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: Int8): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: Int16): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: Int32): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: Int64): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: Int8): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: Int16): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: Int32): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: Int64): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: Int8): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: Int16): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: Int32): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: Int64): Integer;
+begin
+Result := uiCompareValue(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: UInt8; B: UInt16): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt8; B: UInt32): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt8; B: UInt64): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: UInt8): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: UInt32): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: UInt64): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: UInt8): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: UInt16): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: UInt64): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: UInt8): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: UInt16): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: UInt32): Integer;
+begin
+Result := uuCompareValue(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fiCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fiCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fiCompareValue(A,B,Epsilon);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fiCompareValue(A,B,Epsilon);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fuCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fuCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fuCompareValue(A,B,Epsilon);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer;
+begin
+Result := fuCompareValue(A,B,Epsilon);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ifCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ifCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ifCompareValue(A,B,Epsilon);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ifCompareValue(A,B,Epsilon);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ufCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ufCompareValue(A,B,Epsilon);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ufCompareValue(A,B,Epsilon);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer;
+begin
+Result := ufCompareValue(A,B,Epsilon);
+end;
+{$IFEND}
 
 end.
 

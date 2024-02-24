@@ -69,15 +69,6 @@ const
 {$IF Declared(NativeUInt64E)}
   DistinctOverloadUInt64E = True;
 {$IFEND}
-(*
-  DistinctUTF8Char = True;
-  DistinctUTF8String = True;
-*)
-  DistinctOverloadUnicodeChar = {$IF Declared(UnicodeIsWideE)}False{$ELSE}True{$IFEND};
-  DistinctOverloadUnicodeCharN = {$IF Declared(UnicodeIsWideE)}1{$ELSE}1{$IFEND};
-{$IF not Declared(UnicodeIsWideE)}
-  DistinctOverloadUnicodeCharE = True;
-{$IFEND}
   DistinctOverloadUnicodeString = {$IF Declared(UnicodeIsWideE)}False{$ELSE}True{$IFEND};
   DistinctOverloadUnicodeStringN = {$IF Declared(UnicodeIsWideE)}1{$ELSE}1{$IFEND};
 {$IF not Declared(UnicodeIsWideE)}
@@ -2131,65 +2122,508 @@ Function CompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer;
 Function CompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-//==============================================================================
-(*
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                  Compare values using operation (equal types)
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Compares two given numbers according to an operation. If relationship between
+  the two numbers satisfy selected operation (eg. for cmpGreater, first number
+  is larger than the second one), then true is returned, false otherwise.
+
+  These functions are effectively only macros for CompareValue. Note that,
+  since CompareValue functions are internally called, some overloads can and
+  will raise an EAMInvalidOperation exception.
+}
 type
   TCompareOperation = (
     cmpEqual,cmpNotEqual,cmpLess,cmpNotLess,cmpLessOrEqual,cmpNotLessNorEqual,
     cmpGreater,cmpNotGreater,cmpGreaterOrEqual,cmpNotGreaterNorEqual);
 
-Function iCompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-case Operation of
-  cmpNotEqual:                    Result := iCompareValue(A,B) <> 0;
-  cmpLess,cmpNotGreaterNorEqual:  Result := iCompareValue(A,B) < 0;
-  cmpLessOrEqual,cmpNotGreater:   Result := iCompareValue(A,B) <= 0;
-  cmpGreater,cmpNotLessNorEqual:  Result := iCompareValue(A,B) > 0;
-  cmpGreaterOrEqual,cmpNotLess:   Result := iCompareValue(A,B) >= 0;
-else
-  {cmpEqual}
-  Result := iCompareValue(A,B) = 0;
-end;
-end;
+//------------------------------------------------------------------------------
 
-Function iIfThen(Value: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8;
-Function iIfThen(Value: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16;
-Function iIfThen(Value: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32;
-Function iIfThen(Value: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64;
+Function iCompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iCompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iCompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iCompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function uIfThen(Value: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8;
-Function uIfThen(Value: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16;
-Function uIfThen(Value: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32;
-Function uIfThen(Value: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64;
+//------------------------------------------------------------------------------
 
-Function fIfThen(Value: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended;
+Function uCompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uCompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uCompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uCompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function cIfThen(Value: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
-Function cIfThen(Value: Boolean; OnTrue: UTF8Char; OnFalse: UTF8Char = #0): UTF8Char;
-Function cIfThen(Value: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
-Function cIfThen(Value: Boolean; OnTrue: UnicodeChar; OnFalse: UnicodeChar = #0): UnicodeChar;
-Function cIfThen(Value: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
-Function cIfThen(Value: Boolean; OnTrue: Char; OnFalse: Char = #0): Char;
+//------------------------------------------------------------------------------
 
-Function sIfThen(Value: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
-Function sIfThen(Value: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False)): AnsiString;
-Function sIfThen(Value: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False)): UTF8String;
-Function sIfThen(Value: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False)): WideString;
-Function sIfThen(Value: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False)): UnicodeString;
-Function sIfThen(Value: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = ''; UniqueCopy: Boolean = False)): UCS4String;
-Function sIfThen(Value: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False)): String;
+Function fCompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fCompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function pIfThen(Value: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
+//------------------------------------------------------------------------------
 
-Function oIfThen(Value: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject;
-Function oIfThen(Value: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass;
+Function CompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
-Function vIfThen(Value: Boolean; const OnTrue: Variant; const OnFalse: Variant = null): Variant;
+Function CompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
-procedure bIfThen(Value: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
-procedure bIfThen(Value: Boolean; OnTrue,OnFalse: Pointer; Size: TMemSize; Result: Pointer);
+Function CompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function gIfThen(Value: Boolean; const OnTrue: TGUID; const OnFalse: TGUID = ???): TGUID;
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                  Compare values using operation (mixed types)
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Compares two given numbers and returns result according to a selected
+  operation.
+}
+
+Function iiCompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function iiCompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function iiCompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function iiCompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function iuCompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function iuCompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function iuCompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function iuCompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function uiCompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uiCompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uiCompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uiCompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function uuCompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uuCompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uuCompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uuCompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function fiCompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function fiCompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function fuCompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function fuCompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function ifCompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function ifCompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufCompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function ufCompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//==============================================================================
+
+Function CompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                         Ternary-operator-like functions                        
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Following functions are providing functionality similar to conditional or
+  ternary operator. It evaluates value of Condition and when it is true, it
+  returns value passed in OnTrue, otherwise it returns value from OnFalse.
+
+    WARNING - the functionality is similar, but not the same as is in usual
+              implementation of ternary operators. Ternary operators evaluate
+              (execute) only expression in the selected path, whereas these
+              functions might (depends on whether they are inlined or not)
+              evaluate expressions for both pahs, irrespective of which one
+              will is selected.
+}
+Function iIfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8; overload;
+Function iIfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16; overload;
+Function iIfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32; overload;
+Function iIfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uIfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8; overload;
+Function uIfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16; overload;
+Function uIfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32; overload;
+Function uIfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function fIfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended; overload;
+
+//------------------------------------------------------------------------------
+{
+  Note that other character types are just renamed or retyped ansi, wide or
+  ucs4 char, so there is no need for more overloads (and it would not even work
+  in most compilers - eg. they see overload for UnicodeChar as being the same
+  as for WideChar).
+
+  But if you still want to have everything, look a little further down...
+}
+Function cIfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar; overload;
+Function cIfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar; overload;
+Function cIfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char; overload;
+
+//------------------------------------------------------------------------------
+{
+  The same as with chars, some string types are just redressing of base types,
+  so only those are provided under common name overload, others can be found
+  further with type-specific names.
+}
+Function sIfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;
+Function sIfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;
+Function sIfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString; overload;
+{$IF Declared(DistinctOverloadUnicodeStringE)}
+Function sIfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString; overload;
+{$IFEND}
+Function sIfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String; overload;
+
+//------------------------------------------------------------------------------
+
+Function pIfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
+
+Function oIfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject; overload;
+Function oIfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass; overload;
+
+Function vIfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant;
+
+Function gIfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID;
+
+{
+  Function bIfThen will make full copy of input buffer selected by Condition
+  into Result output buffer, copying Size number of bytes.
+}
+procedure bIfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
+
+//------------------------------------------------------------------------------
+{
+  Functions provided for some non-overloadable types.
+}
+Function IfThenAnsiChar(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
+Function IfThenUTF8Char(Condition: Boolean; OnTrue: UTF8Char; OnFalse: UTF8Char = #0): UTF8Char;
+Function IfThenWideChar(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
+Function IfThenUnicodeChar(Condition: Boolean; OnTrue: UnicodeChar; OnFalse: UnicodeChar = #0): UnicodeChar;
+Function IfThenUCS4Char(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
+Function IfThenChar(Condition: Boolean; OnTrue: Char; OnFalse: Char = #0): Char;
+
+Function IfThenShortStr(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
+Function IfThenAnsiStr(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
+Function IfThenUTF8Str(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
+Function IfThenWideStr(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
+Function IfThenUnicodeStr(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
+Function IfThenUCS4Str(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
+Function IfThenStr(Condition: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False): String;
+
+//------------------------------------------------------------------------------
+
+Function IfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function IfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function IfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function IfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function IfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUnicodeStringE)}
+Function IfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+Function IfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function IfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function IfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function IfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function IfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result); overload;{$IFDEF CanInline} inline;{$ENDIF}
+(*
+********************************************************************************
 
 InRange
 EnsureRange
@@ -13875,6 +14309,2047 @@ begin
 Result := ufCompareValue(A,B,Epsilon);
 end;
 {$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                  Compare values using operation (equal types)
+--------------------------------------------------------------------------------
+===============================================================================}
+
+Function ResolveOperation(ComparisonResult: Integer; Operation: TCompareOperation): Boolean;
+begin
+case Operation of
+  cmpNotEqual:                    Result := ComparisonResult <> 0;
+  cmpLess,cmpNotGreaterNorEqual:  Result := ComparisonResult < 0;
+  cmpLessOrEqual,cmpNotGreater:   Result := ComparisonResult <= 0;
+  cmpGreater,cmpNotLessNorEqual:  Result := ComparisonResult > 0;
+  cmpGreaterOrEqual,cmpNotLess:   Result := ComparisonResult >= 0;
+else
+  {cmpEqual}
+  Result := ComparisonResult = 0;
+end;
+end;
+
+{-------------------------------------------------------------------------------
+    iCompareValueOp - signed integers
+-------------------------------------------------------------------------------}
+
+Function iCompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iCompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iCompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iCompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    uCompareValueOp - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uCompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uCompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uCompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uCompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    fCompareValueOp - real numbers
+-------------------------------------------------------------------------------}
+
+Function fCompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fCompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    CompareValueOp - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function CompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fCompareValueOp(A,B,Operation);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                  Compare values using operation (mixed types)
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iiCompareValueOp - signed integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function iiCompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    iuCompareValueOp - signed integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function iuCompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    uiCompareValueOp - unsigned integer & signed integer
+-------------------------------------------------------------------------------}
+
+Function uiCompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uiCompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uiCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    uuCompareValueOp - unsigned integer & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function uuCompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    fiCompareValueOp - float & signed integer
+-------------------------------------------------------------------------------}
+
+Function fiCompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    fuCompareValueOp - float & unsigned integer
+-------------------------------------------------------------------------------}
+
+Function fuCompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
+end;  
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    ifCompareValueOp - signed integer & float
+-------------------------------------------------------------------------------}
+
+Function ifCompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
+Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
+Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
+Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ifCompareValue(A,B),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ifCompareValue(A,B),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ifCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ifCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    ufCompareValueOp - unsigned integer & float
+-------------------------------------------------------------------------------}
+
+Function ufCompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
+end;  
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B),Operation);
+end; 
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B),Operation);
+end;
+
+{-------------------------------------------------------------------------------
+    CompareValueOp - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function CompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iiCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uiCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := uuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Epsilon,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fiCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Epsilon,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := fuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Epsilon,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ifCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Epsilon,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Epsilon,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ufCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                         Ternary-operator-like functions                        
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iIfThen - signed integers
+-------------------------------------------------------------------------------}
+
+Function iIfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8;
+begin
+{
+  this code would be prime candidate for some macro or generic function, if
+  something like that existed in pascal...
+}
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+{-------------------------------------------------------------------------------
+    uIfThen - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uIfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+{-------------------------------------------------------------------------------
+    fIfThen - real numbers
+-------------------------------------------------------------------------------}
+
+Function fIfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+{-------------------------------------------------------------------------------
+    cIfThen - character types
+-------------------------------------------------------------------------------}
+
+Function cIfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function cIfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function cIfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+{-------------------------------------------------------------------------------
+    sIfThen - string types
+-------------------------------------------------------------------------------}
+
+Function sIfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function sIfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function sIfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+
+{$IF Declared(DistinctOverloadUnicodeStringE)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function sIfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function sIfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  SetLength(Result,Length(Result));
+end;
+
+{-------------------------------------------------------------------------------
+    *IfThen - other types
+-------------------------------------------------------------------------------}
+
+Function pIfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+//------------------------------------------------------------------------------
+
+Function oIfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function oIfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+//------------------------------------------------------------------------------
+
+Function vIfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+ 
+//------------------------------------------------------------------------------
+
+Function gIfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+//------------------------------------------------------------------------------
+
+procedure bIfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
+begin
+If Condition then
+  System.Move(OnTrue,Result,Size)
+else
+  System.Move(OnFalse,Result,Size);
+end;
+
+{-------------------------------------------------------------------------------
+    IfThen* - non-overloadable types
+-------------------------------------------------------------------------------}
+
+Function IfThenAnsiChar(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenUTF8Char(Condition: Boolean; OnTrue: UTF8Char; OnFalse: UTF8Char = #0): UTF8Char;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenWideChar(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenUnicodeChar(Condition: Boolean; OnTrue: UnicodeChar; OnFalse: UnicodeChar = #0): UnicodeChar;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenUCS4Char(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenChar(Condition: Boolean; OnTrue: Char; OnFalse: Char = #0): Char;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+//------------------------------------------------------------------------------
+
+Function IfThenShortStr(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenAnsiStr(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenUTF8Str(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(AnsiString(Result));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenWideStr(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenUnicodeStr(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenUCS4Str(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  SetLength(Result,Length(Result));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenStr(Condition: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False): String;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+
+{-------------------------------------------------------------------------------
+    IfThen - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function IfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := iIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := iIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := iIfThen(Condition,OnTrue,OnFalse);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := iIfThen(Condition,OnTrue,OnFalse);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := uIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := uIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := uIfThen(Condition,OnTrue,OnFalse);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := uIfThen(Condition,OnTrue,OnFalse);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := fIfThen(Condition,OnTrue,OnFalse);
+end;
+
+//------------------------------------------------------------------------------
+
+Function IfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := cIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := cIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := cIfThen(Condition,OnTrue,OnFalse);
+end;
+
+//------------------------------------------------------------------------------
+
+Function IfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := sIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
+end;
+
+{$IF Declared(DistinctOverloadUnicodeStringE)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
+end;
+
+//------------------------------------------------------------------------------
+
+Function IfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := pIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := oIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := oIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := vIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID; overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+Result := gIfThen(Condition,OnTrue,OnFalse);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result); overload;{$IFDEF CanInline} inline;{$ENDIF}
+begin
+bIfThen(Condition,OnTrue,OnFalse,Size,Result);
+end;
 
 end.
 

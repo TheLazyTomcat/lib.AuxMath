@@ -2658,16 +2658,82 @@ procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out R
                         Check whether number is in range
 --------------------------------------------------------------------------------
 ===============================================================================}
-(*
+
 Function iInRange(const Value,LowBound,HighBound: Int8): Boolean; overload;
 Function iInRange(const Value,LowBound,HighBound: Int16): Boolean; overload;
 Function iInRange(const Value,LowBound,HighBound: Int32): Boolean; overload;
 Function iInRange(const Value,LowBound,HighBound: Int64): Boolean; overload;
-*)
-(*
-********************************************************************************
-EnsureRange
-*)
+
+//------------------------------------------------------------------------------
+
+Function uInRange(const Value,LowBound,HighBound: UInt8): Boolean; overload;
+Function uInRange(const Value,LowBound,HighBound: UInt16): Boolean; overload;
+Function uInRange(const Value,LowBound,HighBound: UInt32): Boolean; overload;
+Function uInRange(const Value,LowBound,HighBound: UInt64): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function fInRange(const Value,LowBound,HighBound: Extended): Boolean;
+
+//------------------------------------------------------------------------------
+
+Function InRange(const Value,LowBound,HighBound: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function InRange(const Value,LowBound,HighBound: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function InRange(const Value,LowBound,HighBound: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function InRange(const Value,LowBound,HighBound: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function InRange(const Value,LowBound,HighBound: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function InRange(const Value,LowBound,HighBound: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function InRange(const Value,LowBound,HighBound: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function InRange(const Value,LowBound,HighBound: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function InRange(const Value,LowBound,HighBound: Extended): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                           Closest value within range
+--------------------------------------------------------------------------------
+===============================================================================}
+
+Function iEnsureRange(const Value,LowBound,HighBound: Int8): Int8; overload;
+Function iEnsureRange(const Value,LowBound,HighBound: Int16): Int16; overload;
+Function iEnsureRange(const Value,LowBound,HighBound: Int32): Int32; overload;
+Function iEnsureRange(const Value,LowBound,HighBound: Int64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uEnsureRange(const Value,LowBound,HighBound: UInt8): UInt8; overload;
+Function uEnsureRange(const Value,LowBound,HighBound: UInt16): UInt16; overload;
+Function uEnsureRange(const Value,LowBound,HighBound: UInt32): UInt32; overload;
+Function uEnsureRange(const Value,LowBound,HighBound: UInt64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function fEnsureRange(const Value,LowBound,HighBound: Extended): Extended; overload;
+
+//------------------------------------------------------------------------------
+
+Function EnsureRange(const Value,LowBound,HighBound: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function EnsureRange(const Value,LowBound,HighBound: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function EnsureRange(const Value,LowBound,HighBound: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function EnsureRange(const Value,LowBound,HighBound: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function EnsureRange(const Value,LowBound,HighBound: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function EnsureRange(const Value,LowBound,HighBound: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function EnsureRange(const Value,LowBound,HighBound: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function EnsureRange(const Value,LowBound,HighBound: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function EnsureRange(const Value,LowBound,HighBound: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 implementation
 
 {$IF (SizeOf(Extended) <> 10) and (SizeOf(Extended) <> 8)}
@@ -16396,6 +16462,406 @@ end;
 procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
 begin
 bIfThen(Condition,OnTrue,OnFalse,Size,Result);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                        Check whether number is in range
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iInRange - signed integers
+-------------------------------------------------------------------------------}
+
+Function iInRange(const Value,LowBound,HighBound: Int8): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('iInRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iInRange(const Value,LowBound,HighBound: Int16): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('iInRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iInRange(const Value,LowBound,HighBound: Int32): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('iInRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iInRange(const Value,LowBound,HighBound: Int64): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('iInRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+{-------------------------------------------------------------------------------
+    uInRange - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uInRange(const Value,LowBound,HighBound: UInt8): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uInRange(const Value,LowBound,HighBound: UInt16): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uInRange(const Value,LowBound,HighBound: UInt32): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uInRange(const Value,LowBound,HighBound: UInt64): Boolean;
+begin
+If CompareUInt64(LowBound,HighBound) <= 0 then
+  Result := (CompareUInt64(Value,LowBound) >= 0) and (CompareUInt64(Value,HighBound) <= 0)
+else
+  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+{-------------------------------------------------------------------------------
+    fInRange - real numbers
+-------------------------------------------------------------------------------}
+
+Function fInRange(const Value,LowBound,HighBound: Extended): Boolean;
+begin
+If LowBound <= HighBound then
+  Result := (Value >= LowBound) and (Value <= HighBound)
+else
+  raise EAMInvalidValue.CreateFmt('fInRange: Low bound (%g) is larger than high bound (%g).',[LowBound,HighBound]);
+end;
+
+{-------------------------------------------------------------------------------
+    InRange - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function InRange(const Value,LowBound,HighBound: Int8): Boolean;
+begin
+Result := iInRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function InRange(const Value,LowBound,HighBound: Int16): Boolean;
+begin
+Result := iInRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function InRange(const Value,LowBound,HighBound: Int32): Boolean;
+begin
+Result := iInRange(Value,LowBound,HighBound);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function InRange(const Value,LowBound,HighBound: Int64): Boolean;
+begin
+Result := iInRange(Value,LowBound,HighBound);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function InRange(const Value,LowBound,HighBound: UInt8): Boolean;
+begin
+Result := uInRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function InRange(const Value,LowBound,HighBound: UInt16): Boolean;
+begin
+Result := uInRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function InRange(const Value,LowBound,HighBound: UInt32): Boolean;
+begin
+Result := uInRange(Value,LowBound,HighBound);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function InRange(const Value,LowBound,HighBound: UInt64): Boolean;
+begin
+Result := uInRange(Value,LowBound,HighBound);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function InRange(const Value,LowBound,HighBound: Extended): Boolean;
+begin
+Result := fInRange(Value,LowBound,HighBound);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                           Closest value within range
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iInRange - signed integers
+-------------------------------------------------------------------------------}
+
+Function iEnsureRange(const Value,LowBound,HighBound: Int8): Int8;
+begin
+If LowBound <= HighBound then
+  begin
+  {
+    Equality is used for optimization - if value is on a bound then the
+    function will return from here and does not continue to value assignment.
+  }
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('iEnsureRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iEnsureRange(const Value,LowBound,HighBound: Int16): Int16;
+begin
+If LowBound <= HighBound then
+  begin
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('iEnsureRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iEnsureRange(const Value,LowBound,HighBound: Int32): Int32;
+begin
+If LowBound <= HighBound then
+  begin
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('iEnsureRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iEnsureRange(const Value,LowBound,HighBound: Int64): Int64;
+begin
+If LowBound <= HighBound then
+  begin
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('iEnsureRange: Low bound (%d) is larger than high bound (%d).',[LowBound,HighBound]);
+end;
+
+{-------------------------------------------------------------------------------
+    uInRange - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uEnsureRange(const Value,LowBound,HighBound: UInt8): UInt8;
+begin
+If LowBound <= HighBound then
+  begin
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uEnsureRange(const Value,LowBound,HighBound: UInt16): UInt16;
+begin
+If LowBound <= HighBound then
+  begin
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uEnsureRange(const Value,LowBound,HighBound: UInt32): UInt32;
+begin
+If LowBound <= HighBound then
+  begin
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uEnsureRange(const Value,LowBound,HighBound: UInt64): UInt64;
+begin
+If CompareUInt64(LowBound,HighBound) <= 0 then
+  begin
+    If CompareUInt64(Value,LowBound) <= 0 then
+      Result := LowBound
+    else If CompareUInt64(Value,HighBound) >= 0 then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+end;
+
+{-------------------------------------------------------------------------------
+    fInRange - real numbers
+-------------------------------------------------------------------------------}
+
+Function fEnsureRange(const Value,LowBound,HighBound: Extended): Extended;
+begin
+If LowBound <= HighBound then
+  begin
+    If Value <= LowBound then
+      Result := LowBound
+    else If Value >= HighBound then
+      Result := HighBound
+    else
+      Result := Value;
+  end
+else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%g) is larger than high bound (%g).',[LowBound,HighBound]);
+end;
+
+{-------------------------------------------------------------------------------
+    EnsureRange - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function EnsureRange(const Value,LowBound,HighBound: Int8): Int8;
+begin
+Result := iEnsureRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function EnsureRange(const Value,LowBound,HighBound: Int16): Int16;
+begin
+Result := iEnsureRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function EnsureRange(const Value,LowBound,HighBound: Int32): Int32;
+begin
+Result := iEnsureRange(Value,LowBound,HighBound);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function EnsureRange(const Value,LowBound,HighBound: Int64): Int64;
+begin
+Result := iEnsureRange(Value,LowBound,HighBound);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function EnsureRange(const Value,LowBound,HighBound: UInt8): UInt8;
+begin
+Result := uEnsureRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function EnsureRange(const Value,LowBound,HighBound: UInt16): UInt16;
+begin
+Result := uEnsureRange(Value,LowBound,HighBound);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function EnsureRange(const Value,LowBound,HighBound: UInt32): UInt32;
+begin
+Result := uEnsureRange(Value,LowBound,HighBound);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function EnsureRange(const Value,LowBound,HighBound: UInt64): UInt64;
+begin
+Result := uEnsureRange(Value,LowBound,HighBound);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function EnsureRange(const Value,LowBound,HighBound: Extended): Extended;
+begin
+Result := fEnsureRange(Value,LowBound,HighBound);
 end;
 
 end.

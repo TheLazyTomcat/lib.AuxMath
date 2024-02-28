@@ -12,6 +12,10 @@ unit AuxMath;
 {$ENDIF}
 {.$DEFINE PurePascal}
 
+{$IFDEF ENDIAN_BIG}
+  {$MESSAGE FATAL 'Big-endian system not supported'}  // because of memory overlays
+{$ENDIF}
+
 {$IF Defined(CPU64) or Defined(CPU64BITS)}
   {$DEFINE CPU64bit}
 {$ELSEIF Defined(CPU16)}
@@ -40,7 +44,7 @@ unit AuxMath;
     {$ASMMODE Intel}
   {$ENDIF}
 {$ELSE}
-  {$IF CompilerVersion >= 17 then}  // Delphi 2005+
+  {$IF (CompilerVersion >= 17)}  // Delphi 2005+
     {$DEFINE CanInline}
   {$ELSE}
     {$UNDEF CanInline}
@@ -57,23 +61,41 @@ unit AuxMath;
   {$UNDEF AM_OverflowChecks}
 {$ENDIF}
 
+{$IFDEF FPC}
+  {$DEFINE DistinctUCS4Str}
+{$ELSE}
+  {$IF (CompilerVersion > 15)}  // newer than Delphi 7
+    {$DEFINE DistinctUCS4Str}
+  {$ELSE}
+    {$UNDEF DistinctUCS4Str}
+  {$IFEND}
+{$ENDIF}
+
 interface
 
 uses
   SysUtils,
   AuxTypes;
 
+{$message 'todo: description'}
 const
   DistinctOverloadUInt64 = {$IF Declared(NativeUInt64E)}True{$ELSE}False{$IFEND};
   DistinctOverloadUInt64N = {$IF Declared(NativeUInt64E)}1{$ELSE}0{$IFEND};
 {$IF Declared(NativeUInt64E)}
   DistinctOverloadUInt64E = True;
 {$IFEND}
+
   DistinctOverloadUnicodeString = {$IF Declared(UnicodeIsWideE)}False{$ELSE}True{$IFEND};
   DistinctOverloadUnicodeStringN = {$IF Declared(UnicodeIsWideE)}1{$ELSE}1{$IFEND};
 {$IF not Declared(UnicodeIsWideE)}
   DistinctOverloadUnicodeStringE = True;
 {$IFEND}
+
+  DistinctOverloadUCS4String = {$IFDEF DistinctUCS4Str}True{$ELSE}False{$ENDIF};
+  DistinctOverloadUCS4StringN = {$IFDEF DistinctUCS4Str}1{$ELSE}0{$ENDIF};
+{$IFDEF DistinctUCS4Str}
+  DistinctOverloadUCS4StringE = True;
+{$ENDIF}
 
 {===============================================================================
     Library-specific exceptions
@@ -82,6 +104,7 @@ type
   EAMException = class(Exception);
 
   EAMInvalidOperation = class(EAMException);
+  EAMInvalidValue     = class(EAMException);
 
 {===============================================================================
     Public constants
@@ -466,9 +489,9 @@ const
   [AM_INT_DBL_LO,AM_INT_DBL_HI]). If any mentioned rule is not observed, then
   an exception of class EAMInvalidOperation is raised.
 }
-Function Int64ToFloat(N: Int64): Extended;
+Function Int64ToFloat(const N: Int64): Extended;
 
-Function FloatToInt64(N: Extended): Int64;
+Function FloatToInt64(const N: Extended): Int64;
 
 {
   Following functions transfer unsigned 64bit integer value to and from
@@ -478,9 +501,9 @@ Function FloatToInt64(N: Extended): Int64;
   Note that both functions are doing the same checks as corresponding functions
   for signed 64bit integers (of course here tweaked for unsigned).
 }
-Function UInt64ToFloat(N: UInt64): Extended;
+Function UInt64ToFloat(const N: UInt64): Extended;
 
-Function FloatToUInt64(N: Extended): UInt64;
+Function FloatToUInt64(const N: Extended): UInt64;
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -492,29 +515,29 @@ Function FloatToUInt64(N: Extended): UInt64;
   call them separately when both quotient and remainder are required.
 }
 
-procedure iDivMod(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure iDivMod(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure iDivMod(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure iDivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivMod(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivMod(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivMod(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivMod(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-procedure uDivMod(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure uDivMod(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure uDivMod(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure uDivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivMod(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivMod(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivMod(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivMod(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-procedure DivMod(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivMod(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivMod(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-procedure DivMod(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivMod(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivMod(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivMod(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -528,32 +551,32 @@ procedure DivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); over
   information is lost due to precision problems in large float numbers).
 }
 
-Function iDivCeil(Dividend,Divisor: Int8): Int8; overload;
-Function iDivCeil(Dividend,Divisor: Int16): Int16; overload;
-Function iDivCeil(Dividend,Divisor: Int32): Int32; overload;
-Function iDivCeil(Dividend,Divisor: Int64): Int64; overload;
+Function iDivCeil(const Dividend,Divisor: Int8): Int8; overload;
+Function iDivCeil(const Dividend,Divisor: Int16): Int16; overload;
+Function iDivCeil(const Dividend,Divisor: Int32): Int32; overload;
+Function iDivCeil(const Dividend,Divisor: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uDivCeil(Dividend,Divisor: UInt8): UInt8; overload;
-Function uDivCeil(Dividend,Divisor: UInt16): UInt16; overload;
-Function uDivCeil(Dividend,Divisor: UInt32): UInt32; overload;
-Function uDivCeil(Dividend,Divisor: UInt64): UInt64; overload;
+Function uDivCeil(const Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivCeil(const Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivCeil(const Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivCeil(const Dividend,Divisor: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function DivCeil(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeil(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeil(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeil(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivCeil(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeil(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeil(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeil(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeil(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -567,32 +590,32 @@ Function DivCeil(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} 
   not utilize floating point unit/numbers).
 }
 
-Function iDivFloor(Dividend,Divisor: Int8): Int8; overload;
-Function iDivFloor(Dividend,Divisor: Int16): Int16; overload;
-Function iDivFloor(Dividend,Divisor: Int32): Int32; overload;
-Function iDivFloor(Dividend,Divisor: Int64): Int64; overload;
+Function iDivFloor(const Dividend,Divisor: Int8): Int8; overload;
+Function iDivFloor(const Dividend,Divisor: Int16): Int16; overload;
+Function iDivFloor(const Dividend,Divisor: Int32): Int32; overload;
+Function iDivFloor(const Dividend,Divisor: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uDivFloor(Dividend,Divisor: UInt8): UInt8; overload;
-Function uDivFloor(Dividend,Divisor: UInt16): UInt16; overload;
-Function uDivFloor(Dividend,Divisor: UInt32): UInt32; overload;
-Function uDivFloor(Dividend,Divisor: UInt64): UInt64; overload;
+Function uDivFloor(const Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivFloor(const Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivFloor(const Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivFloor(const Dividend,Divisor: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function DivFloor(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloor(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloor(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloor(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivFloor(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloor(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloor(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloor(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -605,7 +628,7 @@ Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline}
   Standard Ceil and Floor functions are returning only Integers - that is,
   32bit numbers. Following functions are here for situations where 64bit wide
   integers are required.
-  
+
   Ceil64 and Floor64 are returning Int64, CeilU64 and FloorU64 are returning
   UInt64.
 
@@ -614,13 +637,13 @@ Function DivFloor(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline}
   manager by the compiler and the exception would be of class EInvalidOP).
 }
 
-Function Ceil64(N: Extended): Int64;
+Function Ceil64(const N: Extended): Int64;
 
-Function Floor64(N: Extended): Int64;
+Function Floor64(const N: Extended): Int64;
 
-Function CeilU64(N: Extended): UInt64;
+Function CeilU64(const N: Extended): UInt64;
 
-Function FloorU64(N: Extended): UInt64;
+Function FloorU64(const N: Extended): UInt64;
 
 {===============================================================================
 --------------------------------------------------------------------------------
@@ -629,37 +652,37 @@ Function FloorU64(N: Extended): UInt64;
 ===============================================================================}
 {
   Returns true when given number is a positive integer power of 2 (2^E, where E
-  is a positive integer), false otherwise.     
+  is a positive integer), false otherwise.
   Note that zero and negative numbers cannot be positive integer power of any
   base, therefore in those cases false is returned.
 }
 
-Function iIsPow2(N: Int8): Boolean; overload;
-Function iIsPow2(N: Int16): Boolean; overload;
-Function iIsPow2(N: Int32): Boolean; overload;
-Function iIsPow2(N: Int64): Boolean; overload;
+Function iIsPow2(const N: Int8): Boolean; overload;
+Function iIsPow2(const N: Int16): Boolean; overload;
+Function iIsPow2(const N: Int32): Boolean; overload;
+Function iIsPow2(const N: Int64): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function uIsPow2(N: UInt8): Boolean; overload;
-Function uIsPow2(N: UInt16): Boolean; overload;
-Function uIsPow2(N: UInt32): Boolean; overload;
-Function uIsPow2(N: UInt64): Boolean; overload;
+Function uIsPow2(const N: UInt8): Boolean; overload;
+Function uIsPow2(const N: UInt16): Boolean; overload;
+Function uIsPow2(const N: UInt32): Boolean; overload;
+Function uIsPow2(const N: UInt64): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function IsPow2(N: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IsPow2(N: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IsPow2(N: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function IsPow2(N: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function IsPow2(N: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IsPow2(N: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IsPow2(N: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function IsPow2(N: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IsPow2(const N: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -675,32 +698,32 @@ Function IsPow2(N: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
   integer power of 2, then it will return -1.
 }
 
-Function iIntLog2(N: Int8): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function iIntLog2(N: Int16): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function iIntLog2(N: Int32): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function iIntLog2(N: Int64): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iIntLog2(const N: Int8): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iIntLog2(const N: Int16): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iIntLog2(const N: Int32): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iIntLog2(const N: Int64): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function uIntLog2(N: UInt8): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function uIntLog2(N: UInt16): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function uIntLog2(N: UInt32): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function uIntLog2(N: UInt64): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uIntLog2(const N: UInt8): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uIntLog2(const N: UInt16): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uIntLog2(const N: UInt32): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uIntLog2(const N: UInt64): Int32; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function IntLog2(N: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IntLog2(N: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IntLog2(N: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function IntLog2(N: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function IntLog2(N: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IntLog2(N: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IntLog2(N: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function IntLog2(N: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IntLog2(const N: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -716,29 +739,29 @@ Function IntLog2(N: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
   remainder) are undefined.
 }
 
-Function iTryDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function iTryDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function iTryDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function iTryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iTryDivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iTryDivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iTryDivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function iTryDivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function uTryDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function uTryDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function uTryDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-Function uTryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uTryDivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uTryDivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uTryDivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+Function uTryDivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function TryDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function TryDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function TryDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function TryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function TryDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function TryDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function TryDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function TryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function TryDivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -756,29 +779,29 @@ Function TryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64)
            only when it fails the standard division (DivMod) is called instead.
 }
 
-Function iDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;
-Function iDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;
-Function iDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;
-Function iDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;
+Function iDivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;
+Function iDivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;
+Function iDivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;
+Function iDivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function uDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;
-Function uDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;
-Function uDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;
-Function uDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;
+Function uDivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;
+Function uDivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;
+Function uDivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;
+Function uDivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function DivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function DivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -792,32 +815,32 @@ Function DivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): B
   The calculation does not use floating point unit/numbers, only integers.
 }
 
-Function iDivCeilPow2(Dividend,Divisor: Int8): Int8; overload;
-Function iDivCeilPow2(Dividend,Divisor: Int16): Int16; overload;
-Function iDivCeilPow2(Dividend,Divisor: Int32): Int32; overload;
-Function iDivCeilPow2(Dividend,Divisor: Int64): Int64; overload;
+Function iDivCeilPow2(const Dividend,Divisor: Int8): Int8; overload;
+Function iDivCeilPow2(const Dividend,Divisor: Int16): Int16; overload;
+Function iDivCeilPow2(const Dividend,Divisor: Int32): Int32; overload;
+Function iDivCeilPow2(const Dividend,Divisor: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uDivCeilPow2(Dividend,Divisor: UInt8): UInt8; overload;
-Function uDivCeilPow2(Dividend,Divisor: UInt16): UInt16; overload;
-Function uDivCeilPow2(Dividend,Divisor: UInt32): UInt32; overload;
-Function uDivCeilPow2(Dividend,Divisor: UInt64): UInt64; overload;
+Function uDivCeilPow2(const Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivCeilPow2(const Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivCeilPow2(const Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivCeilPow2(const Dividend,Divisor: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function DivCeilPow2(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeilPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivCeilPow2(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeilPow2(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -832,32 +855,32 @@ Function DivCeilPow2(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInli
   The calculation does not use floating point unit/numbers, only integers.
 }
 
-Function iDivFloorPow2(Dividend,Divisor: Int8): Int8; overload;
-Function iDivFloorPow2(Dividend,Divisor: Int16): Int16; overload;
-Function iDivFloorPow2(Dividend,Divisor: Int32): Int32; overload;
-Function iDivFloorPow2(Dividend,Divisor: Int64): Int64; overload;
+Function iDivFloorPow2(const Dividend,Divisor: Int8): Int8; overload;
+Function iDivFloorPow2(const Dividend,Divisor: Int16): Int16; overload;
+Function iDivFloorPow2(const Dividend,Divisor: Int32): Int32; overload;
+Function iDivFloorPow2(const Dividend,Divisor: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uDivFloorPow2(Dividend,Divisor: UInt8): UInt8; overload;
-Function uDivFloorPow2(Dividend,Divisor: UInt16): UInt16; overload;
-Function uDivFloorPow2(Dividend,Divisor: UInt32): UInt32; overload;
-Function uDivFloorPow2(Dividend,Divisor: UInt64): UInt64; overload;
+Function uDivFloorPow2(const Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivFloorPow2(const Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivFloorPow2(const Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivFloorPow2(const Dividend,Divisor: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function DivFloorPow2(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloorPow2(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivFloorPow2(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloorPow2(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -875,61 +898,61 @@ Function DivFloorPow2(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInl
               is not a power of two, then the results are completely undefined.
 }
 
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-procedure DivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 //------------------------------------------------------------------------------
 // shortened sliases
 
-procedure iDivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure iDivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure iDivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure iDivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure iDivModPow2NC(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure iDivModPow2NC(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure iDivModPow2NC(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure iDivModPow2NC(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-procedure uDivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure uDivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure uDivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure uDivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure uDivModPow2NC(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure uDivModPow2NC(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure uDivModPow2NC(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure uDivModPow2NC(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-procedure DivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-procedure DivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
-procedure DivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure DivModPow2NC(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64); overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
 --------------------------------------------------------------------------------
-      Combined division and ceiling (optimized for pow2 divisor, no checks)     
+      Combined division and ceiling (optimized for pow2 divisor, no checks)
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
@@ -942,68 +965,68 @@ procedure DivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64)
               is not a power of two, then the result is completely undefined.
 }
 
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int8): Int8; overload;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int16): Int16; overload;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int32): Int32; overload;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function iDivCeilPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function iDivCeilPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function iDivCeilPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function iDivCeilPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivCeilPow2NC(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivCeilPow2NC(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivCeilPow2NC(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivCeilPow2NC(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function uDivCeilPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function uDivCeilPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function uDivCeilPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function uDivCeilPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function DivCeilPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivCeilPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivCeilPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivCeilPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivCeilPow2NC(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
 {===============================================================================
 --------------------------------------------------------------------------------
-       Combined division and floor (optimized for pow2 divisor, no checks)           
+       Combined division and floor (optimized for pow2 divisor, no checks)
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
@@ -1016,62 +1039,62 @@ Function DivCeilPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanIn
               is not a power of two, then the result is completely undefined.
 }
 
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int8): Int8; overload;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int16): Int16; overload;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int32): Int32; overload;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt8): UInt8; overload;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt16): UInt16; overload;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt32): UInt32; overload;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function iDivFloorPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function iDivFloorPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function iDivFloorPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function iDivFloorPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivFloorPow2NC(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivFloorPow2NC(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivFloorPow2NC(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function iDivFloorPow2NC(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function uDivFloorPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function uDivFloorPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function uDivFloorPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function uDivFloorPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 //------------------------------------------------------------------------------
 
-Function DivFloorPow2NC(Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NC(Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NC(Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function DivFloorPow2NC(Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NC(Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function DivFloorPow2NC(Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function DivFloorPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function DivFloorPow2NC(const Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -1084,39 +1107,39 @@ Function DivFloorPow2NC(Dividend,Divisor: UInt64): UInt64; overload;{$IFDEF CanI
   Returns smaller/lower of the two given values.
 }
 
-Function iMin(A,B: Int8): Int8; overload;
-Function iMin(A,B: Int16): Int16; overload;
-Function iMin(A,B: Int32): Int32; overload;
-Function iMin(A,B: Int64): Int64; overload;
+Function iMin(const A,B: Int8): Int8; overload;
+Function iMin(const A,B: Int16): Int16; overload;
+Function iMin(const A,B: Int32): Int32; overload;
+Function iMin(const A,B: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uMin(A,B: UInt8): UInt8; overload;
-Function uMin(A,B: UInt16): UInt16; overload;
-Function uMin(A,B: UInt32): UInt32; overload;
-Function uMin(A,B: UInt64): UInt64; overload;
+Function uMin(const A,B: UInt8): UInt8; overload;
+Function uMin(const A,B: UInt16): UInt16; overload;
+Function uMin(const A,B: UInt32): UInt32; overload;
+Function uMin(const A,B: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function fMin(A,B: Extended): Extended; overload;
+Function fMin(const A,B: Extended): Extended; overload;
 
 //------------------------------------------------------------------------------
 
-Function Min(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Min(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Min(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -1127,11 +1150,11 @@ Function Min(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDI
 {
   Returns smaller/lower of the two given values.
 
-  When the function cannot select or return proper value, then an exception of 
+  When the function cannot select or return proper value, then an exception of
   class EAMInvalidOperation is raised. This can happen in following situations:
 
     - value to be returned cannot fit into result (eg. when comparing Int16 and
-      Int8 where 16bit value is -300 and result is of type Int8 - such number 
+      Int8 where 16bit value is -300 and result is of type Int8 - such number
       simply cannot be stored in signed 8bit integer)
 
     - negative value is to be returned, but the result type is unsigned integer
@@ -1143,257 +1166,257 @@ Function Min(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDI
       applicable limits)
 
     - floating point number needs to be returned in integer result, but it has
-      value beyond what the result type can store (floats can store, though in 
+      value beyond what the result type can store (floats can store, though in
       lower precision, much higher numbers than any integer can)
 
     - selected value is a floating point number with non-zero fraction but the
       result type is integer
 }
 
-Function iiMin(A: Int8; B: Int16): Int8; overload;
-Function iiMin(A: Int8; B: Int32): Int8; overload;
-Function iiMin(A: Int8; B: Int64): Int8; overload;
+Function iiMin(const A: Int8; const B: Int16): Int8; overload;
+Function iiMin(const A: Int8; const B: Int32): Int8; overload;
+Function iiMin(const A: Int8; const B: Int64): Int8; overload;
 
-Function iiMin(A: Int16; B: Int8): Int16; overload;
-Function iiMin(A: Int16; B: Int32): Int16; overload;
-Function iiMin(A: Int16; B: Int64): Int16; overload;
+Function iiMin(const A: Int16; const B: Int8): Int16; overload;
+Function iiMin(const A: Int16; const B: Int32): Int16; overload;
+Function iiMin(const A: Int16; const B: Int64): Int16; overload;
 
-Function iiMin(A: Int32; B: Int8): Int32; overload;
-Function iiMin(A: Int32; B: Int16): Int32; overload;
-Function iiMin(A: Int32; B: Int64): Int32; overload;
+Function iiMin(const A: Int32; const B: Int8): Int32; overload;
+Function iiMin(const A: Int32; const B: Int16): Int32; overload;
+Function iiMin(const A: Int32; const B: Int64): Int32; overload;
 
-Function iiMin(A: Int64; B: Int8): Int64; overload;
-Function iiMin(A: Int64; B: Int16): Int64; overload;
-Function iiMin(A: Int64; B: Int32): Int64; overload;
-
-//------------------------------------------------------------------------------
-
-Function iuMin(A: Int8; B: UInt8): Int8; overload;
-Function iuMin(A: Int8; B: UInt16): Int8; overload;
-Function iuMin(A: Int8; B: UInt32): Int8; overload;
-Function iuMin(A: Int8; B: UInt64): Int8; overload;
-
-Function iuMin(A: Int16; B: UInt8): Int16; overload;
-Function iuMin(A: Int16; B: UInt16): Int16; overload;
-Function iuMin(A: Int16; B: UInt32): Int16; overload;
-Function iuMin(A: Int16; B: UInt64): Int16; overload;
-
-Function iuMin(A: Int32; B: UInt8): Int32; overload;
-Function iuMin(A: Int32; B: UInt16): Int32; overload;
-Function iuMin(A: Int32; B: UInt32): Int32; overload;
-Function iuMin(A: Int32; B: UInt64): Int32; overload;
-
-Function iuMin(A: Int64; B: UInt8): Int64; overload;
-Function iuMin(A: Int64; B: UInt16): Int64; overload;
-Function iuMin(A: Int64; B: UInt32): Int64; overload;
-Function iuMin(A: Int64; B: UInt64): Int64; overload;
+Function iiMin(const A: Int64; const B: Int8): Int64; overload;
+Function iiMin(const A: Int64; const B: Int16): Int64; overload;
+Function iiMin(const A: Int64; const B: Int32): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uiMin(A: UInt8; B: Int8): UInt8; overload;
-Function uiMin(A: UInt8; B: Int16): UInt8; overload;
-Function uiMin(A: UInt8; B: Int32): UInt8; overload;
-Function uiMin(A: UInt8; B: Int64): UInt8; overload;
+Function iuMin(const A: Int8; const B: UInt8): Int8; overload;
+Function iuMin(const A: Int8; const B: UInt16): Int8; overload;
+Function iuMin(const A: Int8; const B: UInt32): Int8; overload;
+Function iuMin(const A: Int8; const B: UInt64): Int8; overload;
 
-Function uiMin(A: UInt16; B: Int8): UInt16; overload;
-Function uiMin(A: UInt16; B: Int16): UInt16; overload;
-Function uiMin(A: UInt16; B: Int32): UInt16; overload;
-Function uiMin(A: UInt16; B: Int64): UInt16; overload;
+Function iuMin(const A: Int16; const B: UInt8): Int16; overload;
+Function iuMin(const A: Int16; const B: UInt16): Int16; overload;
+Function iuMin(const A: Int16; const B: UInt32): Int16; overload;
+Function iuMin(const A: Int16; const B: UInt64): Int16; overload;
 
-Function uiMin(A: UInt32; B: Int8): UInt32; overload;
-Function uiMin(A: UInt32; B: Int16): UInt32; overload;
-Function uiMin(A: UInt32; B: Int32): UInt32; overload;
-Function uiMin(A: UInt32; B: Int64): UInt32; overload;
+Function iuMin(const A: Int32; const B: UInt8): Int32; overload;
+Function iuMin(const A: Int32; const B: UInt16): Int32; overload;
+Function iuMin(const A: Int32; const B: UInt32): Int32; overload;
+Function iuMin(const A: Int32; const B: UInt64): Int32; overload;
 
-Function uiMin(A: UInt64; B: Int8): UInt64; overload;
-Function uiMin(A: UInt64; B: Int16): UInt64; overload;
-Function uiMin(A: UInt64; B: Int32): UInt64; overload;
-Function uiMin(A: UInt64; B: Int64): UInt64; overload;
-
-//------------------------------------------------------------------------------
-
-Function uuMin(A: UInt8; B: UInt16): UInt8; overload;
-Function uuMin(A: UInt8; B: UInt32): UInt8; overload;
-Function uuMin(A: UInt8; B: UInt64): UInt8; overload;
-
-Function uuMin(A: UInt16; B: UInt8): UInt16; overload;
-Function uuMin(A: UInt16; B: UInt32): UInt16; overload;
-Function uuMin(A: UInt16; B: UInt64): UInt16; overload;
-
-Function uuMin(A: UInt32; B: UInt8): UInt32; overload;
-Function uuMin(A: UInt32; B: UInt16): UInt32; overload;
-Function uuMin(A: UInt32; B: UInt64): UInt32; overload;
-
-Function uuMin(A: UInt64; B: UInt8): UInt64; overload;
-Function uuMin(A: UInt64; B: UInt16): UInt64; overload;
-Function uuMin(A: UInt64; B: UInt32): UInt64; overload;
+Function iuMin(const A: Int64; const B: UInt8): Int64; overload;
+Function iuMin(const A: Int64; const B: UInt16): Int64; overload;
+Function iuMin(const A: Int64; const B: UInt32): Int64; overload;
+Function iuMin(const A: Int64; const B: UInt64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function fiMin(A: Extended; B: Int8): Extended; overload;
-Function fiMin(A: Extended; B: Int16): Extended; overload;
-Function fiMin(A: Extended; B: Int32): Extended; overload;
-Function fiMin(A: Extended; B: Int64): Extended; overload;
+Function uiMin(const A: UInt8; const B: Int8): UInt8; overload;
+Function uiMin(const A: UInt8; const B: Int16): UInt8; overload;
+Function uiMin(const A: UInt8; const B: Int32): UInt8; overload;
+Function uiMin(const A: UInt8; const B: Int64): UInt8; overload;
+
+Function uiMin(const A: UInt16; const B: Int8): UInt16; overload;
+Function uiMin(const A: UInt16; const B: Int16): UInt16; overload;
+Function uiMin(const A: UInt16; const B: Int32): UInt16; overload;
+Function uiMin(const A: UInt16; const B: Int64): UInt16; overload;
+
+Function uiMin(const A: UInt32; const B: Int8): UInt32; overload;
+Function uiMin(const A: UInt32; const B: Int16): UInt32; overload;
+Function uiMin(const A: UInt32; const B: Int32): UInt32; overload;
+Function uiMin(const A: UInt32; const B: Int64): UInt32; overload;
+
+Function uiMin(const A: UInt64; const B: Int8): UInt64; overload;
+Function uiMin(const A: UInt64; const B: Int16): UInt64; overload;
+Function uiMin(const A: UInt64; const B: Int32): UInt64; overload;
+Function uiMin(const A: UInt64; const B: Int64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function fuMin(A: Extended; B: UInt8): Extended; overload;
-Function fuMin(A: Extended; B: UInt16): Extended; overload;
-Function fuMin(A: Extended; B: UInt32): Extended; overload;
-Function fuMin(A: Extended; B: UInt64): Extended; overload;
+Function uuMin(const A: UInt8; const B: UInt16): UInt8; overload;
+Function uuMin(const A: UInt8; const B: UInt32): UInt8; overload;
+Function uuMin(const A: UInt8; const B: UInt64): UInt8; overload;
+
+Function uuMin(const A: UInt16; const B: UInt8): UInt16; overload;
+Function uuMin(const A: UInt16; const B: UInt32): UInt16; overload;
+Function uuMin(const A: UInt16; const B: UInt64): UInt16; overload;
+
+Function uuMin(const A: UInt32; const B: UInt8): UInt32; overload;
+Function uuMin(const A: UInt32; const B: UInt16): UInt32; overload;
+Function uuMin(const A: UInt32; const B: UInt64): UInt32; overload;
+
+Function uuMin(const A: UInt64; const B: UInt8): UInt64; overload;
+Function uuMin(const A: UInt64; const B: UInt16): UInt64; overload;
+Function uuMin(const A: UInt64; const B: UInt32): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function ifMin(A: Int8; B: Extended): Int8; overload;
-Function ifMin(A: Int16; B: Extended): Int16; overload;
-Function ifMin(A: Int32; B: Extended): Int32; overload;
-Function ifMin(A: Int64; B: Extended): Int64; overload;
+Function fiMin(const A: Extended; const B: Int8): Extended; overload;
+Function fiMin(const A: Extended; const B: Int16): Extended; overload;
+Function fiMin(const A: Extended; const B: Int32): Extended; overload;
+Function fiMin(const A: Extended; const B: Int64): Extended; overload;
 
 //------------------------------------------------------------------------------
 
-Function ufMin(A: UInt8; B: Extended): UInt8; overload;
-Function ufMin(A: UInt16; B: Extended): UInt16; overload;
-Function ufMin(A: UInt32; B: Extended): UInt32; overload;
-Function ufMin(A: UInt64; B: Extended): UInt64; overload;
+Function fuMin(const A: Extended; const B: UInt8): Extended; overload;
+Function fuMin(const A: Extended; const B: UInt16): Extended; overload;
+Function fuMin(const A: Extended; const B: UInt32): Extended; overload;
+Function fuMin(const A: Extended; const B: UInt64): Extended; overload;
+
+//------------------------------------------------------------------------------
+
+Function ifMin(const A: Int8; const B: Extended): Int8; overload;
+Function ifMin(const A: Int16; const B: Extended): Int16; overload;
+Function ifMin(const A: Int32; const B: Extended): Int32; overload;
+Function ifMin(const A: Int64; const B: Extended): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufMin(const A: UInt8; const B: Extended): UInt8; overload;
+Function ufMin(const A: UInt16; const B: Extended): UInt16; overload;
+Function ufMin(const A: UInt32; const B: Extended): UInt32; overload;
+Function ufMin(const A: UInt64; const B: Extended): UInt64; overload;
 
 //==============================================================================
 
-Function Min(A: Int8; B: Int16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int8; B: Int32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int8; const B: Int16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int8; const B: Int32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Int8; B: Int64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int8; const B: Int64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Min(A: Int16; B: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int16; B: Int32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: Int32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Int16; B: Int64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: Int64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Min(A: Int32; B: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int32; B: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Int32; B: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function Min(A: Int64; B: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int64; B: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int64; B: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Min(A: Int8; B: UInt8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int8; B: UInt16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int8; B: UInt32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Int8; B: UInt64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Min(A: Int16; B: UInt8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int16; B: UInt16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int16; B: UInt32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Int16; B: UInt64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Min(A: Int32; B: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int32; B: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int32; B: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Int32; B: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function Min(A: Int64; B: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int64; B: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int64; B: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int64; B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int64; const B: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int64; const B: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int64; const B: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Min(A: UInt8; B: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt8; B: Int16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt8; B: Int32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int8; const B: UInt8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int8; const B: UInt16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int8; const B: UInt32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: UInt8; B: Int64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int8; const B: UInt64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Min(A: UInt16; B: Int8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt16; B: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt16; B: Int32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: UInt8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: UInt16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: UInt32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: UInt16; B: Int64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: UInt64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Min(A: UInt32; B: Int8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt32; B: Int16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt32; B: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: UInt32; B: Int64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function Min(A: UInt64; B: Int8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt64; B: Int16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt64; B: Int32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt64; B: Int64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Min(A: UInt8; B: UInt16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt8; B: UInt32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: UInt8; B: UInt64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Min(A: UInt16; B: UInt8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt16; B: UInt32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: UInt16; B: UInt64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Min(A: UInt32; B: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt32; B: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: UInt32; B: UInt64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function Min(A: UInt64; B: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt64; B: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt64; B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int64; const B: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int64; const B: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int64; const B: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int64; const B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Min(A: Extended; B: Int8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Extended; B: Int16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Extended; B: Int32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt8; const B: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt8; const B: Int16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt8; const B: Int32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Extended; B: Int64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt8; const B: Int64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(const A: UInt16; const B: Int8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt16; const B: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt16; const B: Int32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(const A: UInt16; const B: Int64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(const A: UInt32; const B: Int8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt32; const B: Int16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt32; const B: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(const A: UInt32; const B: Int64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(const A: UInt64; const B: Int8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt64; const B: Int16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt64; const B: Int32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt64; const B: Int64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Min(A: Extended; B: UInt8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Extended; B: UInt16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Extended; B: UInt32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt8; const B: UInt16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt8; const B: UInt32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Extended; B: UInt64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt8; const B: UInt64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(const A: UInt16; const B: UInt8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt16; const B: UInt32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(const A: UInt16; const B: UInt64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Min(const A: UInt32; const B: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt32; const B: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(const A: UInt32; const B: UInt64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Min(const A: UInt64; const B: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt64; const B: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt64; const B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Min(A: Int8; B: Extended): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int16; B: Extended): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: Int32; B: Extended): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: Int8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: Int16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: Int32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: Int64; B: Extended): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: Int64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Min(A: UInt8; B: Extended): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt16; B: Extended): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Min(A: UInt32; B: Extended): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: UInt8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: UInt16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: UInt32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Min(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Extended; const B: UInt64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(const A: Int8; const B: Extended): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int16; const B: Extended): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: Int32; const B: Extended): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(const A: Int64; const B: Extended): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(const A: UInt8; const B: Extended): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt16; const B: Extended): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Min(const A: UInt32; const B: Extended): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Min(const A: UInt64; const B: Extended): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -1406,39 +1429,39 @@ Function Min(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline
   Returns bigger/higher of the two given values.
 }
 
-Function iMax(A,B: Int8): Int8; overload;
-Function iMax(A,B: Int16): Int16; overload;
-Function iMax(A,B: Int32): Int32; overload;
-Function iMax(A,B: Int64): Int64; overload;
+Function iMax(const A,B: Int8): Int8; overload;
+Function iMax(const A,B: Int16): Int16; overload;
+Function iMax(const A,B: Int32): Int32; overload;
+Function iMax(const A,B: Int64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uMax(A,B: UInt8): UInt8; overload;
-Function uMax(A,B: UInt16): UInt16; overload;
-Function uMax(A,B: UInt32): UInt32; overload;
-Function uMax(A,B: UInt64): UInt64; overload;
+Function uMax(const A,B: UInt8): UInt8; overload;
+Function uMax(const A,B: UInt16): UInt16; overload;
+Function uMax(const A,B: UInt32): UInt32; overload;
+Function uMax(const A,B: UInt64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function fMax(A,B: Extended): Extended; overload;
+Function fMax(const A,B: Extended): Extended; overload;
 
 //------------------------------------------------------------------------------
 
-Function Max(A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: Int8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: Int16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: Int32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: Int64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Max(A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: UInt8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: UInt16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: UInt32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: UInt64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Max(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -1449,255 +1472,255 @@ Function Max(A,B: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDI
 {
   Returns bigger/higher of the two given values.
 
-  When the function cannot select or return proper value, then an exception of 
+  When the function cannot select or return proper value, then an exception of
   class EAMInvalidOperation is raised. Please refer to description of Min
   operating on mixed types for information about when this can happen.
 }
 
-Function iiMax(A: Int8; B: Int16): Int8; overload;
-Function iiMax(A: Int8; B: Int32): Int8; overload;
-Function iiMax(A: Int8; B: Int64): Int8; overload;
+Function iiMax(const A: Int8; const B: Int16): Int8; overload;
+Function iiMax(const A: Int8; const B: Int32): Int8; overload;
+Function iiMax(const A: Int8; const B: Int64): Int8; overload;
 
-Function iiMax(A: Int16; B: Int8): Int16; overload;
-Function iiMax(A: Int16; B: Int32): Int16; overload;
-Function iiMax(A: Int16; B: Int64): Int16; overload;
+Function iiMax(const A: Int16; const B: Int8): Int16; overload;
+Function iiMax(const A: Int16; const B: Int32): Int16; overload;
+Function iiMax(const A: Int16; const B: Int64): Int16; overload;
 
-Function iiMax(A: Int32; B: Int8): Int32; overload;
-Function iiMax(A: Int32; B: Int16): Int32; overload;
-Function iiMax(A: Int32; B: Int64): Int32; overload;
+Function iiMax(const A: Int32; const B: Int8): Int32; overload;
+Function iiMax(const A: Int32; const B: Int16): Int32; overload;
+Function iiMax(const A: Int32; const B: Int64): Int32; overload;
 
-Function iiMax(A: Int64; B: Int8): Int64; overload;
-Function iiMax(A: Int64; B: Int16): Int64; overload;
-Function iiMax(A: Int64; B: Int32): Int64; overload;
-
-//------------------------------------------------------------------------------
-
-Function iuMax(A: Int8; B: UInt8): Int8; overload;
-Function iuMax(A: Int8; B: UInt16): Int8; overload;
-Function iuMax(A: Int8; B: UInt32): Int8; overload;
-Function iuMax(A: Int8; B: UInt64): Int8; overload;
-
-Function iuMax(A: Int16; B: UInt8): Int16; overload;
-Function iuMax(A: Int16; B: UInt16): Int16; overload;
-Function iuMax(A: Int16; B: UInt32): Int16; overload;
-Function iuMax(A: Int16; B: UInt64): Int16; overload;
-
-Function iuMax(A: Int32; B: UInt8): Int32; overload;
-Function iuMax(A: Int32; B: UInt16): Int32; overload;
-Function iuMax(A: Int32; B: UInt32): Int32; overload;
-Function iuMax(A: Int32; B: UInt64): Int32; overload;
-
-Function iuMax(A: Int64; B: UInt8): Int64; overload;
-Function iuMax(A: Int64; B: UInt16): Int64; overload;
-Function iuMax(A: Int64; B: UInt32): Int64; overload;
-Function iuMax(A: Int64; B: UInt64): Int64; overload;
+Function iiMax(const A: Int64; const B: Int8): Int64; overload;
+Function iiMax(const A: Int64; const B: Int16): Int64; overload;
+Function iiMax(const A: Int64; const B: Int32): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uiMax(A: UInt8; B: Int8): UInt8; overload;
-Function uiMax(A: UInt8; B: Int16): UInt8; overload;
-Function uiMax(A: UInt8; B: Int32): UInt8; overload;
-Function uiMax(A: UInt8; B: Int64): UInt8; overload;
+Function iuMax(const A: Int8; const B: UInt8): Int8; overload;
+Function iuMax(const A: Int8; const B: UInt16): Int8; overload;
+Function iuMax(const A: Int8; const B: UInt32): Int8; overload;
+Function iuMax(const A: Int8; const B: UInt64): Int8; overload;
 
-Function uiMax(A: UInt16; B: Int8): UInt16; overload;
-Function uiMax(A: UInt16; B: Int16): UInt16; overload;
-Function uiMax(A: UInt16; B: Int32): UInt16; overload;
-Function uiMax(A: UInt16; B: Int64): UInt16; overload;
+Function iuMax(const A: Int16; const B: UInt8): Int16; overload;
+Function iuMax(const A: Int16; const B: UInt16): Int16; overload;
+Function iuMax(const A: Int16; const B: UInt32): Int16; overload;
+Function iuMax(const A: Int16; const B: UInt64): Int16; overload;
 
-Function uiMax(A: UInt32; B: Int8): UInt32; overload;
-Function uiMax(A: UInt32; B: Int16): UInt32; overload;
-Function uiMax(A: UInt32; B: Int32): UInt32; overload;
-Function uiMax(A: UInt32; B: Int64): UInt32; overload;
+Function iuMax(const A: Int32; const B: UInt8): Int32; overload;
+Function iuMax(const A: Int32; const B: UInt16): Int32; overload;
+Function iuMax(const A: Int32; const B: UInt32): Int32; overload;
+Function iuMax(const A: Int32; const B: UInt64): Int32; overload;
 
-Function uiMax(A: UInt64; B: Int8): UInt64; overload;
-Function uiMax(A: UInt64; B: Int16): UInt64; overload;
-Function uiMax(A: UInt64; B: Int32): UInt64; overload;
-Function uiMax(A: UInt64; B: Int64): UInt64; overload;
-
-//------------------------------------------------------------------------------
-
-Function uuMax(A: UInt8; B: UInt16): UInt8; overload;
-Function uuMax(A: UInt8; B: UInt32): UInt8; overload;
-Function uuMax(A: UInt8; B: UInt64): UInt8; overload;
-
-Function uuMax(A: UInt16; B: UInt8): UInt16; overload;
-Function uuMax(A: UInt16; B: UInt32): UInt16; overload;
-Function uuMax(A: UInt16; B: UInt64): UInt16; overload;
-
-Function uuMax(A: UInt32; B: UInt8): UInt32; overload;
-Function uuMax(A: UInt32; B: UInt16): UInt32; overload;
-Function uuMax(A: UInt32; B: UInt64): UInt32; overload;
-
-Function uuMax(A: UInt64; B: UInt8): UInt64; overload;
-Function uuMax(A: UInt64; B: UInt16): UInt64; overload;
-Function uuMax(A: UInt64; B: UInt32): UInt64; overload;
+Function iuMax(const A: Int64; const B: UInt8): Int64; overload;
+Function iuMax(const A: Int64; const B: UInt16): Int64; overload;
+Function iuMax(const A: Int64; const B: UInt32): Int64; overload;
+Function iuMax(const A: Int64; const B: UInt64): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function fiMax(A: Extended; B: Int8): Extended; overload;
-Function fiMax(A: Extended; B: Int16): Extended; overload;
-Function fiMax(A: Extended; B: Int32): Extended; overload;
-Function fiMax(A: Extended; B: Int64): Extended; overload;
+Function uiMax(const A: UInt8; const B: Int8): UInt8; overload;
+Function uiMax(const A: UInt8; const B: Int16): UInt8; overload;
+Function uiMax(const A: UInt8; const B: Int32): UInt8; overload;
+Function uiMax(const A: UInt8; const B: Int64): UInt8; overload;
+
+Function uiMax(const A: UInt16; const B: Int8): UInt16; overload;
+Function uiMax(const A: UInt16; const B: Int16): UInt16; overload;
+Function uiMax(const A: UInt16; const B: Int32): UInt16; overload;
+Function uiMax(const A: UInt16; const B: Int64): UInt16; overload;
+
+Function uiMax(const A: UInt32; const B: Int8): UInt32; overload;
+Function uiMax(const A: UInt32; const B: Int16): UInt32; overload;
+Function uiMax(const A: UInt32; const B: Int32): UInt32; overload;
+Function uiMax(const A: UInt32; const B: Int64): UInt32; overload;
+
+Function uiMax(const A: UInt64; const B: Int8): UInt64; overload;
+Function uiMax(const A: UInt64; const B: Int16): UInt64; overload;
+Function uiMax(const A: UInt64; const B: Int32): UInt64; overload;
+Function uiMax(const A: UInt64; const B: Int64): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function fuMax(A: Extended; B: UInt8): Extended; overload;
-Function fuMax(A: Extended; B: UInt16): Extended; overload;
-Function fuMax(A: Extended; B: UInt32): Extended; overload;
-Function fuMax(A: Extended; B: UInt64): Extended; overload;
+Function uuMax(const A: UInt8; const B: UInt16): UInt8; overload;
+Function uuMax(const A: UInt8; const B: UInt32): UInt8; overload;
+Function uuMax(const A: UInt8; const B: UInt64): UInt8; overload;
+
+Function uuMax(const A: UInt16; const B: UInt8): UInt16; overload;
+Function uuMax(const A: UInt16; const B: UInt32): UInt16; overload;
+Function uuMax(const A: UInt16; const B: UInt64): UInt16; overload;
+
+Function uuMax(const A: UInt32; const B: UInt8): UInt32; overload;
+Function uuMax(const A: UInt32; const B: UInt16): UInt32; overload;
+Function uuMax(const A: UInt32; const B: UInt64): UInt32; overload;
+
+Function uuMax(const A: UInt64; const B: UInt8): UInt64; overload;
+Function uuMax(const A: UInt64; const B: UInt16): UInt64; overload;
+Function uuMax(const A: UInt64; const B: UInt32): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function ifMax(A: Int8; B: Extended): Int8; overload;
-Function ifMax(A: Int16; B: Extended): Int16; overload;
-Function ifMax(A: Int32; B: Extended): Int32; overload;
-Function ifMax(A: Int64; B: Extended): Int64; overload;
+Function fiMax(const A: Extended; const B: Int8): Extended; overload;
+Function fiMax(const A: Extended; const B: Int16): Extended; overload;
+Function fiMax(const A: Extended; const B: Int32): Extended; overload;
+Function fiMax(const A: Extended; const B: Int64): Extended; overload;
 
 //------------------------------------------------------------------------------
 
-Function ufMax(A: UInt8; B: Extended): UInt8; overload;
-Function ufMax(A: UInt16; B: Extended): UInt16; overload;
-Function ufMax(A: UInt32; B: Extended): UInt32; overload;
-Function ufMax(A: UInt64; B: Extended): UInt64; overload;
+Function fuMax(const A: Extended; const B: UInt8): Extended; overload;
+Function fuMax(const A: Extended; const B: UInt16): Extended; overload;
+Function fuMax(const A: Extended; const B: UInt32): Extended; overload;
+Function fuMax(const A: Extended; const B: UInt64): Extended; overload;
+
+//------------------------------------------------------------------------------
+
+Function ifMax(const A: Int8; const B: Extended): Int8; overload;
+Function ifMax(const A: Int16; const B: Extended): Int16; overload;
+Function ifMax(const A: Int32; const B: Extended): Int32; overload;
+Function ifMax(const A: Int64; const B: Extended): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufMax(const A: UInt8; const B: Extended): UInt8; overload;
+Function ufMax(const A: UInt16; const B: Extended): UInt16; overload;
+Function ufMax(const A: UInt32; const B: Extended): UInt32; overload;
+Function ufMax(const A: UInt64; const B: Extended): UInt64; overload;
 
 //==============================================================================
 
-Function Max(A: Int8; B: Int16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int8; B: Int32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int8; const B: Int16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int8; const B: Int32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Int8; B: Int64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int8; const B: Int64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Max(A: Int16; B: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int16; B: Int32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: Int32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Int16; B: Int64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: Int64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Max(A: Int32; B: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int32; B: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Int32; B: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: Int64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function Max(A: Int64; B: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int64; B: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int64; B: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Max(A: Int8; B: UInt8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int8; B: UInt16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int8; B: UInt32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Int8; B: UInt64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Max(A: Int16; B: UInt8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int16; B: UInt16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int16; B: UInt32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Int16; B: UInt64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Max(A: Int32; B: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int32; B: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int32; B: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Int32; B: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function Max(A: Int64; B: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int64; B: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int64; B: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int64; B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int64; const B: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int64; const B: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int64; const B: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Max(A: UInt8; B: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt8; B: Int16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt8; B: Int32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int8; const B: UInt8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int8; const B: UInt16): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int8; const B: UInt32): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: UInt8; B: Int64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int8; const B: UInt64): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Max(A: UInt16; B: Int8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt16; B: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt16; B: Int32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: UInt8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: UInt16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: UInt32): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: UInt16; B: Int64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: UInt64): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function Max(A: UInt32; B: Int8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt32; B: Int16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt32; B: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: UInt32; B: Int64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: UInt64): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function Max(A: UInt64; B: Int8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt64; B: Int16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt64; B: Int32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt64; B: Int64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Max(A: UInt8; B: UInt16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt8; B: UInt32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: UInt8; B: UInt64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Max(A: UInt16; B: UInt8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt16; B: UInt32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: UInt16; B: UInt64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function Max(A: UInt32; B: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt32; B: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: UInt32; B: UInt64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function Max(A: UInt64; B: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt64; B: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt64; B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int64; const B: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int64; const B: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int64; const B: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int64; const B: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Max(A: Extended; B: Int8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Extended; B: Int16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Extended; B: Int32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt8; const B: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt8; const B: Int16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt8; const B: Int32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Extended; B: Int64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt8; const B: Int64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(const A: UInt16; const B: Int8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt16; const B: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt16; const B: Int32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(const A: UInt16; const B: Int64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(const A: UInt32; const B: Int8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt32; const B: Int16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt32; const B: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(const A: UInt32; const B: Int64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(const A: UInt64; const B: Int8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt64; const B: Int16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt64; const B: Int32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt64; const B: Int64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Max(A: Extended; B: UInt8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Extended; B: UInt16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Extended; B: UInt32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt8; const B: UInt16): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt8; const B: UInt32): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Extended; B: UInt64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt8; const B: UInt64): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(const A: UInt16; const B: UInt8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt16; const B: UInt32): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(const A: UInt16; const B: UInt64): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function Max(const A: UInt32; const B: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt32; const B: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(const A: UInt32; const B: UInt64): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function Max(const A: UInt64; const B: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt64; const B: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt64; const B: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Max(A: Int8; B: Extended): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int16; B: Extended): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: Int32; B: Extended): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: Int8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: Int16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: Int32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: Int64; B: Extended): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: Int64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Max(A: UInt8; B: Extended): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt16; B: Extended): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function Max(A: UInt32; B: Extended): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: UInt8): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: UInt16): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: UInt32): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function Max(A: UInt64; B: Extended): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Extended; const B: UInt64): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(const A: Int8; const B: Extended): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int16; const B: Extended): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: Int32; const B: Extended): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(const A: Int64; const B: Extended): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(const A: UInt8; const B: Extended): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt16; const B: Extended): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function Max(const A: UInt32; const B: Extended): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function Max(const A: UInt64; const B: Extended): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -1824,39 +1847,39 @@ Function MaxValue(const Values: array of Extended; out Maximum: Extended): Integ
   Epsilon is maximal difference between two numbers where they can still be
   considered equal.
 }
-Function iCompareValue(A,B: Int8): Integer; overload;
-Function iCompareValue(A,B: Int16): Integer; overload;
-Function iCompareValue(A,B: Int32): Integer; overload;
-Function iCompareValue(A,B: Int64): Integer; overload;
+Function iCompareValue(const A,B: Int8): Integer; overload;
+Function iCompareValue(const A,B: Int16): Integer; overload;
+Function iCompareValue(const A,B: Int32): Integer; overload;
+Function iCompareValue(const A,B: Int64): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function uCompareValue(A,B: UInt8): Integer; overload;
-Function uCompareValue(A,B: UInt16): Integer; overload;
-Function uCompareValue(A,B: UInt32): Integer; overload;
-Function uCompareValue(A,B: UInt64): Integer; overload;
+Function uCompareValue(const A,B: UInt8): Integer; overload;
+Function uCompareValue(const A,B: UInt16): Integer; overload;
+Function uCompareValue(const A,B: UInt32): Integer; overload;
+Function uCompareValue(const A,B: UInt64): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function fCompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function fCompareValue(const A,B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A,B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A,B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A,B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A,B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValue(A,B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A,B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A,B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A,B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A,B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -1876,250 +1899,250 @@ Function CompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer; overload
            functionality can be achieved by just swapping arguments.
 }
 
-Function iiCompareValue(A: Int8; B: Int16): Integer; overload;
-Function iiCompareValue(A: Int8; B: Int32): Integer; overload;
-Function iiCompareValue(A: Int8; B: Int64): Integer; overload;
+Function iiCompareValue(const A: Int8; const B: Int16): Integer; overload;
+Function iiCompareValue(const A: Int8; const B: Int32): Integer; overload;
+Function iiCompareValue(const A: Int8; const B: Int64): Integer; overload;
 
-Function iiCompareValue(A: Int16; B: Int8): Integer; overload;
-Function iiCompareValue(A: Int16; B: Int32): Integer; overload;
-Function iiCompareValue(A: Int16; B: Int64): Integer; overload;
+Function iiCompareValue(const A: Int16; const B: Int8): Integer; overload;
+Function iiCompareValue(const A: Int16; const B: Int32): Integer; overload;
+Function iiCompareValue(const A: Int16; const B: Int64): Integer; overload;
 
-Function iiCompareValue(A: Int32; B: Int8): Integer; overload;
-Function iiCompareValue(A: Int32; B: Int16): Integer; overload;
-Function iiCompareValue(A: Int32; B: Int64): Integer; overload;
+Function iiCompareValue(const A: Int32; const B: Int8): Integer; overload;
+Function iiCompareValue(const A: Int32; const B: Int16): Integer; overload;
+Function iiCompareValue(const A: Int32; const B: Int64): Integer; overload;
 
-Function iiCompareValue(A: Int64; B: Int8): Integer; overload;
-Function iiCompareValue(A: Int64; B: Int16): Integer; overload;
-Function iiCompareValue(A: Int64; B: Int32): Integer; overload;
-
-//------------------------------------------------------------------------------
-
-Function iuCompareValue(A: Int8; B: UInt8): Integer; overload;
-Function iuCompareValue(A: Int8; B: UInt16): Integer; overload;
-Function iuCompareValue(A: Int8; B: UInt32): Integer; overload;
-Function iuCompareValue(A: Int8; B: UInt64): Integer; overload;
-
-Function iuCompareValue(A: Int16; B: UInt8): Integer; overload;
-Function iuCompareValue(A: Int16; B: UInt16): Integer; overload;
-Function iuCompareValue(A: Int16; B: UInt32): Integer; overload;
-Function iuCompareValue(A: Int16; B: UInt64): Integer; overload;
-
-Function iuCompareValue(A: Int32; B: UInt8): Integer; overload;
-Function iuCompareValue(A: Int32; B: UInt16): Integer; overload;
-Function iuCompareValue(A: Int32; B: UInt32): Integer; overload;
-Function iuCompareValue(A: Int32; B: UInt64): Integer; overload;
-
-Function iuCompareValue(A: Int64; B: UInt8): Integer; overload;
-Function iuCompareValue(A: Int64; B: UInt16): Integer; overload;
-Function iuCompareValue(A: Int64; B: UInt32): Integer; overload;
-Function iuCompareValue(A: Int64; B: UInt64): Integer; overload;
+Function iiCompareValue(const A: Int64; const B: Int8): Integer; overload;
+Function iiCompareValue(const A: Int64; const B: Int16): Integer; overload;
+Function iiCompareValue(const A: Int64; const B: Int32): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function uiCompareValue(A: UInt8; B: Int8): Integer; overload;
-Function uiCompareValue(A: UInt8; B: Int16): Integer; overload;
-Function uiCompareValue(A: UInt8; B: Int32): Integer; overload;
-Function uiCompareValue(A: UInt8; B: Int64): Integer; overload;
+Function iuCompareValue(const A: Int8; const B: UInt8): Integer; overload;
+Function iuCompareValue(const A: Int8; const B: UInt16): Integer; overload;
+Function iuCompareValue(const A: Int8; const B: UInt32): Integer; overload;
+Function iuCompareValue(const A: Int8; const B: UInt64): Integer; overload;
 
-Function uiCompareValue(A: UInt16; B: Int8): Integer; overload;
-Function uiCompareValue(A: UInt16; B: Int16): Integer; overload;
-Function uiCompareValue(A: UInt16; B: Int32): Integer; overload;
-Function uiCompareValue(A: UInt16; B: Int64): Integer; overload;
+Function iuCompareValue(const A: Int16; const B: UInt8): Integer; overload;
+Function iuCompareValue(const A: Int16; const B: UInt16): Integer; overload;
+Function iuCompareValue(const A: Int16; const B: UInt32): Integer; overload;
+Function iuCompareValue(const A: Int16; const B: UInt64): Integer; overload;
 
-Function uiCompareValue(A: UInt32; B: Int8): Integer; overload;
-Function uiCompareValue(A: UInt32; B: Int16): Integer; overload;
-Function uiCompareValue(A: UInt32; B: Int32): Integer; overload;
-Function uiCompareValue(A: UInt32; B: Int64): Integer; overload;
+Function iuCompareValue(const A: Int32; const B: UInt8): Integer; overload;
+Function iuCompareValue(const A: Int32; const B: UInt16): Integer; overload;
+Function iuCompareValue(const A: Int32; const B: UInt32): Integer; overload;
+Function iuCompareValue(const A: Int32; const B: UInt64): Integer; overload;
 
-Function uiCompareValue(A: UInt64; B: Int8): Integer; overload;
-Function uiCompareValue(A: UInt64; B: Int16): Integer; overload;
-Function uiCompareValue(A: UInt64; B: Int32): Integer; overload;
-Function uiCompareValue(A: UInt64; B: Int64): Integer; overload;
-
-//------------------------------------------------------------------------------
-
-Function uuCompareValue(A: UInt8; B: UInt16): Integer; overload;
-Function uuCompareValue(A: UInt8; B: UInt32): Integer; overload;
-Function uuCompareValue(A: UInt8; B: UInt64): Integer; overload;
-
-Function uuCompareValue(A: UInt16; B: UInt8): Integer; overload;
-Function uuCompareValue(A: UInt16; B: UInt32): Integer; overload;
-Function uuCompareValue(A: UInt16; B: UInt64): Integer; overload;
-
-Function uuCompareValue(A: UInt32; B: UInt8): Integer; overload;
-Function uuCompareValue(A: UInt32; B: UInt16): Integer; overload;
-Function uuCompareValue(A: UInt32; B: UInt64): Integer; overload;
-
-Function uuCompareValue(A: UInt64; B: UInt8): Integer; overload;
-Function uuCompareValue(A: UInt64; B: UInt16): Integer; overload;
-Function uuCompareValue(A: UInt64; B: UInt32): Integer; overload;
+Function iuCompareValue(const A: Int64; const B: UInt8): Integer; overload;
+Function iuCompareValue(const A: Int64; const B: UInt16): Integer; overload;
+Function iuCompareValue(const A: Int64; const B: UInt32): Integer; overload;
+Function iuCompareValue(const A: Int64; const B: UInt64): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function fiCompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer; overload;
-Function fiCompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer; overload;
-Function fiCompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer; overload;
-Function fiCompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer; overload;
+Function uiCompareValue(const A: UInt8; const B: Int8): Integer; overload;
+Function uiCompareValue(const A: UInt8; const B: Int16): Integer; overload;
+Function uiCompareValue(const A: UInt8; const B: Int32): Integer; overload;
+Function uiCompareValue(const A: UInt8; const B: Int64): Integer; overload;
+
+Function uiCompareValue(const A: UInt16; const B: Int8): Integer; overload;
+Function uiCompareValue(const A: UInt16; const B: Int16): Integer; overload;
+Function uiCompareValue(const A: UInt16; const B: Int32): Integer; overload;
+Function uiCompareValue(const A: UInt16; const B: Int64): Integer; overload;
+
+Function uiCompareValue(const A: UInt32; const B: Int8): Integer; overload;
+Function uiCompareValue(const A: UInt32; const B: Int16): Integer; overload;
+Function uiCompareValue(const A: UInt32; const B: Int32): Integer; overload;
+Function uiCompareValue(const A: UInt32; const B: Int64): Integer; overload;
+
+Function uiCompareValue(const A: UInt64; const B: Int8): Integer; overload;
+Function uiCompareValue(const A: UInt64; const B: Int16): Integer; overload;
+Function uiCompareValue(const A: UInt64; const B: Int32): Integer; overload;
+Function uiCompareValue(const A: UInt64; const B: Int64): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function fuCompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer; overload;
-Function fuCompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer; overload;
-Function fuCompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer; overload;
-Function fuCompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer; overload;
+Function uuCompareValue(const A: UInt8; const B: UInt16): Integer; overload;
+Function uuCompareValue(const A: UInt8; const B: UInt32): Integer; overload;
+Function uuCompareValue(const A: UInt8; const B: UInt64): Integer; overload;
+
+Function uuCompareValue(const A: UInt16; const B: UInt8): Integer; overload;
+Function uuCompareValue(const A: UInt16; const B: UInt32): Integer; overload;
+Function uuCompareValue(const A: UInt16; const B: UInt64): Integer; overload;
+
+Function uuCompareValue(const A: UInt32; const B: UInt8): Integer; overload;
+Function uuCompareValue(const A: UInt32; const B: UInt16): Integer; overload;
+Function uuCompareValue(const A: UInt32; const B: UInt64): Integer; overload;
+
+Function uuCompareValue(const A: UInt64; const B: UInt8): Integer; overload;
+Function uuCompareValue(const A: UInt64; const B: UInt16): Integer; overload;
+Function uuCompareValue(const A: UInt64; const B: UInt32): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function ifCompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
-Function ifCompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
-Function ifCompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
-Function ifCompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function fiCompareValue(const A: Extended; const B: Int8; const Epsilon: Extended = 0.0): Integer; overload;
+Function fiCompareValue(const A: Extended; const B: Int16; const Epsilon: Extended = 0.0): Integer; overload;
+Function fiCompareValue(const A: Extended; const B: Int32; const Epsilon: Extended = 0.0): Integer; overload;
+Function fiCompareValue(const A: Extended; const B: Int64; const Epsilon: Extended = 0.0): Integer; overload;
 
 //------------------------------------------------------------------------------
 
-Function ufCompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
-Function ufCompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
-Function ufCompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
-Function ufCompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;
+Function fuCompareValue(const A: Extended; const B: UInt8; const Epsilon: Extended = 0.0): Integer; overload;
+Function fuCompareValue(const A: Extended; const B: UInt16; const Epsilon: Extended = 0.0): Integer; overload;
+Function fuCompareValue(const A: Extended; const B: UInt32; const Epsilon: Extended = 0.0): Integer; overload;
+Function fuCompareValue(const A: Extended; const B: UInt64; const Epsilon: Extended = 0.0): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function ifCompareValue(const A: Int8; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
+Function ifCompareValue(const A: Int16; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
+Function ifCompareValue(const A: Int32; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
+Function ifCompareValue(const A: Int64; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufCompareValue(const A: UInt8; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
+Function ufCompareValue(const A: UInt16; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
+Function ufCompareValue(const A: UInt32; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
+Function ufCompareValue(const A: UInt64; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;
 
 //==============================================================================
 
-Function CompareValue(A: Int8; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int8; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int8; const B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int8; const B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Int8; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int8; const B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValue(A: Int16; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int16; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Int16; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValue(A: Int32; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int32; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Int32; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function CompareValue(A: Int64; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int64; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int64; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function CompareValue(A: Int8; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int8; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int8; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Int8; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValue(A: Int16; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int16; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int16; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Int16; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValue(A: Int32; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int32; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int32; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Int32; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function CompareValue(A: Int64; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int64; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int64; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int64; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int64; const B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int64; const B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int64; const B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: UInt8; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt8; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt8; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int8; const B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int8; const B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int8; const B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: UInt8; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int8; const B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValue(A: UInt16; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt16; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt16; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: UInt16; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValue(A: UInt32; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt32; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt32; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: UInt32; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function CompareValue(A: UInt64; B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt64; B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt64; B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt64; B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function CompareValue(A: UInt8; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt8; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: UInt8; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValue(A: UInt16; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt16; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: UInt16; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValue(A: UInt32; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt32; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: UInt32; B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function CompareValue(A: UInt64; B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt64; B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt64; B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int64; const B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int64; const B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int64; const B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int64; const B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt8; const B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt8; const B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt8; const B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt8; const B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(const A: UInt16; const B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt16; const B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt16; const B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(const A: UInt16; const B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(const A: UInt32; const B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt32; const B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt32; const B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(const A: UInt32; const B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValue(const A: UInt64; const B: Int8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt64; const B: Int16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt64; const B: Int32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt64; const B: Int64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt8; const B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt8; const B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt8; const B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(const A: UInt16; const B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt16; const B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(const A: UInt16; const B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValue(const A: UInt32; const B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt32; const B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(const A: UInt32; const B: UInt64): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValue(const A: UInt64; const B: UInt8): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt64; const B: UInt16): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt64; const B: UInt32): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: Int8; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: Int16; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: Int32; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: Int64; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: UInt8; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: UInt16; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: UInt32; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Extended; const B: UInt64; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(const A: Int8; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int16; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: Int32; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(const A: Int64; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(const A: UInt8; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt16; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValue(const A: UInt32; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValue(const A: UInt64; const B: Extended; const Epsilon: Extended = 0.0): Integer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
@@ -2144,41 +2167,41 @@ type
 
 //------------------------------------------------------------------------------
 
-Function iCompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iCompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iCompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iCompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iCompareValueOp(const A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iCompareValueOp(const A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iCompareValueOp(const A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iCompareValueOp(const A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function uCompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uCompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uCompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uCompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uCompareValueOp(const A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uCompareValueOp(const A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uCompareValueOp(const A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uCompareValueOp(const A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function fCompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fCompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fCompareValueOp(const A,B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fCompareValueOp(const A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -2191,304 +2214,304 @@ Function CompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual):
   operation.
 }
 
-Function iiCompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function iiCompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function iiCompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function iiCompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iiCompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-//------------------------------------------------------------------------------
-
-Function iuCompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-Function iuCompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-Function iuCompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-Function iuCompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function iuCompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iiCompareValueOp(const A: Int64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function uiCompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int8; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function uiCompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int16; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function uiCompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int32; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function uiCompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uiCompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-//------------------------------------------------------------------------------
-
-Function uuCompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-Function uuCompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-Function uuCompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-Function uuCompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function uuCompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function iuCompareValueOp(const A: Int64; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function fiCompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fiCompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fiCompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fiCompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt8; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function fiCompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fiCompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fiCompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fiCompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt16; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-//------------------------------------------------------------------------------
+Function uiCompareValueOp(const A: UInt32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt32; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function fuCompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fuCompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fuCompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fuCompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-
-Function fuCompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fuCompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fuCompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function fuCompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uiCompareValueOp(const A: UInt64; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function ifCompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ifCompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ifCompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ifCompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function ifCompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ifCompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ifCompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ifCompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uuCompareValueOp(const A: UInt32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function uuCompareValueOp(const A: UInt64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function uuCompareValueOp(const A: UInt64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //------------------------------------------------------------------------------
 
-Function ufCompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ufCompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ufCompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ufCompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
-Function ufCompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ufCompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ufCompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
-Function ufCompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fiCompareValueOp(const A: Extended; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function fuCompareValueOp(const A: Extended; const B: UInt8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(const A: Extended; const B: UInt16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(const A: Extended; const B: UInt32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(const A: Extended; const B: UInt64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function fuCompareValueOp(const A: Extended; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(const A: Extended; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(const A: Extended; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function fuCompareValueOp(const A: Extended; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function ifCompareValueOp(const A: Int8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(const A: Int16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(const A: Int32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(const A: Int64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function ifCompareValueOp(const A: Int8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(const A: Int16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(const A: Int32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ifCompareValueOp(const A: Int64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+//------------------------------------------------------------------------------
+
+Function ufCompareValueOp(const A: UInt8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(const A: UInt16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(const A: UInt32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(const A: UInt64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+
+Function ufCompareValueOp(const A: UInt8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(const A: UInt16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(const A: UInt32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
+Function ufCompareValueOp(const A: UInt64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;
 
 //==============================================================================
 
-Function CompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function CompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function CompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function CompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int8; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function CompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function CompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
-
-Function CompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-
-Function CompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int64; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt8; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-//------------------------------------------------------------------------------
-
-Function CompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt32; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IFEND}
+Function CompareValueOp(const A: UInt32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function CompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-{$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt64; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(const A: UInt32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(const A: UInt32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CompareValueOp(const A: UInt64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function CompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function CompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function CompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(const A: Extended; const B: UInt8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: UInt16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: UInt32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(const A: Extended; const B: UInt64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(const A: Extended; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Extended; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(const A: Extended; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(const A: Int8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(const A: Int64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(const A: Int8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: Int32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(const A: Int64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(const A: UInt8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(const A: UInt64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function CompareValueOp(const A: UInt8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CompareValueOp(const A: UInt32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function CompareValueOp(const A: UInt64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                         Ternary-operator-like functions                        
+                         Ternary-operator-like functions
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
@@ -2499,44 +2522,45 @@ Function CompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = c
     WARNING - the functionality is similar, but not the same as is in usual
               implementation of ternary operators. Ternary operators evaluate
               (execute) only expression in the selected path, whereas these
-              functions might (depends on whether they are inlined or not)
-              evaluate expressions for both pahs, irrespective of which one
-              will is selected.
+              functions will evaluate expressions for both pahs, irrespective
+              of which one will be selected.
 }
-Function iIfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8; overload;
-Function iIfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16; overload;
-Function iIfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32; overload;
-Function iIfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64; overload;
+Function iIfThen(Condition: Boolean; const OnTrue: Int8; const OnFalse: Int8 = 0): Int8; overload;
+Function iIfThen(Condition: Boolean; const OnTrue: Int16; const OnFalse: Int16 = 0): Int16; overload;
+Function iIfThen(Condition: Boolean; const OnTrue: Int32; const OnFalse: Int32 = 0): Int32; overload;
+Function iIfThen(Condition: Boolean; const OnTrue: Int64; const OnFalse: Int64 = 0): Int64; overload;
 
 //------------------------------------------------------------------------------
 
-Function uIfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8; overload;
-Function uIfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16; overload;
-Function uIfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32; overload;
-Function uIfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64; overload;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt8; const OnFalse: UInt8 = 0): UInt8; overload;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt16; const OnFalse: UInt16 = 0): UInt16; overload;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt32; const OnFalse: UInt32 = 0): UInt32; overload;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt64; const OnFalse: UInt64 = 0): UInt64; overload;
 
 //------------------------------------------------------------------------------
 
-Function fIfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended; overload;
+Function fIfThen(Condition: Boolean; const OnTrue: Extended; const OnFalse: Extended = 0.0): Extended; overload;
 
 //------------------------------------------------------------------------------
 {
   Note that other character types are just renamed or retyped ansi, wide or
   ucs4 char, so there is no need for more overloads (and it would not even work
-  in most compilers - eg. they see overload for UnicodeChar as being the same
-  as for WideChar).
-
-  But if you still want to have everything, look a little further down...
+  in most compilers - for example they see overload for UnicodeChar as being
+  the same as for WideChar). But if you still want to have everything, look a
+  little further down - there are non-overloaded type-specific-named functions.
 }
-Function cIfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar; overload;
-Function cIfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar; overload;
-Function cIfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char; overload;
+Function cIfThen(Condition: Boolean; const OnTrue: AnsiChar; const OnFalse: AnsiChar = #0): AnsiChar; overload;
+Function cIfThen(Condition: Boolean; const OnTrue: WideChar; const OnFalse: WideChar = #0): WideChar; overload;
+Function cIfThen(Condition: Boolean; const OnTrue: UCS4Char; const OnFalse: UCS4Char = 0): UCS4Char; overload;
 
 //------------------------------------------------------------------------------
 {
-  The same as with chars, some string types are just redressing of base types,
+  The same as with chars, some string types are just redressed base types,
   so only those are provided under common name overload, others can be found
   further with type-specific names.
+
+  UniqueCopy copy set to true ensures that the returned string is a unique full
+  copy of the input, not just reference to it.
 }
 Function sIfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;
 Function sIfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;
@@ -2548,10 +2572,10 @@ Function sIfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UC
 
 //------------------------------------------------------------------------------
 
-Function pIfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
+Function pIfThen(Condition: Boolean; const OnTrue: Pointer; const OnFalse: Pointer = nil): Pointer;
 
-Function oIfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject; overload;
-Function oIfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass; overload;
+Function oIfThen(Condition: Boolean; const OnTrue: TObject; const OnFalse: TObject = nil): TObject; overload;
+Function oIfThen(Condition: Boolean; const OnTrue: TClass; const OnFalse: TClass = nil): TClass; overload;
 
 Function vIfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant;
 
@@ -2567,42 +2591,45 @@ procedure bIfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out 
 {
   Functions provided for some non-overloadable types.
 }
-Function IfThenAnsiChar(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
-Function IfThenUTF8Char(Condition: Boolean; OnTrue: UTF8Char; OnFalse: UTF8Char = #0): UTF8Char;
-Function IfThenWideChar(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
-Function IfThenUnicodeChar(Condition: Boolean; OnTrue: UnicodeChar; OnFalse: UnicodeChar = #0): UnicodeChar;
-Function IfThenUCS4Char(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
-Function IfThenChar(Condition: Boolean; OnTrue: Char; OnFalse: Char = #0): Char;
+Function IfThenAnsiChar(Condition: Boolean; const OnTrue: AnsiChar; const OnFalse: AnsiChar = #0): AnsiChar;
+Function IfThenUTF8Char(Condition: Boolean; const OnTrue: UTF8Char; const OnFalse: UTF8Char = #0): UTF8Char;
+Function IfThenWideChar(Condition: Boolean; const OnTrue: WideChar; const OnFalse: WideChar = #0): WideChar;
+Function IfThenUnicodeChar(Condition: Boolean; const OnTrue: UnicodeChar; const OnFalse: UnicodeChar = #0): UnicodeChar;
+Function IfThenUCS4Char(Condition: Boolean; const OnTrue: UCS4Char; const OnFalse: UCS4Char = 0): UCS4Char;
+Function IfThenChar(Condition: Boolean; const OnTrue: Char; const OnFalse: Char = #0): Char;
 
-Function IfThenShortStr(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
-Function IfThenAnsiStr(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
-Function IfThenUTF8Str(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
-Function IfThenWideStr(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
-Function IfThenUnicodeStr(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
-Function IfThenUCS4Str(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
-Function IfThenStr(Condition: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False): String;
+Function IfThenShortString(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
+Function IfThenAnsiString(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
+Function IfThenUTF8String(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
+Function IfThenWideString(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
+Function IfThenUnicodeString(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
+Function IfThenUCS4String(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
+Function IfThenString(Condition: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False): String;
 
 //------------------------------------------------------------------------------
 
-Function IfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int8; const OnFalse: Int8 = 0): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int16; const OnFalse: Int16 = 0): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int32; const OnFalse: Int32 = 0): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function IfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int64; const OnFalse: Int64 = 0): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function IfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt8; const OnFalse: UInt8 = 0): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt16; const OnFalse: UInt16 = 0): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt32; const OnFalse: UInt32 = 0): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUInt64E)}
-Function IfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt64; const OnFalse: UInt64 = 0): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
-Function IfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Extended; const OnFalse: Extended = 0.0): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function IfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: AnsiChar; const OnFalse: AnsiChar = #0): AnsiChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: WideChar; const OnFalse: WideChar = #0): WideChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{
+  Note that UCS4Char is declared as 32bit unsigned integer, therefore its
+  overload here would collide with UInt32 overload, so it was removed.
+}
 
 Function IfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -2610,22 +2637,35 @@ Function IfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: Wid
 {$IF Declared(DistinctOverloadUnicodeStringE)}
 Function IfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
+{$IF Declared(DistinctOverloadUCS4StringE)}
 Function IfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 
-Function IfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Pointer; const OnFalse: Pointer = nil): Pointer; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-Function IfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject; overload;{$IFDEF CanInline} inline;{$ENDIF}
-Function IfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: TObject; const OnFalse: TObject = nil): TObject; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: TClass; const OnFalse: TClass = nil): TClass; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 Function IfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 Function IfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
-procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result); overload;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                        Check whether number is in range
+--------------------------------------------------------------------------------
+===============================================================================}
+(*
+Function iInRange(const Value,LowBound,HighBound: Int8): Boolean; overload;
+Function iInRange(const Value,LowBound,HighBound: Int16): Boolean; overload;
+Function iInRange(const Value,LowBound,HighBound: Int32): Boolean; overload;
+Function iInRange(const Value,LowBound,HighBound: Int64): Boolean; overload;
+*)
 (*
 ********************************************************************************
-
-InRange
 EnsureRange
 *)
 implementation
@@ -2657,7 +2697,7 @@ type
 {$IFEND}
 //------------------------------------------------------------------------------
 
-Function CompareUInt64(A,B: UInt64): Integer;
+Function CompareUInt64(const A,B: UInt64): Integer;
 begin
 {$IF Declared(NativeUInt64E)}
 If A > B then
@@ -2688,7 +2728,7 @@ end;
     Public auxiliary funtions - implementation
 ===============================================================================}
 
-Function Int64ToFloat(N: Int64): Extended;
+Function Int64ToFloat(const N: Int64): Extended;
 begin
 {$IF SizeOf(Extended) <> 10}
 If (N < AM_INT_DBL_LO) or (N > AM_INT_DBL_HI) then
@@ -2699,7 +2739,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function FloatToInt64(N: Extended): Int64;
+Function FloatToInt64(const N: Extended): Int64;
 begin
 If Frac(N) <> 0.0 then
   raise EAMInvalidOperation.CreateFmt('FloatToInt64: Floating point value (%g) cannot be stored in Int64.',[N]);
@@ -2714,7 +2754,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function UInt64ToFloat(N: UInt64): Extended;
+Function UInt64ToFloat(const N: UInt64): Extended;
 begin
 {
   Here we assume that the compiler cannot properly transfer integer bigger than
@@ -2736,19 +2776,23 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function FloatToUInt64(N: Extended): UInt64;
+Function FloatToUInt64(const N: Extended): UInt64;
+var
+  Temp: Extended;
 begin
 If Frac(N) <> 0.0 then
   raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot be stored in UInt64.',[N]);
 If (N < 0) or (N >= TwoPow64) then
   raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot fit into UInt64.',[N]);
 If N >= TwoPow63 then
-  N := N - TwoPow64;
+  Temp := N - TwoPow64
+else
+  Temp := N;
 {$IF SizeOf(Extended) <> 10}
-If (N < AM_INT_DBL_LO) or (N > AM_INT_DBL_HI) then
-  raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot be accurately converted to UInt64.',[N]);
+If (Temp < AM_INT_DBL_LO) or (Temp > AM_INT_DBL_HI) then
+  raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot be accurately converted to UInt64.',[Temp]);
 {$IFEND}
-Result := Trunc(N);
+Result := Trunc(Temp);
 end;
 
 
@@ -2761,7 +2805,7 @@ end;
     iDivMod - signed integers
 -------------------------------------------------------------------------------}
 
-procedure iDivMod(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+procedure iDivMod(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -2802,7 +2846,7 @@ asm
     MOV     byte ptr [ECX], AL
     MOV     ECX, dword ptr [Remainder]
     MOV     byte ptr [ECX], AH
-    
+
 {$ENDIF}
 end;
 {$ELSE}
@@ -2814,7 +2858,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivMod(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+procedure iDivMod(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -2826,7 +2870,7 @@ asm
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
 {$IFDEF x64}
   {$IFDEF Windows}
-  
+
     MOV     AX, CX
     MOV     CX, DX
     CWD                         // DX:AX := sign_extend(AX)
@@ -2874,7 +2918,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivMod(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+procedure iDivMod(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -2886,7 +2930,7 @@ asm
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
 {$IFDEF x64}
   {$IFDEF Windows}
-  
+
     MOV     EAX, ECX
     MOV     ECX, EDX
     CDQ                         // EDX:EAX := sign_extend(EAX)
@@ -2934,7 +2978,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+procedure iDivMod(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -2946,7 +2990,7 @@ asm
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
 {$IFDEF x64}
   {$IFDEF Windows}
-  
+
     MOV     RAX, RCX
     MOV     RCX, RDX
     CQO                         // RDX:RAX := sign_extend(RAX)
@@ -3015,7 +3059,7 @@ asm
 @Full64BitDivision:
   {
     Store signs of quotient and remainder (into EBP and later to the stack).
-    
+
     EBP bit 0 = sign of the quotient, bit 1 = sign of the remainder.
   }
     XOR     EBP, EBP
@@ -3092,7 +3136,7 @@ asm
 
   {
     We are done with loop, get signs for results and do correction.
-    
+
     Quotient is in EDX:EAX, remainder is in EDI:ESI.
   }
     POP     EBP
@@ -3150,7 +3194,7 @@ asm
 
     POP     EBP
     POP     EDI
-    POP     ESI    
+    POP     ESI
     POP     EBX
 
 {$ENDIF}
@@ -3184,7 +3228,7 @@ end;
     uDivMod - unsigned integers
 -------------------------------------------------------------------------------}
 
-procedure uDivMod(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+procedure uDivMod(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -3214,7 +3258,7 @@ asm
     MOV     byte ptr [RDX], AL
     SHR     AX, 8
     MOV     byte ptr [RCX], AL
-    
+
   {$ENDIF}
 {$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
@@ -3237,7 +3281,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivMod(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+procedure uDivMod(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -3249,7 +3293,7 @@ asm
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
 {$IFDEF x64}
   {$IFDEF Windows}
-  
+
     MOV     AX, CX
     MOV     CX, DX
     XOR     DX, DX
@@ -3297,7 +3341,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivMod(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+procedure uDivMod(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -3309,7 +3353,7 @@ asm
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
 {$IFDEF x64}
   {$IFDEF Windows}
-  
+
     MOV     EAX, ECX
     MOV     ECX, EDX
     XOR     EDX, EDX
@@ -3361,7 +3405,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+procedure uDivMod(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -3373,7 +3417,7 @@ asm
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- }
 {$IFDEF x64}
   {$IFDEF Windows}
-  
+
     MOV     RAX, RCX
     MOV     RCX, RDX
     XOR     RDX, RDX
@@ -3508,7 +3552,7 @@ asm
 
     POP     EBP
     POP     EDI
-    POP     ESI    
+    POP     ESI
     POP     EBX
 
 {$ENDIF}
@@ -3537,7 +3581,7 @@ var
   ShiftRegister:  array[0..3] of UInt32;
   i:              Integer;
   Carry:          Boolean;
-{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}  
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 begin
 If Divisor <> 0 then
   begin
@@ -3574,7 +3618,7 @@ If Divisor <> 0 then
                 Carry := ShiftRegister[2] < UInt64Rec(Divisor).Lo;
                 ShiftRegister[2] := ShiftRegister[2] - UInt64Rec(Divisor).Lo;
                 If Carry then
-                  ShiftRegister[3] := ShiftRegister[3] - UInt64Rec(Divisor).Hi - 1 
+                  ShiftRegister[3] := ShiftRegister[3] - UInt64Rec(Divisor).Hi - 1
                 else
                   ShiftRegister[3] := ShiftRegister[3] - UInt64Rec(Divisor).Hi;
                 Inc(ShiftRegister[0]);
@@ -3597,56 +3641,56 @@ end;
     DivMod - common-name overloads
 -------------------------------------------------------------------------------}
 
-procedure DivMod(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+procedure DivMod(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
 begin
 iDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivMod(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+procedure DivMod(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
 begin
 iDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivMod(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+procedure DivMod(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
 begin
 iDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivMod(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+procedure DivMod(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 begin
 iDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 //------------------------------------------------------------------------------
 
-procedure DivMod(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+procedure DivMod(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
 begin
 uDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivMod(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+procedure DivMod(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
 begin
 uDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivMod(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+procedure DivMod(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
 begin
 uDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivMod(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+procedure DivMod(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 begin
 uDivMod(Dividend,Divisor,Quotient,Remainder);
 end;
@@ -3661,7 +3705,7 @@ end;
     iDivCeil - signed integers
 -------------------------------------------------------------------------------}
 
-Function iDivCeil(Dividend,Divisor: Int8): Int8;
+Function iDivCeil(const Dividend,Divisor: Int8): Int8;
 var
   Remainder:  Int8;
 begin
@@ -3672,7 +3716,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeil(Dividend,Divisor: Int16): Int16;
+Function iDivCeil(const Dividend,Divisor: Int16): Int16;
 var
   Remainder:  Int16;
 begin
@@ -3683,7 +3727,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeil(Dividend,Divisor: Int32): Int32;
+Function iDivCeil(const Dividend,Divisor: Int32): Int32;
 var
   Remainder:  Int32;
 begin
@@ -3694,7 +3738,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeil(Dividend,Divisor: Int64): Int64;
+Function iDivCeil(const Dividend,Divisor: Int64): Int64;
 var
   Remainder:  Int64;
 begin
@@ -3707,7 +3751,7 @@ end;
     uDivCeil - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uDivCeil(Dividend,Divisor: UInt8): UInt8;
+Function uDivCeil(const Dividend,Divisor: UInt8): UInt8;
 var
   Remainder:  UInt8;
 begin
@@ -3718,7 +3762,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeil(Dividend,Divisor: UInt16): UInt16;
+Function uDivCeil(const Dividend,Divisor: UInt16): UInt16;
 var
   Remainder:  UInt16;
 begin
@@ -3729,7 +3773,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeil(Dividend,Divisor: UInt32): UInt32;
+Function uDivCeil(const Dividend,Divisor: UInt32): UInt32;
 var
   Remainder:  UInt32;
 begin
@@ -3744,7 +3788,7 @@ end;
   only as an alias to Int64.
 }
 {$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Result + 1 can overflow
-Function uDivCeil(Dividend,Divisor: UInt64): UInt64;
+Function uDivCeil(const Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
 begin
@@ -3758,21 +3802,21 @@ end;
     DivCeil - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function DivCeil(Dividend,Divisor: Int8): Int8;
+Function DivCeil(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivCeil(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeil(Dividend,Divisor: Int16): Int16;
+Function DivCeil(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivCeil(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeil(Dividend,Divisor: Int32): Int32;
+Function DivCeil(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivCeil(Dividend,Divisor);
 end;
@@ -3780,7 +3824,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeil(Dividend,Divisor: Int64): Int64;
+Function DivCeil(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeil(Dividend,Divisor);
 end;
@@ -3788,21 +3832,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function DivCeil(Dividend,Divisor: UInt8): UInt8;
+Function DivCeil(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivCeil(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeil(Dividend,Divisor: UInt16): UInt16;
+Function DivCeil(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivCeil(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeil(Dividend,Divisor: UInt32): UInt32;
+Function DivCeil(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivCeil(Dividend,Divisor);
 end;
@@ -3810,7 +3854,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeil(Dividend,Divisor: UInt64): UInt64;
+Function DivCeil(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivCeil(Dividend,Divisor);
 end;
@@ -3826,7 +3870,7 @@ end;
     iDivFloor - signed integers
 -------------------------------------------------------------------------------}
 
-Function iDivFloor(Dividend,Divisor: Int8): Int8;
+Function iDivFloor(const Dividend,Divisor: Int8): Int8;
 var
   Remainder:  Int8;
 begin
@@ -3837,7 +3881,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloor(Dividend,Divisor: Int16): Int16;
+Function iDivFloor(const Dividend,Divisor: Int16): Int16;
 var
   Remainder:  Int16;
 begin
@@ -3848,7 +3892,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloor(Dividend,Divisor: Int32): Int32;
+Function iDivFloor(const Dividend,Divisor: Int32): Int32;
 var
   Remainder:  Int32;
 begin
@@ -3859,7 +3903,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloor(Dividend,Divisor: Int64): Int64;
+Function iDivFloor(const Dividend,Divisor: Int64): Int64;
 var
   Remainder:  Int64;
 begin
@@ -3872,7 +3916,7 @@ end;
     uDivFloor - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uDivFloor(Dividend,Divisor: UInt8): UInt8;
+Function uDivFloor(const Dividend,Divisor: UInt8): UInt8;
 var
   Remainder:  UInt8;
 begin
@@ -3881,25 +3925,25 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloor(Dividend,Divisor: UInt16): UInt16;
+Function uDivFloor(const Dividend,Divisor: UInt16): UInt16;
 var
   Remainder:  UInt16;
 begin
 uDivMod(Dividend,Divisor,Result,Remainder);
 end;
- 
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloor(Dividend,Divisor: UInt32): UInt32;
+Function uDivFloor(const Dividend,Divisor: UInt32): UInt32;
 var
   Remainder:  UInt32;
 begin
 uDivMod(Dividend,Divisor,Result,Remainder);
 end;
- 
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloor(Dividend,Divisor: UInt64): UInt64;
+Function uDivFloor(const Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
 begin
@@ -3910,21 +3954,21 @@ end;
     DivFloor - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function DivFloor(Dividend,Divisor: Int8): Int8;
+Function DivFloor(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivFloor(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloor(Dividend,Divisor: Int16): Int16;
+Function DivFloor(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivFloor(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloor(Dividend,Divisor: Int32): Int32;
+Function DivFloor(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivFloor(Dividend,Divisor);
 end;
@@ -3932,7 +3976,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloor(Dividend,Divisor: Int64): Int64;
+Function DivFloor(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloor(Dividend,Divisor);
 end;
@@ -3940,21 +3984,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function DivFloor(Dividend,Divisor: UInt8): UInt8;
+Function DivFloor(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivFloor(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloor(Dividend,Divisor: UInt16): UInt16;
+Function DivFloor(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivFloor(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloor(Dividend,Divisor: UInt32): UInt32;
+Function DivFloor(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivFloor(Dividend,Divisor);
 end;
@@ -3962,7 +4006,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloor(Dividend,Divisor: UInt64): UInt64;
+Function DivFloor(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivFloor(Dividend,Divisor);
 end;
@@ -3971,11 +4015,11 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                              64bit ceil and floor                             
+                              64bit ceil and floor
 --------------------------------------------------------------------------------
 ===============================================================================}
 
-Function Ceil64(N: Extended): Int64;
+Function Ceil64(const N: Extended): Int64;
 begin
 // no need to check limits, Trunc is doing that
 Result := Trunc(N);
@@ -3985,7 +4029,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Floor64(N: Extended): Int64;
+Function Floor64(const N: Extended): Int64;
 begin
 Result := Trunc(N);
 If Frac(N) < 0 then
@@ -3994,7 +4038,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CeilU64(N: Extended): UInt64;
+Function CeilU64(const N: Extended): UInt64;
 begin
 If (N >= 0) and (N < TwoPow64) then
   begin
@@ -4010,7 +4054,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function FloorU64(N: Extended): UInt64;
+Function FloorU64(const N: Extended): UInt64;
 begin
 If (N >= 0) and (N < TwoPow64) then
   begin
@@ -4029,14 +4073,14 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                         Is positive integer power of 2                                                      
+                         Is positive integer power of 2
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
     iIsPow2 - signed integers
 -------------------------------------------------------------------------------}
 
-Function iIsPow2(N: Int8): Boolean;
+Function iIsPow2(const N: Int8): Boolean;
 begin
 If N > 0 then
   Result := N and Pred(N) = 0
@@ -4050,7 +4094,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIsPow2(N: Int16): Boolean;
+Function iIsPow2(const N: Int16): Boolean;
 begin
 If N > 0 then
   Result := N and Pred(N) = 0
@@ -4060,7 +4104,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIsPow2(N: Int32): Boolean;
+Function iIsPow2(const N: Int32): Boolean;
 begin
 If N > 0 then
   Result := N and Pred(N) = 0
@@ -4070,7 +4114,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIsPow2(N: Int64): Boolean;
+Function iIsPow2(const N: Int64): Boolean;
 begin
 If N > 0 then
   Result := N and Pred(N) = 0
@@ -4082,7 +4126,7 @@ end;
     uIsPow2 - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uIsPow2(N: UInt8): Boolean;
+Function uIsPow2(const N: UInt8): Boolean;
 begin
 If N > 0 then
   Result := N and Pred(N) = 0
@@ -4092,7 +4136,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIsPow2(N: UInt16): Boolean;
+Function uIsPow2(const N: UInt16): Boolean;
 begin
 If N > 0 then
   Result := N and Pred(N) = 0
@@ -4102,7 +4146,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIsPow2(N: UInt32): Boolean;
+Function uIsPow2(const N: UInt32): Boolean;
 begin
 If N > 0 then
   Result := N and Pred(N) = 0
@@ -4113,7 +4157,7 @@ end;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 {$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // N - 1 can overflow
-Function uIsPow2(N: UInt64): Boolean;
+Function uIsPow2(const N: UInt64): Boolean;
 begin
 If CompareUInt64(N,0) > 0 then
   Result := N and (N - 1) = 0
@@ -4126,21 +4170,21 @@ end;
     IsPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function IsPow2(N: Int8): Boolean;
+Function IsPow2(const N: Int8): Boolean;
 begin
 Result := iIsPow2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IsPow2(N: Int16): Boolean;
+Function IsPow2(const N: Int16): Boolean;
 begin
 Result := iIsPow2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IsPow2(N: Int32): Boolean;
+Function IsPow2(const N: Int32): Boolean;
 begin
 Result := iIsPow2(N);
 end;
@@ -4148,7 +4192,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IsPow2(N: Int64): Boolean;
+Function IsPow2(const N: Int64): Boolean;
 begin
 Result := iIsPow2(N);
 end;
@@ -4156,21 +4200,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function IsPow2(N: UInt8): Boolean;
+Function IsPow2(const N: UInt8): Boolean;
 begin
 Result := uIsPow2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IsPow2(N: UInt16): Boolean; 
+Function IsPow2(const N: UInt16): Boolean;
 begin
 Result := uIsPow2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IsPow2(N: UInt32): Boolean;   
+Function IsPow2(const N: UInt32): Boolean;
 begin
 Result := uIsPow2(N);
 end;
@@ -4178,10 +4222,10 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IsPow2(N: UInt64): Boolean; 
+Function IsPow2(const N: UInt64): Boolean;
 begin
 Result := uIsPow2(N);
-end;  
+end;
 {$IFEND}
 
 
@@ -4194,7 +4238,7 @@ end;
     iIntLog2 - signed integers
 -------------------------------------------------------------------------------}
 
-Function iIntLog2(N: Int8): Int32;
+Function iIntLog2(const N: Int8): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4269,7 +4313,7 @@ asm
     MOV   EAX, -1
 
 @RoutineEnd:
-    
+
 {$ENDIF}
 end;
 {$ELSE}
@@ -4290,7 +4334,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIntLog2(N: Int16): Int32;
+Function iIntLog2(const N: Int16): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4362,7 +4406,7 @@ asm
     MOV   EAX, -1
 
 @RoutineEnd:
-    
+
 {$ENDIF}
 end;
 {$ELSE}
@@ -4383,7 +4427,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIntLog2(N: Int32): Int32;
+Function iIntLog2(const N: Int32): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4452,7 +4496,7 @@ asm
     MOV   EAX, -1
 
 @RoutineEnd:
-    
+
 {$ENDIF}
 end;
 {$ELSE}
@@ -4473,7 +4517,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIntLog2(N: Int64): Int32;
+Function iIntLog2(const N: Int64): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4524,7 +4568,7 @@ asm
 
   {$ENDIF}
 {$ELSE}// -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
-  
+
     // load the number
     MOV   EAX, dword ptr [N]
     MOV   EDX, dword ptr [N + 4]
@@ -4554,7 +4598,7 @@ asm
 
     SUB   EBX, 1
     SBB   ECX, 0
-    
+
     TEST  EAX, EBX
     JNZ   @InvalidInputWithCleanup
     TEST  EDX, ECX
@@ -4609,7 +4653,7 @@ end;
     uIntLog2 - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uIntLog2(N: UInt8): Int32;
+Function uIntLog2(const N: UInt8): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4684,7 +4728,7 @@ asm
     MOV   EAX, -1
 
 @RoutineEnd:
-    
+
 {$ENDIF}
 end;
 {$ELSE}
@@ -4705,7 +4749,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIntLog2(N: UInt16): Int32;
+Function uIntLog2(const N: UInt16): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4777,7 +4821,7 @@ asm
     MOV   EAX, -1
 
 @RoutineEnd:
-    
+
 {$ENDIF}
 end;
 {$ELSE}
@@ -4798,7 +4842,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIntLog2(N: UInt32): Int32;
+Function uIntLog2(const N: UInt32): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4867,7 +4911,7 @@ asm
     MOV   EAX, -1
 
 @RoutineEnd:
-    
+
 {$ENDIF}
 end;
 {$ELSE}
@@ -4888,7 +4932,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIntLog2(N: UInt64): Int32;
+Function uIntLog2(const N: UInt64): Int32;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -4960,7 +5004,7 @@ asm
 
     SUB   EBX, 1
     SBB   ECX, 0
-    
+
     TEST  EAX, EBX
     JNZ   @InvalidInputWithCleanup
     TEST  EDX, ECX
@@ -5017,21 +5061,21 @@ end;
     IntLog2 - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function IntLog2(N: Int8): Int32;
+Function IntLog2(const N: Int8): Int32;
 begin
 Result := iIntLog2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IntLog2(N: Int16): Int32;
+Function IntLog2(const N: Int16): Int32;
 begin
 Result := iIntLog2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IntLog2(N: Int32): Int32;
+Function IntLog2(const N: Int32): Int32;
 begin
 Result := iIntLog2(N);
 end;
@@ -5039,7 +5083,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IntLog2(N: Int64): Int32;
+Function IntLog2(const N: Int64): Int32;
 begin
 Result := iIntLog2(N);
 end;
@@ -5047,21 +5091,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function IntLog2(N: UInt8): Int32;
+Function IntLog2(const N: UInt8): Int32;
 begin
 Result := uIntLog2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IntLog2(N: UInt16): Int32;
+Function IntLog2(const N: UInt16): Int32;
 begin
 Result := uIntLog2(N);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IntLog2(N: UInt32): Int32;
+Function IntLog2(const N: UInt32): Int32;
 begin
 Result := uIntLog2(N);
 end;
@@ -5069,7 +5113,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IntLog2(N: UInt64): Int32;
+Function IntLog2(const N: UInt64): Int32;
 begin
 Result := uIntLog2(N);
 end;
@@ -5147,7 +5191,7 @@ end;
     iTryDivModPow2 - signed integers
 -------------------------------------------------------------------------------}
 
-Function iTryDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
+Function iTryDivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -5172,7 +5216,7 @@ asm
     BSF   DX, DX                      // Log2(Divisor)
     JZ    @SignalFailure              // let's be paranoid
 
-    XCHG  RCX, RDX  
+    XCHG  RCX, RDX
     TEST  DL, DL
     JNS   @PositiveDividend
 
@@ -5266,7 +5310,7 @@ asm
     MOV   byte ptr [RSI], AL          // storing remainder
 
 @SignalSuccess:
-    
+
     MOV   RAX, 1                      // return true
     JMP   @RoutineEnd
 
@@ -5293,7 +5337,7 @@ asm
     BSF   DX, DX                      // Log2(Divisor)
     JZ    @SignalFailure              // let's be paranoid
 
-    XCHG  ECX, EDX  
+    XCHG  ECX, EDX
     TEST  AL, AL
     JNS   @PositiveDividend
 
@@ -5334,7 +5378,7 @@ asm
     MOV   byte ptr [EAX], BL          // storing remainder
 
 @SignalSuccess:
-    
+
     MOV   EAX, 1                      // return true
     JMP   @RoutineEnd
 
@@ -5385,7 +5429,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iTryDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
+Function iTryDivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -5522,7 +5566,7 @@ asm
     BSF   DX, DX
     JZ    @SignalFailure
 
-    XCHG  ECX, EDX  
+    XCHG  ECX, EDX
     TEST  AX, AX
     JNS   @PositiveDividend
 
@@ -5602,7 +5646,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iTryDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
+Function iTryDivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -5739,7 +5783,7 @@ asm
     BSF   EDX, EDX
     JZ    @SignalFailure
 
-    XCHG  ECX, EDX  
+    XCHG  ECX, EDX
     TEST  EAX, EAX
     JNS   @PositiveDividend
 
@@ -5819,7 +5863,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iTryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
+Function iTryDivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -5948,7 +5992,7 @@ asm
     PUSH  EDI
 
     PUSH  EAX
-    PUSH  EDX  
+    PUSH  EDX
 
     // load divisor
     MOV   EAX, dword ptr [Divisor]
@@ -6017,7 +6061,7 @@ asm
 @N_ShiftAbove31:
 
     MOV   EAX, EDX
-    
+
     // fill the EDX with sign bit
     TEST  EDX, EDX
     SETNS DL
@@ -6152,7 +6196,7 @@ end;
     uTryDivModPow2 - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uTryDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
+Function uTryDivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -6243,7 +6287,7 @@ asm
     AND   BL, AL                      // calculate remainder
     XCHG  EDX, ECX                    // shift must be in CL
     SHR   AL, CL                      // calculate quotient
-    
+
     MOV   byte ptr [EDX], AL          // store quotient
     MOV   EAX, dword ptr [Remainder]  // load address of remainder
     MOV   byte ptr [EAX], BL          // store remainder
@@ -6278,7 +6322,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uTryDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
+Function uTryDivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -6401,7 +6445,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uTryDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
+Function uTryDivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -6499,7 +6543,7 @@ asm
 
 @SignalFailure:
 
-    XOR   EAX, EAX                    
+    XOR   EAX, EAX
 
 @RoutineEnd:
 
@@ -6524,7 +6568,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uTryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
+Function uTryDivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -6684,7 +6728,7 @@ asm
     // cleanup and signal success
     POP   ESI
     POP   EDI
-    ADD   ESP, 8    // EDX, EAX    
+    ADD   ESP, 8    // EDX, EAX
 
     MOV   EAX, 1
     JMP   @RoutineEnd
@@ -6721,56 +6765,56 @@ end;
     TryDivModPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function TryDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
 begin
 Result := iTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function TryDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
 begin
 Result := iTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function TryDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
 begin
 Result := iTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function TryDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 begin
 Result := iTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 //------------------------------------------------------------------------------
 
-Function TryDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
 begin
 Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function TryDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
 begin
 Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function TryDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
 begin
 Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function TryDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
+Function TryDivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
 begin
 Result := uTryDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
@@ -6785,7 +6829,7 @@ end;
     iDivModPow2 - signed integers
 -------------------------------------------------------------------------------}
 
-Function iDivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
+Function iDivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
 begin
 If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6797,7 +6841,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
+Function iDivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
 begin
 If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6809,7 +6853,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
+Function iDivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
 begin
 If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6821,7 +6865,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
+Function iDivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 begin
 If not iTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6835,7 +6879,7 @@ end;
     uDivModPow2 - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uDivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
+Function uDivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
 begin
 If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6847,7 +6891,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
+Function uDivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
 begin
 If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6859,7 +6903,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
+Function uDivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
 begin
 If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6871,7 +6915,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
+Function uDivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
 begin
 If not uTryDivModPow2(Dividend,Divisor,Quotient,Remainder) then
   begin
@@ -6885,56 +6929,56 @@ end;
     DivModPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function DivModPow2(Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
+Function DivModPow2(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8): Boolean;
 begin
 Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivModPow2(Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
+Function DivModPow2(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16): Boolean;
 begin
 Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivModPow2(Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
+Function DivModPow2(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32): Boolean;
 begin
 Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivModPow2(Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
+Function DivModPow2(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64): Boolean;
 begin
 Result := iDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 //------------------------------------------------------------------------------
 
-Function DivModPow2(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
+Function DivModPow2(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8): Boolean;
 begin
 Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivModPow2(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
+Function DivModPow2(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16): Boolean;
 begin
 Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivModPow2(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
+Function DivModPow2(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32): Boolean;
 begin
 Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivModPow2(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
+Function DivModPow2(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64): Boolean;
 begin
 Result := uDivModPow2(Dividend,Divisor,Quotient,Remainder);
 end;
@@ -6949,7 +6993,7 @@ end;
     iDivCeilPow2 - signed integers
 -------------------------------------------------------------------------------}
 
-Function iDivCeilPow2(Dividend,Divisor: Int8): Int8;
+Function iDivCeilPow2(const Dividend,Divisor: Int8): Int8;
 var
   Remainder:  Int8;
 begin
@@ -6960,7 +7004,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2(Dividend,Divisor: Int16): Int16;
+Function iDivCeilPow2(const Dividend,Divisor: Int16): Int16;
 var
   Remainder:  Int16;
 begin
@@ -6971,7 +7015,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2(Dividend,Divisor: Int32): Int32;
+Function iDivCeilPow2(const Dividend,Divisor: Int32): Int32;
 var
   Remainder:  Int32;
 begin
@@ -6982,7 +7026,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2(Dividend,Divisor: Int64): Int64;
+Function iDivCeilPow2(const Dividend,Divisor: Int64): Int64;
 var
   Remainder:  Int64;
 begin
@@ -6995,7 +7039,7 @@ end;
     uDivCeilPow2 - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uDivCeilPow2(Dividend,Divisor: UInt8): UInt8;
+Function uDivCeilPow2(const Dividend,Divisor: UInt8): UInt8;
 var
   Remainder:  UInt8;
 begin
@@ -7006,7 +7050,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeilPow2(Dividend,Divisor: UInt16): UInt16;
+Function uDivCeilPow2(const Dividend,Divisor: UInt16): UInt16;
 var
   Remainder:  UInt16;
 begin
@@ -7017,7 +7061,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeilPow2(Dividend,Divisor: UInt32): UInt32;
+Function uDivCeilPow2(const Dividend,Divisor: UInt32): UInt32;
 var
   Remainder:  UInt32;
 begin
@@ -7028,8 +7072,8 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Result + 1 can overflow 
-Function uDivCeilPow2(Dividend,Divisor: UInt64): UInt64;
+{$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Result + 1 can overflow
+Function uDivCeilPow2(const Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
 begin
@@ -7043,21 +7087,21 @@ end;
     DivCeilPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function DivCeilPow2(Dividend,Divisor: Int8): Int8;
+Function DivCeilPow2(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivCeilPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2(Dividend,Divisor: Int16): Int16;
+Function DivCeilPow2(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivCeilPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2(Dividend,Divisor: Int32): Int32;
+Function DivCeilPow2(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivCeilPow2(Dividend,Divisor);
 end;
@@ -7065,7 +7109,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2(Dividend,Divisor: Int64): Int64;
+Function DivCeilPow2(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2(Dividend,Divisor);
 end;
@@ -7073,21 +7117,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function DivCeilPow2(Dividend,Divisor: UInt8): UInt8;
+Function DivCeilPow2(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivCeilPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2(Dividend,Divisor: UInt16): UInt16;
+Function DivCeilPow2(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivCeilPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2(Dividend,Divisor: UInt32): UInt32;
+Function DivCeilPow2(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivCeilPow2(Dividend,Divisor);
 end;
@@ -7095,7 +7139,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2(Dividend,Divisor: UInt64): UInt64;
+Function DivCeilPow2(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivCeilPow2(Dividend,Divisor);
 end;
@@ -7111,7 +7155,7 @@ end;
     iDivFloorPow2 - signed integers
 -------------------------------------------------------------------------------}
 
-Function iDivFloorPow2(Dividend,Divisor: Int8): Int8;
+Function iDivFloorPow2(const Dividend,Divisor: Int8): Int8;
 var
   Remainder:  Int8;
 begin
@@ -7122,7 +7166,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2(Dividend,Divisor: Int16): Int16;
+Function iDivFloorPow2(const Dividend,Divisor: Int16): Int16;
 var
   Remainder:  Int16;
 begin
@@ -7133,7 +7177,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2(Dividend,Divisor: Int32): Int32;
+Function iDivFloorPow2(const Dividend,Divisor: Int32): Int32;
 var
   Remainder:  Int32;
 begin
@@ -7144,7 +7188,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2(Dividend,Divisor: Int64): Int64;
+Function iDivFloorPow2(const Dividend,Divisor: Int64): Int64;
 var
   Remainder:  Int64;
 begin
@@ -7157,7 +7201,7 @@ end;
     uDivFloorPow2 - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uDivFloorPow2(Dividend,Divisor: UInt8): UInt8;
+Function uDivFloorPow2(const Dividend,Divisor: UInt8): UInt8;
 var
   Remainder:  UInt8;
 begin
@@ -7166,7 +7210,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2(Dividend,Divisor: UInt16): UInt16;
+Function uDivFloorPow2(const Dividend,Divisor: UInt16): UInt16;
 var
   Remainder:  UInt16;
 begin
@@ -7175,7 +7219,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2(Dividend,Divisor: UInt32): UInt32;
+Function uDivFloorPow2(const Dividend,Divisor: UInt32): UInt32;
 var
   Remainder:  UInt32;
 begin
@@ -7184,7 +7228,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2(Dividend,Divisor: UInt64): UInt64;
+Function uDivFloorPow2(const Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
 begin
@@ -7195,21 +7239,21 @@ end;
     DivFloorPow2 - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function DivFloorPow2(Dividend,Divisor: Int8): Int8;
+Function DivFloorPow2(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivFloorPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2(Dividend,Divisor: Int16): Int16;
+Function DivFloorPow2(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivFloorPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2(Dividend,Divisor: Int32): Int32;
+Function DivFloorPow2(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivFloorPow2(Dividend,Divisor);
 end;
@@ -7217,7 +7261,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2(Dividend,Divisor: Int64): Int64;
+Function DivFloorPow2(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2(Dividend,Divisor);
 end;
@@ -7225,21 +7269,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function DivFloorPow2(Dividend,Divisor: UInt8): UInt8;
+Function DivFloorPow2(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivFloorPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2(Dividend,Divisor: UInt16): UInt16;
+Function DivFloorPow2(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivFloorPow2(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2(Dividend,Divisor: UInt32): UInt32;
+Function DivFloorPow2(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivFloorPow2(Dividend,Divisor);
 end;
@@ -7247,7 +7291,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2(Dividend,Divisor: UInt64): UInt64;
+Function DivFloorPow2(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivFloorPow2(Dividend,Divisor);
 end;
@@ -7256,7 +7300,7 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-         Combined division and modulo by integer power of 2 (no checks)          
+         Combined division and modulo by integer power of 2 (no checks)
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
@@ -7265,7 +7309,7 @@ end;
 
 {$IFDEF PurePascal}
 
-Function BSF_8(N: UInt8): Integer;
+Function BSF_8(const N: UInt8): Integer;
 var
   i:  Integer;
 begin
@@ -7281,7 +7325,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function BSF_16(N: UInt16): Integer;
+Function BSF_16(const N: UInt16): Integer;
 var
   i:  Integer;
 begin
@@ -7297,7 +7341,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function BSF_32(N: UInt32): Integer;
+Function BSF_32(const N: UInt32): Integer;
 var
   i:  Integer;
 begin
@@ -7313,7 +7357,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function BSF_64(N: UInt64): Integer;
+Function BSF_64(const N: UInt64): Integer;
 var
   i:  Integer;
 begin
@@ -7333,7 +7377,7 @@ end;
     iDivModPow2NoCheck - signed integers
 -------------------------------------------------------------------------------}
 
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8); overload;
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -7401,7 +7445,7 @@ asm
     AND   SIL, DIL
     SHR   DIL, CL
 
-@StoreResults:    
+@StoreResults:
 
     MOV   byte ptr [RDX], DIL
     MOV   byte ptr [RAX], SIL
@@ -7470,7 +7514,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16); overload;
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -7536,7 +7580,7 @@ asm
     AND   SI, DI
     SHR   DI, CL
 
-@StoreResults:    
+@StoreResults:
 
     MOV   word ptr [RDX], DI
     MOV   word ptr [RAX], SI
@@ -7604,7 +7648,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32); overload;
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -7670,7 +7714,7 @@ asm
     AND   ESI, EDI
     SHR   EDI, CL
 
-@StoreResults:    
+@StoreResults:
 
     MOV   dword ptr [RDX], EDI
     MOV   dword ptr [RAX], ESI
@@ -7738,7 +7782,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64); overload;
+procedure iDivModPow2NoCheck(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -7804,7 +7848,7 @@ asm
     AND   RSI, RDI
     SHR   RDI, CL
 
-@StoreResults:    
+@StoreResults:
 
     MOV   qword ptr [RDX], RDI
     MOV   qword ptr [RAX], RSI
@@ -7817,7 +7861,7 @@ asm
     PUSH  EDI
 
     PUSH  EAX
-    PUSH  EDX  
+    PUSH  EDX
 
     // load divisor
     MOV   EDI, dword ptr [Divisor]
@@ -7864,7 +7908,7 @@ asm
 @N_ShiftAbove31:
 
     MOV   EAX, EDX
-    
+
     // fill EDX with sign bit
     TEST  EDX, EDX
     SETNS DL
@@ -7985,7 +8029,7 @@ end;
     uDivModPow2NoCheck - unsigned integers
 -------------------------------------------------------------------------------}
 
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -8047,7 +8091,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -8106,7 +8150,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -8165,7 +8209,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+procedure uDivModPow2NoCheck(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 {$IFNDEF PurePascal}
 asm
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
@@ -8277,56 +8321,56 @@ end;
     DivModPow2NoCheck - common-name overloads
 -------------------------------------------------------------------------------}
 
-procedure DivModPow2NoCheck(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NoCheck(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NoCheck(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NoCheck(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+procedure DivModPow2NoCheck(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 //------------------------------------------------------------------------------
 
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NoCheck(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+procedure DivModPow2NoCheck(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
@@ -8335,112 +8379,112 @@ end;
     *DivModPow2NC - shortened sliases
 -------------------------------------------------------------------------------}
 
-procedure iDivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+procedure iDivModPow2NC(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+procedure iDivModPow2NC(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+procedure iDivModPow2NC(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure iDivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+procedure iDivModPow2NC(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 //------------------------------------------------------------------------------
 
-procedure uDivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+procedure uDivModPow2NC(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+procedure uDivModPow2NC(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+procedure uDivModPow2NC(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure uDivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+procedure uDivModPow2NC(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 //------------------------------------------------------------------------------
 
-procedure DivModPow2NC(Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
+procedure DivModPow2NC(const Dividend,Divisor: Int8; out Quotient,Remainder: Int8);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NC(Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
+procedure DivModPow2NC(const Dividend,Divisor: Int16; out Quotient,Remainder: Int16);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NC(Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
+procedure DivModPow2NC(const Dividend,Divisor: Int32; out Quotient,Remainder: Int32);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NC(Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
+procedure DivModPow2NC(const Dividend,Divisor: Int64; out Quotient,Remainder: Int64);
 begin
 iDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NC(Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
+procedure DivModPow2NC(const Dividend,Divisor: UInt8; out Quotient,Remainder: UInt8);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NC(Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
+procedure DivModPow2NC(const Dividend,Divisor: UInt16; out Quotient,Remainder: UInt16);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NC(Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
+procedure DivModPow2NC(const Dividend,Divisor: UInt32; out Quotient,Remainder: UInt32);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure DivModPow2NC(Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
+procedure DivModPow2NC(const Dividend,Divisor: UInt64; out Quotient,Remainder: UInt64);
 begin
 uDivModPow2NoCheck(Dividend,Divisor,Quotient,Remainder);
 end;
@@ -8448,14 +8492,14 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-      Combined division and ceiling (optimized for pow2 divisor, no checks)     
+      Combined division and ceiling (optimized for pow2 divisor, no checks)
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
     iDivCeilPow2NoCheck - signed integers
 -------------------------------------------------------------------------------}
 
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int8): Int8;
 var
   Remainder:  Int8;
 begin
@@ -8466,7 +8510,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int16): Int16;
 var
   Remainder:  Int16;
 begin
@@ -8477,7 +8521,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int32): Int32;
 var
   Remainder:  Int32;
 begin
@@ -8488,7 +8532,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64;
+Function iDivCeilPow2NoCheck(const Dividend,Divisor: Int64): Int64;
 var
   Remainder:  Int64;
 begin
@@ -8501,7 +8545,7 @@ end;
     uDivCeilPow2NoCheck - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt8): UInt8;
 var
   Remainder:  UInt8;
 begin
@@ -8509,10 +8553,10 @@ uDivModPow2NoCheck(Dividend,Divisor,Result,Remainder);
 If Remainder <> 0 then
   Inc(Result);
 end;
- 
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt16): UInt16;
 var
   Remainder:  UInt16;
 begin
@@ -8523,7 +8567,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt32): UInt32;
 var
   Remainder:  UInt32;
 begin
@@ -8535,7 +8579,7 @@ end;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 {$IF not Declared(NativeUInt64E) and Defined(AM_OverflowChecks)}{$Q-}{$IFEND} // Result + 1 can overflow
-Function uDivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+Function uDivCeilPow2NoCheck(const Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
 begin
@@ -8549,21 +8593,21 @@ end;
     DivCeilPow2NoCheck - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int8): Int8;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int16): Int16;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int32): Int32;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8571,7 +8615,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: Int64): Int64;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8579,21 +8623,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8601,7 +8645,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+Function DivCeilPow2NoCheck(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8611,77 +8655,77 @@ end;
     *DivCeilPow2NC - shortened sliases
 -------------------------------------------------------------------------------}
 
-Function iDivCeilPow2NC(Dividend,Divisor: Int8): Int8;
+Function iDivCeilPow2NC(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2NC(Dividend,Divisor: Int16): Int16;
+Function iDivCeilPow2NC(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2NC(Dividend,Divisor: Int32): Int32;
+Function iDivCeilPow2NC(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivCeilPow2NC(Dividend,Divisor: Int64): Int64;
+Function iDivCeilPow2NC(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 //------------------------------------------------------------------------------
 
-Function uDivCeilPow2NC(Dividend,Divisor: UInt8): UInt8;
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeilPow2NC(Dividend,Divisor: UInt16): UInt16;
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeilPow2NC(Dividend,Divisor: UInt32): UInt32;
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivCeilPow2NC(Dividend,Divisor: UInt64): UInt64;
+Function uDivCeilPow2NC(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 //------------------------------------------------------------------------------
 
-Function DivCeilPow2NC(Dividend,Divisor: Int8): Int8;
+Function DivCeilPow2NC(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NC(Dividend,Divisor: Int16): Int16;
+Function DivCeilPow2NC(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NC(Dividend,Divisor: Int32): Int32;
+Function DivCeilPow2NC(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8689,7 +8733,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NC(Dividend,Divisor: Int64): Int64;
+Function DivCeilPow2NC(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8697,21 +8741,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NC(Dividend,Divisor: UInt8): UInt8;
+Function DivCeilPow2NC(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NC(Dividend,Divisor: UInt16): UInt16;
+Function DivCeilPow2NC(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NC(Dividend,Divisor: UInt32): UInt32;
+Function DivCeilPow2NC(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8719,7 +8763,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivCeilPow2NC(Dividend,Divisor: UInt64): UInt64;
+Function DivCeilPow2NC(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivCeilPow2NoCheck(Dividend,Divisor);
 end;
@@ -8728,14 +8772,14 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-       Combined division and floor (optimized for pow2 divisor, no checks)           
+       Combined division and floor (optimized for pow2 divisor, no checks)
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
     iDivFloorPow2NoCheck - signed integers
 -------------------------------------------------------------------------------}
 
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int8): Int8;
 var
   Remainder:  Int8;
 begin
@@ -8746,7 +8790,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int16): Int16;
 var
   Remainder:  Int16;
 begin
@@ -8757,7 +8801,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int32): Int32;
 var
   Remainder:  Int32;
 begin
@@ -8768,7 +8812,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64;
+Function iDivFloorPow2NoCheck(const Dividend,Divisor: Int64): Int64;
 var
   Remainder:  Int64;
 begin
@@ -8781,7 +8825,7 @@ end;
     uDivFloorPow2NoCheck - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt8): UInt8;
 var
   Remainder:  UInt8;
 begin
@@ -8790,7 +8834,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt16): UInt16;
 var
   Remainder:  UInt16;
 begin
@@ -8799,7 +8843,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt32): UInt32;
 var
   Remainder:  UInt32;
 begin
@@ -8808,7 +8852,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+Function uDivFloorPow2NoCheck(const Dividend,Divisor: UInt64): UInt64;
 var
   Remainder:  UInt64;
 begin
@@ -8819,21 +8863,21 @@ end;
     DivFloorPow2NoCheck - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int8): Int8;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int16): Int16;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int32): Int32;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -8841,7 +8885,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: Int64): Int64;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -8849,21 +8893,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt8): UInt8;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt16): UInt16;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt32): UInt32;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -8871,7 +8915,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NoCheck(Dividend,Divisor: UInt64): UInt64;
+Function DivFloorPow2NoCheck(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -8881,77 +8925,77 @@ end;
     *DivCeilPow2NC - shortened sliases
 -------------------------------------------------------------------------------}
 
-Function iDivFloorPow2NC(Dividend,Divisor: Int8): Int8;
+Function iDivFloorPow2NC(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2NC(Dividend,Divisor: Int16): Int16;
+Function iDivFloorPow2NC(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2NC(Dividend,Divisor: Int32): Int32;
+Function iDivFloorPow2NC(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iDivFloorPow2NC(Dividend,Divisor: Int64): Int64;
+Function iDivFloorPow2NC(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 //------------------------------------------------------------------------------
 
-Function uDivFloorPow2NC(Dividend,Divisor: UInt8): UInt8;
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2NC(Dividend,Divisor: UInt16): UInt16;
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2NC(Dividend,Divisor: UInt32): UInt32;
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uDivFloorPow2NC(Dividend,Divisor: UInt64): UInt64;
+Function uDivFloorPow2NC(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 //------------------------------------------------------------------------------
 
-Function DivFloorPow2NC(Dividend,Divisor: Int8): Int8;
+Function DivFloorPow2NC(const Dividend,Divisor: Int8): Int8;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NC(Dividend,Divisor: Int16): Int16;
+Function DivFloorPow2NC(const Dividend,Divisor: Int16): Int16;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NC(Dividend,Divisor: Int32): Int32;
+Function DivFloorPow2NC(const Dividend,Divisor: Int32): Int32;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -8959,7 +9003,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NC(Dividend,Divisor: Int64): Int64;
+Function DivFloorPow2NC(const Dividend,Divisor: Int64): Int64;
 begin
 Result := iDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -8967,21 +9011,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NC(Dividend,Divisor: UInt8): UInt8;
+Function DivFloorPow2NC(const Dividend,Divisor: UInt8): UInt8;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NC(Dividend,Divisor: UInt16): UInt16;
+Function DivFloorPow2NC(const Dividend,Divisor: UInt16): UInt16;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NC(Dividend,Divisor: UInt32): UInt32;
+Function DivFloorPow2NC(const Dividend,Divisor: UInt32): UInt32;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -8989,7 +9033,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function DivFloorPow2NC(Dividend,Divisor: UInt64): UInt64;
+Function DivFloorPow2NC(const Dividend,Divisor: UInt64): UInt64;
 begin
 Result := uDivFloorPow2NoCheck(Dividend,Divisor);
 end;
@@ -9005,7 +9049,7 @@ end;
     iMin - signed integers
 -------------------------------------------------------------------------------}
 
-Function iMin(A,B: Int8): Int8;
+Function iMin(const A,B: Int8): Int8;
 begin
 If A < B then
   Result := A
@@ -9015,7 +9059,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iMin(A,B: Int16): Int16;
+Function iMin(const A,B: Int16): Int16;
 begin
 If A < B then
   Result := A
@@ -9025,7 +9069,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iMin(A,B: Int32): Int32;
+Function iMin(const A,B: Int32): Int32;
 begin
 If A < B then
   Result := A
@@ -9035,7 +9079,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iMin(A,B: Int64): Int64;
+Function iMin(const A,B: Int64): Int64;
 begin
 If A < B then
   Result := A
@@ -9047,7 +9091,7 @@ end;
     uMin - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uMin(A,B: UInt8): UInt8;
+Function uMin(const A,B: UInt8): UInt8;
 begin
 If A < B then
   Result := A
@@ -9057,7 +9101,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uMin(A,B: UInt16): UInt16;
+Function uMin(const A,B: UInt16): UInt16;
 begin
 If A < B then
   Result := A
@@ -9067,7 +9111,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uMin(A,B: UInt32): UInt32;
+Function uMin(const A,B: UInt32): UInt32;
 begin
 If A < B then
   Result := A
@@ -9077,7 +9121,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uMin(A,B: UInt64): UInt64;
+Function uMin(const A,B: UInt64): UInt64;
 begin
 If CompareUInt64(A,B) < 0 then
   Result := A
@@ -9089,7 +9133,7 @@ end;
     fMin - real numbers
 -------------------------------------------------------------------------------}
 
-Function fMin(A,B: Extended): Extended;
+Function fMin(const A,B: Extended): Extended;
 begin
 If A < B then
   Result := A
@@ -9101,21 +9145,21 @@ end;
     Min - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function Min(A,B: Int8): Int8;
+Function Min(const A,B: Int8): Int8;
 begin
 Result := iMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A,B: Int16): Int16;
+Function Min(const A,B: Int16): Int16;
 begin
 Result := iMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A,B: Int32): Int32;
+Function Min(const A,B: Int32): Int32;
 begin
 Result := iMin(A,B);
 end;
@@ -9123,7 +9167,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A,B: Int64): Int64;
+Function Min(const A,B: Int64): Int64;
 begin
 Result := iMin(A,B);
 end;
@@ -9131,21 +9175,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Min(A,B: UInt8): UInt8;
+Function Min(const A,B: UInt8): UInt8;
 begin
 Result := uMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A,B: UInt16): UInt16;
+Function Min(const A,B: UInt16): UInt16;
 begin
 Result := uMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A,B: UInt32): UInt32;
+Function Min(const A,B: UInt32): UInt32;
 begin
 Result := uMin(A,B);
 end;
@@ -9153,7 +9197,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A,B: UInt64): UInt64;
+Function Min(const A,B: UInt64): UInt64;
 begin
 Result := uMin(A,B);
 end;
@@ -9161,7 +9205,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Min(A,B: Extended): Extended;
+Function Min(const A,B: Extended): Extended;
 begin
 Result := fMin(A,B);
 end;
@@ -9176,7 +9220,7 @@ end;
     iiMin - signed integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function iiMin(A: Int8; B: Int16): Int8;
+Function iiMin(const A: Int8; const B: Int16): Int8;
 begin
 If B >= Int16(Low(Int8)) then
   begin
@@ -9190,7 +9234,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int8; B: Int32): Int8;
+Function iiMin(const A: Int8; const B: Int32): Int8;
 begin
 If B >= Int32(Low(Int8)) then
   begin
@@ -9204,7 +9248,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int8; B: Int64): Int8;
+Function iiMin(const A: Int8; const B: Int64): Int8;
 begin
 If B >= Int64(Low(Int8)) then
   begin
@@ -9218,7 +9262,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int16; B: Int8): Int16;
+Function iiMin(const A: Int16; const B: Int8): Int16;
 begin
 If A < Int16(B) then
   Result := A
@@ -9228,7 +9272,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int16; B: Int32): Int16;
+Function iiMin(const A: Int16; const B: Int32): Int16;
 begin
 If B >= Int32(Low(Int16)) then
   begin
@@ -9242,7 +9286,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int16; B: Int64): Int16;
+Function iiMin(const A: Int16; const B: Int64): Int16;
 begin
 If B >= Int64(Low(Int16)) then
   begin
@@ -9256,7 +9300,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int32; B: Int8): Int32;
+Function iiMin(const A: Int32; const B: Int8): Int32;
 begin
 If A < Int32(B) then
   Result := A
@@ -9266,7 +9310,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int32; B: Int16): Int32;
+Function iiMin(const A: Int32; const B: Int16): Int32;
 begin
 If A < Int32(B) then
   Result := A
@@ -9276,7 +9320,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int32; B: Int64): Int32;
+Function iiMin(const A: Int32; const B: Int64): Int32;
 begin
 If B >= Int64(Low(Int32)) then
   begin
@@ -9290,7 +9334,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int64; B: Int8): Int64;
+Function iiMin(const A: Int64; const B: Int8): Int64;
 begin
 If A < Int64(B) then
   Result := A
@@ -9300,7 +9344,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int64; B: Int16): Int64;
+Function iiMin(const A: Int64; const B: Int16): Int64;
 begin
 If A < Int64(B) then
   Result := A
@@ -9310,7 +9354,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMin(A: Int64; B: Int32): Int64;
+Function iiMin(const A: Int64; const B: Int32): Int64;
 begin
 If A < Int64(B) then
   Result := A
@@ -9322,7 +9366,7 @@ end;
     iuMin - signed integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function iuMin(A: Int8; B: UInt8): Int8;
+Function iuMin(const A: Int8; const B: UInt8): Int8;
 begin
 If (A < 0) or (B > UInt8(High(Int8))) or (UInt8(A) < B) then
   Result := A
@@ -9332,7 +9376,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int8; B: UInt16): Int8;
+Function iuMin(const A: Int8; const B: UInt16): Int8;
 begin
 If (A < 0) or (B > UInt16(High(Int8))) or (UInt16(A) < B) then
   Result := A
@@ -9342,7 +9386,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int8; B: UInt32): Int8;
+Function iuMin(const A: Int8; const B: UInt32): Int8;
 begin
 If (A < 0) or (B > UInt32(High(Int8))) or (UInt32(A) < B) then
   Result := A
@@ -9352,17 +9396,17 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int8; B: UInt64): Int8;
+Function iuMin(const A: Int8; const B: UInt64): Int8;
 begin
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int8))) > 0) or (CompareUInt64(UInt64(UInt8(A)),B) < 0) then
   Result := A
 else
   Result := Int8(B);
-end;   
+end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int16; B: UInt8): Int16;
+Function iuMin(const A: Int16; const B: UInt8): Int16;
 begin
 // note - B can never be bigger than what result can accomodate
 If A < Int16(B) then
@@ -9373,7 +9417,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int16; B: UInt16): Int16;
+Function iuMin(const A: Int16; const B: UInt16): Int16;
 begin
 If (A < 0) or (B > UInt16(High(Int16))) or (UInt16(A) < B) then
   Result := A
@@ -9383,7 +9427,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int16; B: UInt32): Int16;
+Function iuMin(const A: Int16; const B: UInt32): Int16;
 begin
 If (A < 0) or (B > UInt32(High(Int16))) or (UInt32(A) < B) then
   Result := A
@@ -9393,7 +9437,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int16; B: UInt64): Int16;
+Function iuMin(const A: Int16; const B: UInt64): Int16;
 begin
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int16))) > 0) or (CompareUInt64(UInt64(UInt16(A)),B) < 0) then
   Result := A
@@ -9403,7 +9447,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int32; B: UInt8): Int32;
+Function iuMin(const A: Int32; const B: UInt8): Int32;
 begin
 If A < Int32(B) then
   Result := A
@@ -9413,7 +9457,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int32; B: UInt16): Int32;
+Function iuMin(const A: Int32; const B: UInt16): Int32;
 begin
 If A < Int32(B) then
   Result := A
@@ -9423,7 +9467,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int32; B: UInt32): Int32;
+Function iuMin(const A: Int32; const B: UInt32): Int32;
 begin
 If (A < 0) or (B > UInt32(High(Int32))) or (UInt32(A) < B) then
   Result := A
@@ -9433,7 +9477,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int32; B: UInt64): Int32;
+Function iuMin(const A: Int32; const B: UInt64): Int32;
 begin
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int32))) > 0) or (CompareUInt64(UInt64(UInt32(A)),B) < 0) then
   Result := A
@@ -9443,7 +9487,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int64; B: UInt8): Int64;
+Function iuMin(const A: Int64; const B: UInt8): Int64;
 begin
 If A < Int64(B) then
   Result := A
@@ -9453,7 +9497,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int64; B: UInt16): Int64;
+Function iuMin(const A: Int64; const B: UInt16): Int64;
 begin
 If A < Int64(B) then
   Result := A
@@ -9463,7 +9507,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int64; B: UInt32): Int64;
+Function iuMin(const A: Int64; const B: UInt32): Int64;
 begin
 If A < Int64(B) then
   Result := A
@@ -9473,7 +9517,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMin(A: Int64; B: UInt64): Int64;
+Function iuMin(const A: Int64; const B: UInt64): Int64;
 begin
 If (A < 0) or (CompareUInt64(B,UInt64(High(Int64))) > 0) or (CompareUInt64(UInt64(A),B) < 0) then
   Result := A
@@ -9485,7 +9529,7 @@ end;
     uiMin - unsigned integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function uiMin(A: UInt8; B: Int8): UInt8;
+Function uiMin(const A: UInt8; const B: Int8): UInt8;
 begin
 If B >= 0 then
   begin
@@ -9499,7 +9543,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt8; B: Int16): UInt8;
+Function uiMin(const A: UInt8; const B: Int16): UInt8;
 begin
 If B >= 0 then
   begin
@@ -9513,7 +9557,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt8; B: Int32): UInt8;
+Function uiMin(const A: UInt8; const B: Int32): UInt8;
 begin
 If B >= 0 then
   begin
@@ -9527,7 +9571,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt8; B: Int64): UInt8;
+Function uiMin(const A: UInt8; const B: Int64): UInt8;
 begin
 If B >= 0 then
   begin
@@ -9541,7 +9585,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt16; B: Int8): UInt16;
+Function uiMin(const A: UInt16; const B: Int8): UInt16;
 begin
 If B >= 0 then
   begin
@@ -9555,7 +9599,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt16; B: Int16): UInt16;
+Function uiMin(const A: UInt16; const B: Int16): UInt16;
 begin
 If B >= 0 then
   begin
@@ -9569,7 +9613,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt16; B: Int32): UInt16;
+Function uiMin(const A: UInt16; const B: Int32): UInt16;
 begin
 If B >= 0 then
   begin
@@ -9583,7 +9627,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt16; B: Int64): UInt16;
+Function uiMin(const A: UInt16; const B: Int64): UInt16;
 begin
 If B >= 0 then
   begin
@@ -9597,7 +9641,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt32; B: Int8): UInt32;
+Function uiMin(const A: UInt32; const B: Int8): UInt32;
 begin
 If B >= 0 then
   begin
@@ -9611,7 +9655,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt32; B: Int16): UInt32;
+Function uiMin(const A: UInt32; const B: Int16): UInt32;
 begin
 If B >= 0 then
   begin
@@ -9625,7 +9669,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt32; B: Int32): UInt32;
+Function uiMin(const A: UInt32; const B: Int32): UInt32;
 begin
 If B >= 0 then
   begin
@@ -9639,7 +9683,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt32; B: Int64): UInt32;
+Function uiMin(const A: UInt32; const B: Int64): UInt32;
 begin
 If B >= 0 then
   begin
@@ -9653,7 +9697,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt64; B: Int8): UInt64;
+Function uiMin(const A: UInt64; const B: Int8): UInt64;
 begin
 If B >= 0 then
   begin
@@ -9667,7 +9711,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt64; B: Int16): UInt64;
+Function uiMin(const A: UInt64; const B: Int16): UInt64;
 begin
 If B >= 0 then
   begin
@@ -9681,7 +9725,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt64; B: Int32): UInt64;
+Function uiMin(const A: UInt64; const B: Int32): UInt64;
 begin
 If B >= 0 then
   begin
@@ -9695,7 +9739,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMin(A: UInt64; B: Int64): UInt64;
+Function uiMin(const A: UInt64; const B: Int64): UInt64;
 begin
 If B >= 0 then
   begin
@@ -9711,10 +9755,10 @@ end;
     uuMin - unsigned integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function uuMin(A: UInt8; B: UInt16): UInt8;
+Function uuMin(const A: UInt8; const B: UInt16): UInt8;
 begin
 {
-  No more comparisons and checks is needed here, if B is larger than 
+  No more comparisons and checks is needed here, if B is larger than
   High(UInt8), then it cannot be returned as minimum.
 }
 If UInt16(A) < B then
@@ -9725,7 +9769,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt8; B: UInt32): UInt8;
+Function uuMin(const A: UInt8; const B: UInt32): UInt8;
 begin
 If UInt32(A) < B then
   Result := A
@@ -9735,7 +9779,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt8; B: UInt64): UInt8;
+Function uuMin(const A: UInt8; const B: UInt64): UInt8;
 begin
 If CompareUInt64(UInt64(A),B) < 0 then
   Result := A
@@ -9745,7 +9789,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt16; B: UInt8): UInt16;
+Function uuMin(const A: UInt16; const B: UInt8): UInt16;
 begin
 If A < UInt16(B) then
   Result := A
@@ -9755,7 +9799,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt16; B: UInt32): UInt16;
+Function uuMin(const A: UInt16; const B: UInt32): UInt16;
 begin
 If UInt32(A) < B then
   Result := A
@@ -9765,7 +9809,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt16; B: UInt64): UInt16;
+Function uuMin(const A: UInt16; const B: UInt64): UInt16;
 begin
 If CompareUInt64(UInt64(A),B) < 0 then
   Result := A
@@ -9775,7 +9819,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt32; B: UInt8): UInt32;
+Function uuMin(const A: UInt32; const B: UInt8): UInt32;
 begin
 If A < UInt32(B) then
   Result := A
@@ -9785,7 +9829,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt32; B: UInt16): UInt32;
+Function uuMin(const A: UInt32; const B: UInt16): UInt32;
 begin
 If A < UInt32(B) then
   Result := A
@@ -9795,7 +9839,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt32; B: UInt64): UInt32;
+Function uuMin(const A: UInt32; const B: UInt64): UInt32;
 begin
 If CompareUInt64(UInt64(A),B) < 0 then
   Result := A
@@ -9805,7 +9849,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt64; B: UInt8): UInt64;
+Function uuMin(const A: UInt64; const B: UInt8): UInt64;
 begin
 If CompareUInt64(A,UInt64(B)) < 0 then
   Result := A
@@ -9815,7 +9859,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt64; B: UInt16): UInt64;
+Function uuMin(const A: UInt64; const B: UInt16): UInt64;
 begin
 If CompareUInt64(A,UInt64(B)) < 0 then
   Result := A
@@ -9825,7 +9869,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMin(A: UInt64; B: UInt32): UInt64;
+Function uuMin(const A: UInt64; const B: UInt32): UInt64;
 begin
 If CompareUInt64(A,UInt64(B)) < 0 then
   Result := A
@@ -9837,7 +9881,7 @@ end;
     fiMin - float & signed integer
 -------------------------------------------------------------------------------}
 
-Function fiMin(A: Extended; B: Int8): Extended;
+Function fiMin(const A: Extended; const B: Int8): Extended;
 begin
 {
   [U]Int8 through [U]Int32 can be converted to Extended without losing
@@ -9851,7 +9895,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiMin(A: Extended; B: Int16): Extended;
+Function fiMin(const A: Extended; const B: Int16): Extended;
 begin
 If A < B then
   Result := A
@@ -9861,7 +9905,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiMin(A: Extended; B: Int32): Extended;
+Function fiMin(const A: Extended; const B: Int32): Extended;
 begin
 If A < B then
   Result := A
@@ -9871,7 +9915,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiMin(A: Extended; B: Int64): Extended;
+Function fiMin(const A: Extended; const B: Int64): Extended;
 begin
 {
   By checking whether the float is smaller than the integer can ever be, we
@@ -9892,7 +9936,7 @@ end;
     fuMin - float & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function fuMin(A: Extended; B: UInt8): Extended;
+Function fuMin(const A: Extended; const B: UInt8): Extended;
 begin
 If A < B then
   Result := A
@@ -9902,7 +9946,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuMin(A: Extended; B: UInt16): Extended;
+Function fuMin(const A: Extended; const B: UInt16): Extended;
 begin
 If A < B then
   Result := A
@@ -9912,7 +9956,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuMin(A: Extended; B: UInt32): Extended;
+Function fuMin(const A: Extended; const B: UInt32): Extended;
 begin
 If A < B then
   Result := A
@@ -9922,7 +9966,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuMin(A: Extended; B: UInt64): Extended;
+Function fuMin(const A: Extended; const B: UInt64): Extended;
 begin
 If A >= 0 then
   begin
@@ -9938,7 +9982,7 @@ end;
     ifMin - signed integer & float
 -------------------------------------------------------------------------------}
 
-Function ifMin(A: Int8; B: Extended): Int8;
+Function ifMin(const A: Int8; const B: Extended): Int8;
 begin
 If B < A then
   begin
@@ -9954,7 +9998,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifMin(A: Int16; B: Extended): Int16;
+Function ifMin(const A: Int16; const B: Extended): Int16;
 begin
 If B < A then
   begin
@@ -9970,7 +10014,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifMin(A: Int32; B: Extended): Int32;
+Function ifMin(const A: Int32; const B: Extended): Int32;
 begin
 If B < A then
   begin
@@ -9986,7 +10030,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifMin(A: Int64; B: Extended): Int64;
+Function ifMin(const A: Int64; const B: Extended): Int64;
 begin
 If B < TwoPow63 then
   begin
@@ -10002,7 +10046,7 @@ end;
     ufMin - unsigned integer & float
 -------------------------------------------------------------------------------}
 
-Function ufMin(A: UInt8; B: Extended): UInt8;
+Function ufMin(const A: UInt8; const B: Extended): UInt8;
 begin
 If B < A then
   begin
@@ -10018,7 +10062,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufMin(A: UInt16; B: Extended): UInt16;
+Function ufMin(const A: UInt16; const B: Extended): UInt16;
 begin
 If B < A then
   begin
@@ -10034,7 +10078,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufMin(A: UInt32; B: Extended): UInt32;
+Function ufMin(const A: UInt32; const B: Extended): UInt32;
 begin
 If B < A then
   begin
@@ -10050,7 +10094,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufMin(A: UInt64; B: Extended): UInt64;
+Function ufMin(const A: UInt64; const B: Extended): UInt64;
 begin
 If B < TwoPow64 then
   begin
@@ -10066,14 +10110,14 @@ end;
     Min - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function Min(A: Int8; B: Int16): Int8;
+Function Min(const A: Int8; const B: Int16): Int8;
 begin
 Result := iiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int8; B: Int32): Int8;
+Function Min(const A: Int8; const B: Int32): Int8;
 begin
 Result := iiMin(A,B);
 end;
@@ -10081,7 +10125,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int8; B: Int64): Int8;
+Function Min(const A: Int8; const B: Int64): Int8;
 begin
 Result := iiMin(A,B);
 end;
@@ -10089,14 +10133,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int16; B: Int8): Int16;
+Function Min(const A: Int16; const B: Int8): Int16;
 begin
 Result := iiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int16; B: Int32): Int16;
+Function Min(const A: Int16; const B: Int32): Int16;
 begin
 Result := iiMin(A,B);
 end;
@@ -10104,7 +10148,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int16; B: Int64): Int16;
+Function Min(const A: Int16; const B: Int64): Int16;
 begin
 Result := iiMin(A,B);
 end;
@@ -10112,14 +10156,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int32; B: Int8): Int32;
+Function Min(const A: Int32; const B: Int8): Int32;
 begin
 Result := iiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int32; B: Int16): Int32;
+Function Min(const A: Int32; const B: Int16): Int32;
 begin
 Result := iiMin(A,B);
 end;
@@ -10127,168 +10171,168 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int32; B: Int64): Int32;
+Function Min(const A: Int32; const B: Int64): Int32;
 begin
 Result := iiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int64; B: Int8): Int64;
+Function Min(const A: Int64; const B: Int8): Int64;
 begin
 Result := iiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int64; B: Int16): Int64;
+Function Min(const A: Int64; const B: Int16): Int64;
 begin
 Result := iiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int64; B: Int32): Int64;
+Function Min(const A: Int64; const B: Int32): Int64;
 begin
 Result := iiMin(A,B);
-end;
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Min(A: Int8; B: UInt8): Int8;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int8; B: UInt16): Int8;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int8; B: UInt32): Int8;
-begin
-Result := iuMin(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int8; B: UInt64): Int8;
-begin
-Result := iuMin(A,B);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int16; B: UInt8): Int16;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int16; B: UInt16): Int16;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int16; B: UInt32): Int16;
-begin
-Result := iuMin(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int16; B: UInt64): Int16;
-begin
-Result := iuMin(A,B);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int32; B: UInt8): Int32;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int32; B: UInt16): Int32;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int32; B: UInt32): Int32;
-begin
-Result := iuMin(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int32; B: UInt64): Int32; 
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int64; B: UInt8): Int64;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int64; B: UInt16): Int64;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int64; B: UInt32): Int64;
-begin
-Result := iuMin(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Min(A: Int64; B: UInt64): Int64;
-begin
-Result := iuMin(A,B);
 end;
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Min(A: UInt8; B: Int8): UInt8;
+Function Min(const A: Int8; const B: UInt8): Int8;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int8; const B: UInt16): Int8;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int8; const B: UInt32): Int8;
+begin
+Result := iuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int8; const B: UInt64): Int8;
+begin
+Result := iuMin(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int16; const B: UInt8): Int16;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int16; const B: UInt16): Int16;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int16; const B: UInt32): Int16;
+begin
+Result := iuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int16; const B: UInt64): Int16;
+begin
+Result := iuMin(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int32; const B: UInt8): Int32;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int32; const B: UInt16): Int32;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int32; const B: UInt32): Int32;
+begin
+Result := iuMin(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int32; const B: UInt64): Int32;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int64; const B: UInt8): Int64;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int64; const B: UInt16): Int64;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int64; const B: UInt32): Int64;
+begin
+Result := iuMin(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Min(const A: Int64; const B: UInt64): Int64;
+begin
+Result := iuMin(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Min(const A: UInt8; const B: Int8): UInt8;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt8; B: Int16): UInt8;
+Function Min(const A: UInt8; const B: Int16): UInt8;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt8; B: Int32): UInt8;
+Function Min(const A: UInt8; const B: Int32): UInt8;
 begin
 Result := uiMin(A,B);
 end;
@@ -10296,7 +10340,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt8; B: Int64): UInt8;
+Function Min(const A: UInt8; const B: Int64): UInt8;
 begin
 Result := uiMin(A,B);
 end;
@@ -10304,21 +10348,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: Int8): UInt16;
+Function Min(const A: UInt16; const B: Int8): UInt16;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: Int16): UInt16;
+Function Min(const A: UInt16; const B: Int16): UInt16;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: Int32): UInt16;
+Function Min(const A: UInt16; const B: Int32): UInt16;
 begin
 Result := uiMin(A,B);
 end;
@@ -10326,7 +10370,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: Int64): UInt16;
+Function Min(const A: UInt16; const B: Int64): UInt16;
 begin
 Result := uiMin(A,B);
 end;
@@ -10334,21 +10378,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: Int8): UInt32;
+Function Min(const A: UInt32; const B: Int8): UInt32;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: Int16): UInt32;
+Function Min(const A: UInt32; const B: Int16): UInt32;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: Int32): UInt32;
+Function Min(const A: UInt32; const B: Int32): UInt32;
 begin
 Result := uiMin(A,B);
 end;
@@ -10356,35 +10400,35 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: Int64): UInt32;
+Function Min(const A: UInt32; const B: Int64): UInt32;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: Int8): UInt64;
+Function Min(const A: UInt64; const B: Int8): UInt64;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: Int16): UInt64;
+Function Min(const A: UInt64; const B: Int16): UInt64;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: Int32): UInt64;
+Function Min(const A: UInt64; const B: Int32): UInt64;
 begin
 Result := uiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: Int64): UInt64;
+Function Min(const A: UInt64; const B: Int64): UInt64;
 begin
 Result := uiMin(A,B);
 end;
@@ -10392,14 +10436,14 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Min(A: UInt8; B: UInt16): UInt8;
+Function Min(const A: UInt8; const B: UInt16): UInt8;
 begin
 Result := uuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt8; B: UInt32): UInt8; 
+Function Min(const A: UInt8; const B: UInt32): UInt8;
 begin
 Result := uuMin(A,B);
 end;
@@ -10407,7 +10451,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt8; B: UInt64): UInt8;  
+Function Min(const A: UInt8; const B: UInt64): UInt8;
 begin
 Result := uuMin(A,B);
 end;
@@ -10415,14 +10459,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: UInt8): UInt16;  
+Function Min(const A: UInt16; const B: UInt8): UInt16;
 begin
 Result := uuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: UInt32): UInt16; 
+Function Min(const A: UInt16; const B: UInt32): UInt16;
 begin
 Result := uuMin(A,B);
 end;
@@ -10430,7 +10474,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: UInt64): UInt16; 
+Function Min(const A: UInt16; const B: UInt64): UInt16;
 begin
 Result := uuMin(A,B);
 end;
@@ -10438,14 +10482,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: UInt8): UInt32;
+Function Min(const A: UInt32; const B: UInt8): UInt32;
 begin
 Result := uuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: UInt16): UInt32;
+Function Min(const A: UInt32; const B: UInt16): UInt32;
 begin
 Result := uuMin(A,B);
 end;
@@ -10453,28 +10497,28 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: UInt64): UInt32;
+Function Min(const A: UInt32; const B: UInt64): UInt32;
 begin
 Result := uuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: UInt8): UInt64; 
+Function Min(const A: UInt64; const B: UInt8): UInt64;
 begin
 Result := uuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: UInt16): UInt64;
+Function Min(const A: UInt64; const B: UInt16): UInt64;
 begin
 Result := uuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: UInt32): UInt64;
+Function Min(const A: UInt64; const B: UInt32): UInt64;
 begin
 Result := uuMin(A,B);
 end;
@@ -10482,21 +10526,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Min(A: Extended; B: Int8): Extended;
+Function Min(const A: Extended; const B: Int8): Extended;
 begin
 Result := fiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Extended; B: Int16): Extended;
+Function Min(const A: Extended; const B: Int16): Extended;
 begin
 Result := fiMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Extended; B: Int32): Extended;
+Function Min(const A: Extended; const B: Int32): Extended;
 begin
 Result := fiMin(A,B);
 end;
@@ -10504,7 +10548,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Extended; B: Int64): Extended;
+Function Min(const A: Extended; const B: Int64): Extended;
 begin
 Result := fiMin(A,B);
 end;
@@ -10512,21 +10556,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Min(A: Extended; B: UInt8): Extended;
+Function Min(const A: Extended; const B: UInt8): Extended;
 begin
 Result := fuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Extended; B: UInt16): Extended;
+Function Min(const A: Extended; const B: UInt16): Extended;
 begin
 Result := fuMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Extended; B: UInt32): Extended;
+Function Min(const A: Extended; const B: UInt32): Extended;
 begin
 Result := fuMin(A,B);
 end;
@@ -10534,7 +10578,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Extended; B: UInt64): Extended;
+Function Min(const A: Extended; const B: UInt64): Extended;
 begin
 Result := fuMin(A,B);
 end;
@@ -10542,21 +10586,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Min(A: Int8; B: Extended): Int8;
+Function Min(const A: Int8; const B: Extended): Int8;
 begin
 Result := ifMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int16; B: Extended): Int16;
+Function Min(const A: Int16; const B: Extended): Int16;
 begin
 Result := ifMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int32; B: Extended): Int32;
+Function Min(const A: Int32; const B: Extended): Int32;
 begin
 Result := ifMin(A,B);
 end;
@@ -10564,7 +10608,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: Int64; B: Extended): Int64;
+Function Min(const A: Int64; const B: Extended): Int64;
 begin
 Result := ifMin(A,B);
 end;
@@ -10572,21 +10616,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Min(A: UInt8; B: Extended): UInt8;
+Function Min(const A: UInt8; const B: Extended): UInt8;
 begin
 Result := ufMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt16; B: Extended): UInt16;
+Function Min(const A: UInt16; const B: Extended): UInt16;
 begin
 Result := ufMin(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt32; B: Extended): UInt32;
+Function Min(const A: UInt32; const B: Extended): UInt32;
 begin
 Result := ufMin(A,B);
 end;
@@ -10594,7 +10638,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Min(A: UInt64; B: Extended): UInt64;
+Function Min(const A: UInt64; const B: Extended): UInt64;
 begin
 Result := ufMin(A,B);
 end;
@@ -10610,7 +10654,7 @@ end;
     iMax - signed integers
 -------------------------------------------------------------------------------}
 
-Function iMax(A,B: Int8): Int8;
+Function iMax(const A,B: Int8): Int8;
 begin
 If A > B then
   Result := A
@@ -10620,7 +10664,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iMax(A,B: Int16): Int16;
+Function iMax(const A,B: Int16): Int16;
 begin
 If A > B then
   Result := A
@@ -10630,7 +10674,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iMax(A,B: Int32): Int32;
+Function iMax(const A,B: Int32): Int32;
 begin
 If A > B then
   Result := A
@@ -10640,7 +10684,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iMax(A,B: Int64): Int64;
+Function iMax(const A,B: Int64): Int64;
 begin
 If A > B then
   Result := A
@@ -10652,7 +10696,7 @@ end;
     uMax - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uMax(A,B: UInt8): UInt8;
+Function uMax(const A,B: UInt8): UInt8;
 begin
 If A > B then
   Result := A
@@ -10662,7 +10706,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uMax(A,B: UInt16): UInt16;
+Function uMax(const A,B: UInt16): UInt16;
 begin
 If A > B then
   Result := A
@@ -10672,7 +10716,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uMax(A,B: UInt32): UInt32;
+Function uMax(const A,B: UInt32): UInt32;
 begin
 If A > B then
   Result := A
@@ -10682,7 +10726,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uMax(A,B: UInt64): UInt64;
+Function uMax(const A,B: UInt64): UInt64;
 begin
 If CompareUInt64(A,B) > 0 then
   Result := A
@@ -10694,7 +10738,7 @@ end;
     fMax - real numbers
 -------------------------------------------------------------------------------}
 
-Function fMax(A,B: Extended): Extended;
+Function fMax(const A,B: Extended): Extended;
 begin
 If A > B then
   Result := A
@@ -10706,21 +10750,21 @@ end;
     Max - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function Max(A,B: Int8): Int8;
+Function Max(const A,B: Int8): Int8;
 begin
 Result := iMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A,B: Int16): Int16;
+Function Max(const A,B: Int16): Int16;
 begin
 Result := iMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A,B: Int32): Int32;
+Function Max(const A,B: Int32): Int32;
 begin
 Result := iMax(A,B);
 end;
@@ -10728,7 +10772,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A,B: Int64): Int64;
+Function Max(const A,B: Int64): Int64;
 begin
 Result := iMax(A,B);
 end;
@@ -10736,21 +10780,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Max(A,B: UInt8): UInt8;
+Function Max(const A,B: UInt8): UInt8;
 begin
 Result := uMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A,B: UInt16): UInt16;
+Function Max(const A,B: UInt16): UInt16;
 begin
 Result := uMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A,B: UInt32): UInt32;
+Function Max(const A,B: UInt32): UInt32;
 begin
 Result := uMax(A,B);
 end;
@@ -10758,7 +10802,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A,B: UInt64): UInt64;
+Function Max(const A,B: UInt64): UInt64;
 begin
 Result := uMax(A,B);
 end;
@@ -10766,7 +10810,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Max(A,B: Extended): Extended;
+Function Max(const A,B: Extended): Extended;
 begin
 Result := fMax(A,B);
 end;
@@ -10781,7 +10825,7 @@ end;
     iiMax - signed integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function iiMax(A: Int8; B: Int16): Int8;
+Function iiMax(const A: Int8; const B: Int16): Int8;
 begin
 If B <= Int16(High(Int8)) then
   begin
@@ -10795,7 +10839,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int8; B: Int32): Int8;
+Function iiMax(const A: Int8; const B: Int32): Int8;
 begin
 If B <= Int32(High(Int8)) then
   begin
@@ -10809,7 +10853,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int8; B: Int64): Int8;
+Function iiMax(const A: Int8; const B: Int64): Int8;
 begin
 If B <= Int64(High(Int8)) then
   begin
@@ -10823,7 +10867,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int16; B: Int8): Int16;
+Function iiMax(const A: Int16; const B: Int8): Int16;
 begin
 If A > Int16(B) then
   Result := A
@@ -10833,7 +10877,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int16; B: Int32): Int16;
+Function iiMax(const A: Int16; const B: Int32): Int16;
 begin
 If B <= Int32(High(Int16)) then
   begin
@@ -10847,7 +10891,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int16; B: Int64): Int16;
+Function iiMax(const A: Int16; const B: Int64): Int16;
 begin
 If B <= Int64(High(Int16)) then
   begin
@@ -10861,7 +10905,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int32; B: Int8): Int32;
+Function iiMax(const A: Int32; const B: Int8): Int32;
 begin
 If A > Int32(B) then
   Result := A
@@ -10871,7 +10915,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int32; B: Int16): Int32;
+Function iiMax(const A: Int32; const B: Int16): Int32;
 begin
 If A > Int32(B) then
   Result := A
@@ -10881,7 +10925,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int32; B: Int64): Int32;
+Function iiMax(const A: Int32; const B: Int64): Int32;
 begin
 If B <= Int64(High(Int32)) then
   begin
@@ -10895,7 +10939,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int64; B: Int8): Int64;
+Function iiMax(const A: Int64; const B: Int8): Int64;
 begin
 If A > Int64(B) then
   Result := A
@@ -10905,7 +10949,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int64; B: Int16): Int64;
+Function iiMax(const A: Int64; const B: Int16): Int64;
 begin
 If A > Int64(B) then
   Result := A
@@ -10915,7 +10959,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiMax(A: Int64; B: Int32): Int64;
+Function iiMax(const A: Int64; const B: Int32): Int64;
 begin
 If A > Int64(B) then
   Result := A
@@ -10927,7 +10971,7 @@ end;
     iuMax - signed integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function iuMax(A: Int8; B: UInt8): Int8;
+Function iuMax(const A: Int8; const B: UInt8): Int8;
 begin
 If B <= UInt8(High(Int8)) then
   begin
@@ -10941,7 +10985,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int8; B: UInt16): Int8;
+Function iuMax(const A: Int8; const B: UInt16): Int8;
 begin
 If B <= UInt16(High(Int8)) then
   begin
@@ -10955,7 +10999,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int8; B: UInt32): Int8;
+Function iuMax(const A: Int8; const B: UInt32): Int8;
 begin
 If B <= UInt32(High(Int8)) then
   begin
@@ -10969,7 +11013,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int8; B: UInt64): Int8;
+Function iuMax(const A: Int8; const B: UInt64): Int8;
 begin
 If CompareUInt64(B,UInt64(High(Int8))) <= 0 then
   begin
@@ -10983,7 +11027,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int16; B: UInt8): Int16;
+Function iuMax(const A: Int16; const B: UInt8): Int16;
 begin
 If A > Int16(B) then
   Result := A
@@ -10993,7 +11037,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int16; B: UInt16): Int16;
+Function iuMax(const A: Int16; const B: UInt16): Int16;
 begin
 If B <= UInt16(High(Int16)) then
   begin
@@ -11007,7 +11051,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int16; B: UInt32): Int16;
+Function iuMax(const A: Int16; const B: UInt32): Int16;
 begin
 If B <= UInt32(High(Int16)) then
   begin
@@ -11021,7 +11065,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int16; B: UInt64): Int16;
+Function iuMax(const A: Int16; const B: UInt64): Int16;
 begin
 If CompareUInt64(B,UInt32(High(Int16))) <= 0 then
   begin
@@ -11035,7 +11079,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int32; B: UInt8): Int32;
+Function iuMax(const A: Int32; const B: UInt8): Int32;
 begin
 If A > Int32(B) then
   Result := A
@@ -11045,7 +11089,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int32; B: UInt16): Int32;
+Function iuMax(const A: Int32; const B: UInt16): Int32;
 begin
 If A > Int32(B) then
   Result := A
@@ -11055,7 +11099,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int32; B: UInt32): Int32;
+Function iuMax(const A: Int32; const B: UInt32): Int32;
 begin
 If B <= UInt32(High(Int32)) then
   begin
@@ -11069,7 +11113,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int32; B: UInt64): Int32;
+Function iuMax(const A: Int32; const B: UInt64): Int32;
 begin
 If CompareUInt64(B,UInt64(High(Int32))) <= 0 then
   begin
@@ -11083,7 +11127,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int64; B: UInt8): Int64;
+Function iuMax(const A: Int64; const B: UInt8): Int64;
 begin
 If A > Int64(B) then
   Result := A
@@ -11093,7 +11137,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int64; B: UInt16): Int64;
+Function iuMax(const A: Int64; const B: UInt16): Int64;
 begin
 If A > Int64(B) then
   Result := A
@@ -11103,7 +11147,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int64; B: UInt32): Int64;
+Function iuMax(const A: Int64; const B: UInt32): Int64;
 begin
 If A > Int64(B) then
   Result := A
@@ -11113,7 +11157,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuMax(A: Int64; B: UInt64): Int64;
+Function iuMax(const A: Int64; const B: UInt64): Int64;
 begin
 If CompareUInt64(B,UInt64(High(Int64))) <= 0 then
   begin
@@ -11129,7 +11173,7 @@ end;
     uiMax - unsigned integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function uiMax(A: UInt8; B: Int8): UInt8;
+Function uiMax(const A: UInt8; const B: Int8): UInt8;
 begin
 If (B < 0) or (A > UInt8(B)) then
   Result := A
@@ -11139,7 +11183,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt8; B: Int16): UInt8;
+Function uiMax(const A: UInt8; const B: Int16): UInt8;
 begin
 If B <= Int16(High(UInt8)) then
   begin
@@ -11153,7 +11197,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt8; B: Int32): UInt8;
+Function uiMax(const A: UInt8; const B: Int32): UInt8;
 begin
 If B <= Int32(High(UInt8)) then
   begin
@@ -11167,7 +11211,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt8; B: Int64): UInt8;
+Function uiMax(const A: UInt8; const B: Int64): UInt8;
 begin
 If B <= Int64(High(UInt8)) then
   begin
@@ -11181,7 +11225,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt16; B: Int8): UInt16;
+Function uiMax(const A: UInt16; const B: Int8): UInt16;
 begin
 If (B < 0) or (A > UInt16(B)) then
   Result := A
@@ -11191,7 +11235,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt16; B: Int16): UInt16;
+Function uiMax(const A: UInt16; const B: Int16): UInt16;
 begin
 If (B < 0) or (A > UInt16(B)) then
   Result := A
@@ -11201,7 +11245,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt16; B: Int32): UInt16;
+Function uiMax(const A: UInt16; const B: Int32): UInt16;
 begin
 If B <= Int32(High(UInt16)) then
   begin
@@ -11215,7 +11259,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt16; B: Int64): UInt16;
+Function uiMax(const A: UInt16; const B: Int64): UInt16;
 begin
 If B <= Int64(High(UInt16)) then
   begin
@@ -11229,7 +11273,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt32; B: Int8): UInt32;
+Function uiMax(const A: UInt32; const B: Int8): UInt32;
 begin
 If (B < 0) or (A > UInt32(B)) then
   Result := A
@@ -11239,7 +11283,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt32; B: Int16): UInt32;
+Function uiMax(const A: UInt32; const B: Int16): UInt32;
 begin
 If (B < 0) or (A > UInt32(B)) then
   Result := A
@@ -11249,7 +11293,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt32; B: Int32): UInt32;
+Function uiMax(const A: UInt32; const B: Int32): UInt32;
 begin
 If (B < 0) or (A > UInt32(B)) then
   Result := A
@@ -11259,7 +11303,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt32; B: Int64): UInt32;
+Function uiMax(const A: UInt32; const B: Int64): UInt32;
 begin
 If B <= Int64(High(UInt32)) then
   begin
@@ -11273,7 +11317,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt64; B: Int8): UInt64;
+Function uiMax(const A: UInt64; const B: Int8): UInt64;
 begin
 If (B < 0) or (CompareUInt64(A,UInt64(UInt8(B))) > 0) then
   Result := A
@@ -11283,7 +11327,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt64; B: Int16): UInt64;
+Function uiMax(const A: UInt64; const B: Int16): UInt64;
 begin
 If (B < 0) or (CompareUInt64(A,UInt64(UInt16(B))) > 0) then
   Result := A
@@ -11293,7 +11337,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt64; B: Int32): UInt64;
+Function uiMax(const A: UInt64; const B: Int32): UInt64;
 begin
 If (B < 0) or (CompareUInt64(A,UInt64(UInt32(B))) > 0) then
   Result := A
@@ -11303,7 +11347,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiMax(A: UInt64; B: Int64): UInt64;
+Function uiMax(const A: UInt64; const B: Int64): UInt64;
 begin
 If (B < 0) or (CompareUInt64(A,UInt64(B)) > 0) then
   Result := A
@@ -11315,7 +11359,7 @@ end;
     uuMax - unsigned integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function uuMax(A: UInt8; B: UInt16): UInt8;
+Function uuMax(const A: UInt8; const B: UInt16): UInt8;
 begin
 If UInt16(A) > B then
   Result := A
@@ -11325,7 +11369,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt8; B: UInt32): UInt8;
+Function uuMax(const A: UInt8; const B: UInt32): UInt8;
 begin
 If UInt32(A) > B then
   Result := A
@@ -11335,7 +11379,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt8; B: UInt64): UInt8;
+Function uuMax(const A: UInt8; const B: UInt64): UInt8;
 begin
 If CompareUInt64(UInt64(A),B) > 0 then
   Result := A
@@ -11345,7 +11389,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt16; B: UInt8): UInt16;
+Function uuMax(const A: UInt16; const B: UInt8): UInt16;
 begin
 If A > UInt16(B) then
   Result := A
@@ -11355,7 +11399,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt16; B: UInt32): UInt16;
+Function uuMax(const A: UInt16; const B: UInt32): UInt16;
 begin
 If UInt32(A) > B then
   Result := A
@@ -11365,7 +11409,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt16; B: UInt64): UInt16;
+Function uuMax(const A: UInt16; const B: UInt64): UInt16;
 begin
 If CompareUInt64(UInt64(A),B) > 0 then
   Result := A
@@ -11375,7 +11419,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt32; B: UInt8): UInt32;
+Function uuMax(const A: UInt32; const B: UInt8): UInt32;
 begin
 If A > UInt32(B) then
   Result := A
@@ -11385,7 +11429,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt32; B: UInt16): UInt32;
+Function uuMax(const A: UInt32; const B: UInt16): UInt32;
 begin
 If A > UInt32(B) then
   Result := A
@@ -11395,7 +11439,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt32; B: UInt64): UInt32;
+Function uuMax(const A: UInt32; const B: UInt64): UInt32;
 begin
 If CompareUInt64(UInt64(A),B) > 0 then
   Result := A
@@ -11405,7 +11449,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt64; B: UInt8): UInt64;
+Function uuMax(const A: UInt64; const B: UInt8): UInt64;
 begin
 If CompareUInt64(A,UInt64(B)) > 0 then
   Result := A
@@ -11415,7 +11459,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt64; B: UInt16): UInt64;
+Function uuMax(const A: UInt64; const B: UInt16): UInt64;
 begin
 If CompareUInt64(A,UInt64(B)) > 0 then
   Result := A
@@ -11425,7 +11469,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuMax(A: UInt64; B: UInt32): UInt64;
+Function uuMax(const A: UInt64; const B: UInt32): UInt64;
 begin
 If CompareUInt64(A,UInt64(B)) > 0 then
   Result := A
@@ -11437,7 +11481,7 @@ end;
     fiMax - float & signed integer
 -------------------------------------------------------------------------------}
 
-Function fiMax(A: Extended; B: Int8): Extended;
+Function fiMax(const A: Extended; const B: Int8): Extended;
 begin
 If A > B then
   Result := A
@@ -11447,7 +11491,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiMax(A: Extended; B: Int16): Extended;
+Function fiMax(const A: Extended; const B: Int16): Extended;
 begin
 If A > B then
   Result := A
@@ -11457,7 +11501,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiMax(A: Extended; B: Int32): Extended;
+Function fiMax(const A: Extended; const B: Int32): Extended;
 begin
 If A > B then
   Result := A
@@ -11467,7 +11511,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiMax(A: Extended; B: Int64): Extended;
+Function fiMax(const A: Extended; const B: Int64): Extended;
 begin
 If A < TwoPow63 then
   begin
@@ -11483,7 +11527,7 @@ end;
     fuMax - float & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function fuMax(A: Extended; B: UInt8): Extended;
+Function fuMax(const A: Extended; const B: UInt8): Extended;
 begin
 If A > B then
   Result := A
@@ -11493,7 +11537,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuMax(A: Extended; B: UInt16): Extended;
+Function fuMax(const A: Extended; const B: UInt16): Extended;
 begin
 If A > B then
   Result := A
@@ -11503,7 +11547,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuMax(A: Extended; B: UInt32): Extended;
+Function fuMax(const A: Extended; const B: UInt32): Extended;
 begin
 If A > B then
   Result := A
@@ -11513,7 +11557,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuMax(A: Extended; B: UInt64): Extended;
+Function fuMax(const A: Extended; const B: UInt64): Extended;
 begin
 If A < TwoPow64 then
   begin
@@ -11529,7 +11573,7 @@ end;
     ifMax - signed integer & float
 -------------------------------------------------------------------------------}
 
-Function ifMax(A: Int8; B: Extended): Int8;
+Function ifMax(const A: Int8; const B: Extended): Int8;
 begin
 If B > A then
   begin
@@ -11545,7 +11589,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifMax(A: Int16; B: Extended): Int16;
+Function ifMax(const A: Int16; const B: Extended): Int16;
 begin
 If B > A then
   begin
@@ -11561,7 +11605,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifMax(A: Int32; B: Extended): Int32;
+Function ifMax(const A: Int32; const B: Extended): Int32;
 begin
 If B > A then
   begin
@@ -11577,7 +11621,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifMax(A: Int64; B: Extended): Int64;
+Function ifMax(const A: Int64; const B: Extended): Int64;
 begin
 If B >= -TwoPow63 then
   begin
@@ -11593,7 +11637,7 @@ end;
     ufMax - unsigned integer & float
 -------------------------------------------------------------------------------}
 
-Function ufMax(A: UInt8; B: Extended): UInt8;
+Function ufMax(const A: UInt8; const B: Extended): UInt8;
 begin
 If B > A then
   begin
@@ -11609,7 +11653,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufMax(A: UInt16; B: Extended): UInt16;
+Function ufMax(const A: UInt16; const B: Extended): UInt16;
 begin
 If B > A then
   begin
@@ -11625,7 +11669,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufMax(A: UInt32; B: Extended): UInt32;
+Function ufMax(const A: UInt32; const B: Extended): UInt32;
 begin
 If B > A then
   begin
@@ -11641,7 +11685,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufMax(A: UInt64; B: Extended): UInt64;
+Function ufMax(const A: UInt64; const B: Extended): UInt64;
 begin
 If B >= 0 then
   begin
@@ -11657,14 +11701,14 @@ end;
     Max - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function Max(A: Int8; B: Int16): Int8;
+Function Max(const A: Int8; const B: Int16): Int8;
 begin
 Result := iiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int8; B: Int32): Int8;
+Function Max(const A: Int8; const B: Int32): Int8;
 begin
 Result := iiMax(A,B);
 end;
@@ -11672,7 +11716,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int8; B: Int64): Int8;
+Function Max(const A: Int8; const B: Int64): Int8;
 begin
 Result := iiMax(A,B);
 end;
@@ -11680,14 +11724,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int16; B: Int8): Int16;
+Function Max(const A: Int16; const B: Int8): Int16;
 begin
 Result := iiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int16; B: Int32): Int16;
+Function Max(const A: Int16; const B: Int32): Int16;
 begin
 Result := iiMax(A,B);
 end;
@@ -11695,7 +11739,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int16; B: Int64): Int16;
+Function Max(const A: Int16; const B: Int64): Int16;
 begin
 Result := iiMax(A,B);
 end;
@@ -11703,14 +11747,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int32; B: Int8): Int32;
+Function Max(const A: Int32; const B: Int8): Int32;
 begin
 Result := iiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int32; B: Int16): Int32;
+Function Max(const A: Int32; const B: Int16): Int32;
 begin
 Result := iiMax(A,B);
 end;
@@ -11718,168 +11762,168 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int32; B: Int64): Int32;
+Function Max(const A: Int32; const B: Int64): Int32;
 begin
 Result := iiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int64; B: Int8): Int64;
+Function Max(const A: Int64; const B: Int8): Int64;
 begin
 Result := iiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int64; B: Int16): Int64;
+Function Max(const A: Int64; const B: Int16): Int64;
 begin
 Result := iiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int64; B: Int32): Int64;
+Function Max(const A: Int64; const B: Int32): Int64;
 begin
 Result := iiMax(A,B);
-end;
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function Max(A: Int8; B: UInt8): Int8;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int8; B: UInt16): Int8;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int8; B: UInt32): Int8;
-begin
-Result := iuMax(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int8; B: UInt64): Int8;
-begin
-Result := iuMax(A,B);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int16; B: UInt8): Int16;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int16; B: UInt16): Int16;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int16; B: UInt32): Int16;
-begin
-Result := iuMax(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int16; B: UInt64): Int16;
-begin
-Result := iuMax(A,B);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int32; B: UInt8): Int32;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int32; B: UInt16): Int32;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int32; B: UInt32): Int32;
-begin
-Result := iuMax(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int32; B: UInt64): Int32; 
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int64; B: UInt8): Int64;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int64; B: UInt16): Int64;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int64; B: UInt32): Int64;
-begin
-Result := iuMax(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function Max(A: Int64; B: UInt64): Int64;
-begin
-Result := iuMax(A,B);
 end;
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function Max(A: UInt8; B: Int8): UInt8;
+Function Max(const A: Int8; const B: UInt8): Int8;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int8; const B: UInt16): Int8;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int8; const B: UInt32): Int8;
+begin
+Result := iuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int8; const B: UInt64): Int8;
+begin
+Result := iuMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int16; const B: UInt8): Int16;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int16; const B: UInt16): Int16;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int16; const B: UInt32): Int16;
+begin
+Result := iuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int16; const B: UInt64): Int16;
+begin
+Result := iuMax(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int32; const B: UInt8): Int32;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int32; const B: UInt16): Int32;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int32; const B: UInt32): Int32;
+begin
+Result := iuMax(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int32; const B: UInt64): Int32;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int64; const B: UInt8): Int64;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int64; const B: UInt16): Int64;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int64; const B: UInt32): Int64;
+begin
+Result := iuMax(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function Max(const A: Int64; const B: UInt64): Int64;
+begin
+Result := iuMax(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function Max(const A: UInt8; const B: Int8): UInt8;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt8; B: Int16): UInt8;
+Function Max(const A: UInt8; const B: Int16): UInt8;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt8; B: Int32): UInt8;
+Function Max(const A: UInt8; const B: Int32): UInt8;
 begin
 Result := uiMax(A,B);
 end;
@@ -11887,7 +11931,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt8; B: Int64): UInt8;
+Function Max(const A: UInt8; const B: Int64): UInt8;
 begin
 Result := uiMax(A,B);
 end;
@@ -11895,21 +11939,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: Int8): UInt16;
+Function Max(const A: UInt16; const B: Int8): UInt16;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: Int16): UInt16;
+Function Max(const A: UInt16; const B: Int16): UInt16;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: Int32): UInt16;
+Function Max(const A: UInt16; const B: Int32): UInt16;
 begin
 Result := uiMax(A,B);
 end;
@@ -11917,7 +11961,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: Int64): UInt16;
+Function Max(const A: UInt16; const B: Int64): UInt16;
 begin
 Result := uiMax(A,B);
 end;
@@ -11925,21 +11969,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: Int8): UInt32;
+Function Max(const A: UInt32; const B: Int8): UInt32;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: Int16): UInt32;
+Function Max(const A: UInt32; const B: Int16): UInt32;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: Int32): UInt32;
+Function Max(const A: UInt32; const B: Int32): UInt32;
 begin
 Result := uiMax(A,B);
 end;
@@ -11947,35 +11991,35 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: Int64): UInt32;
+Function Max(const A: UInt32; const B: Int64): UInt32;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: Int8): UInt64;
+Function Max(const A: UInt64; const B: Int8): UInt64;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: Int16): UInt64;
+Function Max(const A: UInt64; const B: Int16): UInt64;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: Int32): UInt64;
+Function Max(const A: UInt64; const B: Int32): UInt64;
 begin
 Result := uiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: Int64): UInt64;
+Function Max(const A: UInt64; const B: Int64): UInt64;
 begin
 Result := uiMax(A,B);
 end;
@@ -11983,14 +12027,14 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Max(A: UInt8; B: UInt16): UInt8;
+Function Max(const A: UInt8; const B: UInt16): UInt8;
 begin
 Result := uuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt8; B: UInt32): UInt8; 
+Function Max(const A: UInt8; const B: UInt32): UInt8;
 begin
 Result := uuMax(A,B);
 end;
@@ -11998,7 +12042,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt8; B: UInt64): UInt8;  
+Function Max(const A: UInt8; const B: UInt64): UInt8;
 begin
 Result := uuMax(A,B);
 end;
@@ -12006,14 +12050,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: UInt8): UInt16;  
+Function Max(const A: UInt16; const B: UInt8): UInt16;
 begin
 Result := uuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: UInt32): UInt16; 
+Function Max(const A: UInt16; const B: UInt32): UInt16;
 begin
 Result := uuMax(A,B);
 end;
@@ -12021,7 +12065,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: UInt64): UInt16; 
+Function Max(const A: UInt16; const B: UInt64): UInt16;
 begin
 Result := uuMax(A,B);
 end;
@@ -12029,14 +12073,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: UInt8): UInt32;
+Function Max(const A: UInt32; const B: UInt8): UInt32;
 begin
 Result := uuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: UInt16): UInt32;
+Function Max(const A: UInt32; const B: UInt16): UInt32;
 begin
 Result := uuMax(A,B);
 end;
@@ -12044,28 +12088,28 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: UInt64): UInt32;
+Function Max(const A: UInt32; const B: UInt64): UInt32;
 begin
 Result := uuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: UInt8): UInt64; 
+Function Max(const A: UInt64; const B: UInt8): UInt64;
 begin
 Result := uuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: UInt16): UInt64;
+Function Max(const A: UInt64; const B: UInt16): UInt64;
 begin
 Result := uuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: UInt32): UInt64;
+Function Max(const A: UInt64; const B: UInt32): UInt64;
 begin
 Result := uuMax(A,B);
 end;
@@ -12073,21 +12117,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Max(A: Extended; B: Int8): Extended;
+Function Max(const A: Extended; const B: Int8): Extended;
 begin
 Result := fiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Extended; B: Int16): Extended;
+Function Max(const A: Extended; const B: Int16): Extended;
 begin
 Result := fiMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Extended; B: Int32): Extended;
+Function Max(const A: Extended; const B: Int32): Extended;
 begin
 Result := fiMax(A,B);
 end;
@@ -12095,7 +12139,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Extended; B: Int64): Extended;
+Function Max(const A: Extended; const B: Int64): Extended;
 begin
 Result := fiMax(A,B);
 end;
@@ -12103,21 +12147,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Max(A: Extended; B: UInt8): Extended;
+Function Max(const A: Extended; const B: UInt8): Extended;
 begin
 Result := fuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Extended; B: UInt16): Extended;
+Function Max(const A: Extended; const B: UInt16): Extended;
 begin
 Result := fuMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Extended; B: UInt32): Extended;
+Function Max(const A: Extended; const B: UInt32): Extended;
 begin
 Result := fuMax(A,B);
 end;
@@ -12125,7 +12169,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Extended; B: UInt64): Extended;
+Function Max(const A: Extended; const B: UInt64): Extended;
 begin
 Result := fuMax(A,B);
 end;
@@ -12133,21 +12177,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Max(A: Int8; B: Extended): Int8;
+Function Max(const A: Int8; const B: Extended): Int8;
 begin
 Result := ifMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int16; B: Extended): Int16;
+Function Max(const A: Int16; const B: Extended): Int16;
 begin
 Result := ifMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int32; B: Extended): Int32;
+Function Max(const A: Int32; const B: Extended): Int32;
 begin
 Result := ifMax(A,B);
 end;
@@ -12155,7 +12199,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: Int64; B: Extended): Int64;
+Function Max(const A: Int64; const B: Extended): Int64;
 begin
 Result := ifMax(A,B);
 end;
@@ -12163,21 +12207,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function Max(A: UInt8; B: Extended): UInt8;
+Function Max(const A: UInt8; const B: Extended): UInt8;
 begin
 Result := ufMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt16; B: Extended): UInt16;
+Function Max(const A: UInt16; const B: Extended): UInt16;
 begin
 Result := ufMax(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt32; B: Extended): UInt32;
+Function Max(const A: UInt32; const B: Extended): UInt32;
 begin
 Result := ufMax(A,B);
 end;
@@ -12185,7 +12229,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function Max(A: UInt64; B: Extended): UInt64;
+Function Max(const A: UInt64; const B: Extended): UInt64;
 begin
 Result := ufMax(A,B);
 end;
@@ -12927,7 +12971,7 @@ end;
     iCompareValue - signed integers
 -------------------------------------------------------------------------------}
 
-Function iCompareValue(A,B: Int8): Integer;
+Function iCompareValue(const A,B: Int8): Integer;
 begin
 If A > B then
   Result := +1
@@ -12939,7 +12983,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iCompareValue(A,B: Int16): Integer;
+Function iCompareValue(const A,B: Int16): Integer;
 begin
 If A > B then
   Result := +1
@@ -12951,7 +12995,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iCompareValue(A,B: Int32): Integer;
+Function iCompareValue(const A,B: Int32): Integer;
 begin
 If A > B then
   Result := +1
@@ -12963,7 +13007,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iCompareValue(A,B: Int64): Integer;
+Function iCompareValue(const A,B: Int64): Integer;
 begin
 If A > B then
   Result := +1
@@ -12977,7 +13021,7 @@ end;
     uCompareValue - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uCompareValue(A,B: UInt8): Integer;
+Function uCompareValue(const A,B: UInt8): Integer;
 begin
 If A > B then
   Result := +1
@@ -12989,7 +13033,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uCompareValue(A,B: UInt16): Integer;
+Function uCompareValue(const A,B: UInt16): Integer;
 begin
 If A > B then
   Result := +1
@@ -13001,7 +13045,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uCompareValue(A,B: UInt32): Integer;
+Function uCompareValue(const A,B: UInt32): Integer;
 begin
 If A > B then
   Result := +1
@@ -13013,7 +13057,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uCompareValue(A,B: UInt64): Integer;
+Function uCompareValue(const A,B: UInt64): Integer;
 begin
 Result := CompareUInt64(A,B);
 end;
@@ -13022,7 +13066,7 @@ end;
     fCompareValue - real numbers
 -------------------------------------------------------------------------------}
 
-Function fCompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer;
+Function fCompareValue(const A,B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 If Epsilon <> 0.0 then
   begin
@@ -13045,21 +13089,21 @@ end;
     CompareValue - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function CompareValue(A,B: Int8): Integer;
+Function CompareValue(const A,B: Int8): Integer;
 begin
 Result := iCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: Int16): Integer;
+Function CompareValue(const A,B: Int16): Integer;
 begin
 Result := iCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: Int32): Integer;
+Function CompareValue(const A,B: Int32): Integer;
 begin
 Result := iCompareValue(A,B);
 end;
@@ -13067,7 +13111,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: Int64): Integer;
+Function CompareValue(const A,B: Int64): Integer;
 begin
 Result := iCompareValue(A,B);
 end;
@@ -13075,21 +13119,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: UInt8): Integer;
+Function CompareValue(const A,B: UInt8): Integer;
 begin
 Result := uCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: UInt16): Integer;
+Function CompareValue(const A,B: UInt16): Integer;
 begin
 Result := uCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: UInt32): Integer;
+Function CompareValue(const A,B: UInt32): Integer;
 begin
 Result := uCompareValue(A,B);
 end;
@@ -13097,7 +13141,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: UInt64): Integer;
+Function CompareValue(const A,B: UInt64): Integer;
 begin
 Result := uCompareValue(A,B);
 end;
@@ -13105,7 +13149,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A,B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A,B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
@@ -13120,84 +13164,84 @@ end;
     iiCompareValue - signed integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function iiCompareValue(A: Int8; B: Int16): Integer;
+Function iiCompareValue(const A: Int8; const B: Int16): Integer;
 begin
 Result := iCompareValue(Int16(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int8; B: Int32): Integer;
+Function iiCompareValue(const A: Int8; const B: Int32): Integer;
 begin
 Result := iCompareValue(Int32(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int8; B: Int64): Integer;
+Function iiCompareValue(const A: Int8; const B: Int64): Integer;
 begin
 Result := iCompareValue(Int64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int16; B: Int8): Integer;
+Function iiCompareValue(const A: Int16; const B: Int8): Integer;
 begin
 Result := iCompareValue(A,Int16(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int16; B: Int32): Integer;
+Function iiCompareValue(const A: Int16; const B: Int32): Integer;
 begin
 Result := iCompareValue(Int32(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int16; B: Int64): Integer;
+Function iiCompareValue(const A: Int16; const B: Int64): Integer;
 begin
 Result := iCompareValue(Int64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int32; B: Int8): Integer;
+Function iiCompareValue(const A: Int32; const B: Int8): Integer;
 begin
 Result := iCompareValue(A,Int32(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int32; B: Int16): Integer;
+Function iiCompareValue(const A: Int32; const B: Int16): Integer;
 begin
 Result := iCompareValue(A,Int32(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int32; B: Int64): Integer;
+Function iiCompareValue(const A: Int32; const B: Int64): Integer;
 begin
 Result := iCompareValue(Int64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int64; B: Int8): Integer;
+Function iiCompareValue(const A: Int64; const B: Int8): Integer;
 begin
 Result := iCompareValue(A,Int64(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int64; B: Int16): Integer;
+Function iiCompareValue(const A: Int64; const B: Int16): Integer;
 begin
 Result := iCompareValue(A,Int64(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValue(A: Int64; B: Int32): Integer;
+Function iiCompareValue(const A: Int64; const B: Int32): Integer;
 begin
 Result := iCompareValue(A,Int64(B));
 end;
@@ -13206,7 +13250,7 @@ end;
     iuCompareValue - signed integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function iuCompareValue(A: Int8; B: UInt8): Integer;
+Function iuCompareValue(const A: Int8; const B: UInt8): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt8(A),B)
@@ -13216,17 +13260,17 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int8; B: UInt16): Integer;
+Function iuCompareValue(const A: Int8; const B: UInt16): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt16(A),B)
 else
   Result := -1;
 end;
- 
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int8; B: UInt32): Integer;
+Function iuCompareValue(const A: Int8; const B: UInt32): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt32(A),B)
@@ -13236,7 +13280,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int8; B: UInt64): Integer;
+Function iuCompareValue(const A: Int8; const B: UInt64): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt64(UInt8(A)),B)
@@ -13246,14 +13290,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int16; B: UInt8): Integer;
+Function iuCompareValue(const A: Int16; const B: UInt8): Integer;
 begin
 Result := iCompareValue(A,Int16(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int16; B: UInt16): Integer;
+Function iuCompareValue(const A: Int16; const B: UInt16): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt16(A),B)
@@ -13263,7 +13307,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int16; B: UInt32): Integer;
+Function iuCompareValue(const A: Int16; const B: UInt32): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt32(A),B)
@@ -13273,7 +13317,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int16; B: UInt64): Integer;
+Function iuCompareValue(const A: Int16; const B: UInt64): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt64(UInt16(A)),B)
@@ -13283,21 +13327,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int32; B: UInt8): Integer;
+Function iuCompareValue(const A: Int32; const B: UInt8): Integer;
 begin
 Result := iCompareValue(A,Int32(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int32; B: UInt16): Integer;
+Function iuCompareValue(const A: Int32; const B: UInt16): Integer;
 begin
 Result := iCompareValue(A,Int32(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int32; B: UInt32): Integer;
+Function iuCompareValue(const A: Int32; const B: UInt32): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt32(A),B)
@@ -13307,7 +13351,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int32; B: UInt64): Integer;
+Function iuCompareValue(const A: Int32; const B: UInt64): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt64(UInt32(A)),B)
@@ -13317,28 +13361,28 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int64; B: UInt8): Integer;
+Function iuCompareValue(const A: Int64; const B: UInt8): Integer;
 begin
 Result := iCompareValue(A,Int64(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int64; B: UInt16): Integer;
+Function iuCompareValue(const A: Int64; const B: UInt16): Integer;
 begin
 Result := iCompareValue(A,Int64(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int64; B: UInt32): Integer;
+Function iuCompareValue(const A: Int64; const B: UInt32): Integer;
 begin
 Result := iCompareValue(A,Int64(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValue(A: Int64; B: UInt64): Integer;
+Function iuCompareValue(const A: Int64; const B: UInt64): Integer;
 begin
 If A >= 0 then
   Result := uCompareValue(UInt64(A),B)
@@ -13350,7 +13394,7 @@ end;
     uiCompareValue - unsigned integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function uiCompareValue(A: UInt8; B: Int8): Integer;
+Function uiCompareValue(const A: UInt8; const B: Int8): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt8(B))
@@ -13360,28 +13404,28 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt8; B: Int16): Integer;
+Function uiCompareValue(const A: UInt8; const B: Int16): Integer;
 begin
 Result := iCompareValue(Int16(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt8; B: Int32): Integer;
+Function uiCompareValue(const A: UInt8; const B: Int32): Integer;
 begin
 Result := iCompareValue(Int32(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt8; B: Int64): Integer;
+Function uiCompareValue(const A: UInt8; const B: Int64): Integer;
 begin
 Result := iCompareValue(Int64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt16; B: Int8): Integer;
+Function uiCompareValue(const A: UInt16; const B: Int8): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt16(B))
@@ -13391,31 +13435,31 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt16; B: Int16): Integer;
+Function uiCompareValue(const A: UInt16; const B: Int16): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt16(B))
 else
   Result := +1;
 end;
- 
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt16; B: Int32): Integer;
+Function uiCompareValue(const A: UInt16; const B: Int32): Integer;
 begin
 Result := iCompareValue(Int32(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt16; B: Int64): Integer;
+Function uiCompareValue(const A: UInt16; const B: Int64): Integer;
 begin
 Result := iCompareValue(Int64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt32; B: Int8): Integer;
+Function uiCompareValue(const A: UInt32; const B: Int8): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt32(B))
@@ -13425,7 +13469,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt32; B: Int16): Integer;
+Function uiCompareValue(const A: UInt32; const B: Int16): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt32(B))
@@ -13435,7 +13479,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt32; B: Int32): Integer;
+Function uiCompareValue(const A: UInt32; const B: Int32): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt32(B))
@@ -13445,14 +13489,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt32; B: Int64): Integer;
+Function uiCompareValue(const A: UInt32; const B: Int64): Integer;
 begin
 Result := iCompareValue(Int64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt64; B: Int8): Integer;
+Function uiCompareValue(const A: UInt64; const B: Int8): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt64(UInt8(B)))
@@ -13462,7 +13506,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt64; B: Int16): Integer;
+Function uiCompareValue(const A: UInt64; const B: Int16): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt64(UInt16(B)))
@@ -13472,7 +13516,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt64; B: Int32): Integer;
+Function uiCompareValue(const A: UInt64; const B: Int32): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt64(UInt32(B)))
@@ -13482,7 +13526,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValue(A: UInt64; B: Int64): Integer;
+Function uiCompareValue(const A: UInt64; const B: Int64): Integer;
 begin
 If B >= 0 then
   Result := uCompareValue(A,UInt64(B))
@@ -13494,84 +13538,84 @@ end;
     uuCompareValue - unsigned integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function uuCompareValue(A: UInt8; B: UInt16): Integer;
+Function uuCompareValue(const A: UInt8; const B: UInt16): Integer;
 begin
 Result := uCompareValue(UInt16(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt8; B: UInt32): Integer;
+Function uuCompareValue(const A: UInt8; const B: UInt32): Integer;
 begin
 Result := uCompareValue(UInt32(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt8; B: UInt64): Integer;
+Function uuCompareValue(const A: UInt8; const B: UInt64): Integer;
 begin
 Result := uCompareValue(UInt64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt16; B: UInt8): Integer;
+Function uuCompareValue(const A: UInt16; const B: UInt8): Integer;
 begin
 Result := uCompareValue(A,UInt16(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt16; B: UInt32): Integer;
+Function uuCompareValue(const A: UInt16; const B: UInt32): Integer;
 begin
 Result := uCompareValue(UInt32(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt16; B: UInt64): Integer;
+Function uuCompareValue(const A: UInt16; const B: UInt64): Integer;
 begin
 Result := uCompareValue(UInt64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt32; B: UInt8): Integer;
+Function uuCompareValue(const A: UInt32; const B: UInt8): Integer;
 begin
 Result := uCompareValue(A,UInt32(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt32; B: UInt16): Integer;
+Function uuCompareValue(const A: UInt32; const B: UInt16): Integer;
 begin
 Result := uCompareValue(A,UInt32(B));
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt32; B: UInt64): Integer;
+Function uuCompareValue(const A: UInt32; const B: UInt64): Integer;
 begin
 Result := uCompareValue(UInt64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt64; B: UInt8): Integer;
+Function uuCompareValue(const A: UInt64; const B: UInt8): Integer;
 begin
 Result := uCompareValue(UInt64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt64; B: UInt16): Integer;
+Function uuCompareValue(const A: UInt64; const B: UInt16): Integer;
 begin
 Result := uCompareValue(UInt64(A),B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValue(A: UInt64; B: UInt32): Integer;
+Function uuCompareValue(const A: UInt64; const B: UInt32): Integer;
 begin
 Result := uCompareValue(UInt64(A),B);
 end;
@@ -13580,28 +13624,30 @@ end;
     fiCompareValue - real number & signed integer
 -------------------------------------------------------------------------------}
 
-Function fiCompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer;
+Function fiCompareValue(const A: Extended; const B: Int8; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer;
+Function fiCompareValue(const A: Extended; const B: Int16; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer;
+Function fiCompareValue(const A: Extended; const B: Int32; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer;
+Function fiCompareValue(const A: Extended; const B: Int64; const Epsilon: Extended = 0.0): Integer;
+var
+  TrueEpsilon:  Extended;
 begin
 {
   Compare float with values the integer cannot ever have to avoid possible
@@ -13609,13 +13655,13 @@ begin
 }
 If Epsilon <> 0.0 then
   begin
-    Epsilon := Abs(Epsilon);
-    If A >= (TwoPow63 + Epsilon) then
+    TrueEpsilon := Abs(Epsilon);
+    If A >= (TwoPow63 + TrueEpsilon) then
       Result := +1
-    else If A < (-TwoPow63 - Epsilon) then
+    else If A < (-TwoPow63 - TrueEpsilon) then
       Result := -1
     else
-      Result := fCompareValue(A,Int64ToFloat(B),Epsilon);
+      Result := fCompareValue(A,Int64ToFloat(B),TrueEpsilon);
   end
 else
   begin
@@ -13632,38 +13678,40 @@ end;
     fuCompareValue - real number & signed integer
 -------------------------------------------------------------------------------}
 
-Function fuCompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer;
+Function fuCompareValue(const A: Extended; const B: UInt8; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer;
+Function fuCompareValue(const A: Extended; const B: UInt16; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer;
+Function fuCompareValue(const A: Extended; const B: UInt32; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer;
+Function fuCompareValue(const A: Extended; const B: UInt64; const Epsilon: Extended = 0.0): Integer;
+var
+  TrueEpsilon:  Extended;
 begin
 If Epsilon <> 0.0 then
   begin
-    Epsilon := Abs(Epsilon);
-    If A >= (TwoPow64 + Epsilon) then
+    TrueEpsilon := Abs(Epsilon);
+    If A >= (TwoPow64 + TrueEpsilon) then
       Result := +1
-    else If A < -Epsilon then
+    else If A < -TrueEpsilon then
       Result := -1
     else
-      Result := fCompareValue(A,UInt64ToFloat(B),Epsilon);
+      Result := fCompareValue(A,UInt64ToFloat(B),TrueEpsilon);
   end
 else
   begin
@@ -13680,38 +13728,40 @@ end;
     ifCompareValue - signed integer & real number
 -------------------------------------------------------------------------------}
 
-Function ifCompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ifCompareValue(const A: Int8; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ifCompareValue(const A: Int16; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ifCompareValue(const A: Int32; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ifCompareValue(const A: Int64; const B: Extended; const Epsilon: Extended = 0.0): Integer;
+var
+  TrueEpsilon:  Extended;
 begin
 If Epsilon <> 0.0 then
   begin
-    Epsilon := Abs(Epsilon);
-    If B >= (TwoPow63 + Epsilon) then
+    TrueEpsilon := Abs(Epsilon);
+    If B >= (TwoPow63 + TrueEpsilon) then
       Result := -1
-    else If B < (-TwoPow63 - Epsilon) then
+    else If B < (-TwoPow63 - TrueEpsilon) then
       Result := +1
     else
-      Result := fCompareValue(Int64ToFloat(A),B,Epsilon);
+      Result := fCompareValue(Int64ToFloat(A),B,TrueEpsilon);
   end
 else
   begin
@@ -13728,38 +13778,40 @@ end;
     ufCompareValue - unsigned integer & real number
 -------------------------------------------------------------------------------}
 
-Function ufCompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ufCompareValue(const A: UInt8; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ufCompareValue(const A: UInt16; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ufCompareValue(const A: UInt32; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function ufCompareValue(const A: UInt64; const B: Extended; const Epsilon: Extended = 0.0): Integer;
+var
+  TrueEpsilon:  Extended;
 begin
 If Epsilon <> 0.0 then
   begin
-    Epsilon := Abs(Epsilon);
-    If B >= (TwoPow64 + Epsilon) then
+    TrueEpsilon := Abs(Epsilon);
+    If B >= (TwoPow64 + TrueEpsilon) then
       Result := -1
-    else If B < -Epsilon then
+    else If B < -TrueEpsilon then
       Result := +1
     else
-      Result := fCompareValue(UInt64ToFloat(A),B,Epsilon);
+      Result := fCompareValue(UInt64ToFloat(A),B,TrueEpsilon);
   end
 else
   begin
@@ -13776,14 +13828,14 @@ end;
     CompareValue - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function CompareValue(A: Int8; B: Int16): Integer;
+Function CompareValue(const A: Int8; const B: Int16): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int8; B: Int32): Integer;
+Function CompareValue(const A: Int8; const B: Int32): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
@@ -13791,7 +13843,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int8; B: Int64): Integer;
+Function CompareValue(const A: Int8; const B: Int64): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
@@ -13799,14 +13851,14 @@ end;
 {$IFEND}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int16; B: Int8): Integer;
+Function CompareValue(const A: Int16; const B: Int8): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int16; B: Int32): Integer;
+Function CompareValue(const A: Int16; const B: Int32): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
@@ -13814,7 +13866,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int16; B: Int64): Integer;
+Function CompareValue(const A: Int16; const B: Int64): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
@@ -13822,14 +13874,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int32; B: Int8): Integer;
+Function CompareValue(const A: Int32; const B: Int8): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int32; B: Int16): Integer;
+Function CompareValue(const A: Int32; const B: Int16): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
@@ -13837,168 +13889,168 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int32; B: Int64): Integer;
+Function CompareValue(const A: Int32; const B: Int64): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int64; B: Int8): Integer;
+Function CompareValue(const A: Int64; const B: Int8): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int64; B: Int16): Integer;
+Function CompareValue(const A: Int64; const B: Int16): Integer;
 begin
 Result := iiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int64; B: Int32): Integer;
+Function CompareValue(const A: Int64; const B: Int32): Integer;
 begin
 Result := iiCompareValue(A,B);
-end;
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function CompareValue(A: Int8; B: UInt8): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int8; B: UInt16): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int8; B: UInt32): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int8; B: UInt64): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int16; B: UInt8): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int16; B: UInt16): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int16; B: UInt32): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int16; B: UInt64): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int32; B: UInt8): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int32; B: UInt16): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int32; B: UInt32): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int32; B: UInt64): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int64; B: UInt8): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int64; B: UInt16): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int64; B: UInt32): Integer;
-begin
-Result := iuCompareValue(A,B);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValue(A: Int64; B: UInt64): Integer;
-begin
-Result := iuCompareValue(A,B);
 end;
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: UInt8; B: Int8): Integer;
+Function CompareValue(const A: Int8; const B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int8; const B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int8; const B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int8; const B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int16; const B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int16; const B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int16; const B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int16; const B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int32; const B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int32; const B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int32; const B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int32; const B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int64; const B: UInt8): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int64; const B: UInt16): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int64; const B: UInt32): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValue(const A: Int64; const B: UInt64): Integer;
+begin
+Result := iuCompareValue(A,B);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValue(const A: UInt8; const B: Int8): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt8; B: Int16): Integer;
+Function CompareValue(const A: UInt8; const B: Int16): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt8; B: Int32): Integer;
+Function CompareValue(const A: UInt8; const B: Int32): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
@@ -14006,7 +14058,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt8; B: Int64): Integer;
+Function CompareValue(const A: UInt8; const B: Int64): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
@@ -14014,21 +14066,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: Int8): Integer;
+Function CompareValue(const A: UInt16; const B: Int8): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: Int16): Integer;
+Function CompareValue(const A: UInt16; const B: Int16): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: Int32): Integer;
+Function CompareValue(const A: UInt16; const B: Int32): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
@@ -14036,7 +14088,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: Int64): Integer;
+Function CompareValue(const A: UInt16; const B: Int64): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
@@ -14044,21 +14096,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: Int8): Integer;
+Function CompareValue(const A: UInt32; const B: Int8): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: Int16): Integer;
+Function CompareValue(const A: UInt32; const B: Int16): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: Int32): Integer;
+Function CompareValue(const A: UInt32; const B: Int32): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
@@ -14066,35 +14118,35 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: Int64): Integer;
+Function CompareValue(const A: UInt32; const B: Int64): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: Int8): Integer;
+Function CompareValue(const A: UInt64; const B: Int8): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: Int16): Integer;
+Function CompareValue(const A: UInt64; const B: Int16): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: Int32): Integer;
+Function CompareValue(const A: UInt64; const B: Int32): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: Int64): Integer;
+Function CompareValue(const A: UInt64; const B: Int64): Integer;
 begin
 Result := uiCompareValue(A,B);
 end;
@@ -14102,14 +14154,14 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: UInt8; B: UInt16): Integer;
+Function CompareValue(const A: UInt8; const B: UInt16): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt8; B: UInt32): Integer;
+Function CompareValue(const A: UInt8; const B: UInt32): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
@@ -14117,7 +14169,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt8; B: UInt64): Integer;
+Function CompareValue(const A: UInt8; const B: UInt64): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
@@ -14125,14 +14177,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: UInt8): Integer;
+Function CompareValue(const A: UInt16; const B: UInt8): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: UInt32): Integer;
+Function CompareValue(const A: UInt16; const B: UInt32): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
@@ -14140,7 +14192,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: UInt64): Integer;
+Function CompareValue(const A: UInt16; const B: UInt64): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
@@ -14148,14 +14200,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: UInt8): Integer;
+Function CompareValue(const A: UInt32; const B: UInt8): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: UInt16): Integer;
+Function CompareValue(const A: UInt32; const B: UInt16): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
@@ -14163,28 +14215,28 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: UInt64): Integer;
+Function CompareValue(const A: UInt32; const B: UInt64): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: UInt8): Integer;
+Function CompareValue(const A: UInt64; const B: UInt8): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: UInt16): Integer;
+Function CompareValue(const A: UInt64; const B: UInt16): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: UInt32): Integer;
+Function CompareValue(const A: UInt64; const B: UInt32): Integer;
 begin
 Result := uuCompareValue(A,B);
 end;
@@ -14192,21 +14244,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: Extended; B: Int8; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: Int8; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fiCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Extended; B: Int16; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: Int16; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fiCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Extended; B: Int32; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: Int32; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fiCompareValue(A,B,Epsilon);
 end;
@@ -14214,7 +14266,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Extended; B: Int64; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: Int64; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fiCompareValue(A,B,Epsilon);
 end;
@@ -14222,21 +14274,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: Extended; B: UInt8; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: UInt8; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fuCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Extended; B: UInt16; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: UInt16; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fuCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Extended; B: UInt32; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: UInt32; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fuCompareValue(A,B,Epsilon);
 end;
@@ -14244,7 +14296,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Extended; B: UInt64; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Extended; const B: UInt64; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := fuCompareValue(A,B,Epsilon);
 end;
@@ -14252,21 +14304,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: Int8; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Int8; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ifCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int16; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Int16; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ifCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int32; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Int32; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ifCompareValue(A,B,Epsilon);
 end;
@@ -14274,7 +14326,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: Int64; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: Int64; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ifCompareValue(A,B,Epsilon);
 end;
@@ -14282,21 +14334,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValue(A: UInt8; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: UInt8; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ufCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt16; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: UInt16; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ufCompareValue(A,B,Epsilon);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt32; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: UInt32; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ufCompareValue(A,B,Epsilon);
 end;
@@ -14304,7 +14356,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValue(A: UInt64; B: Extended; Epsilon: Extended = 0.0): Integer;
+Function CompareValue(const A: UInt64; const B: Extended; const Epsilon: Extended = 0.0): Integer;
 begin
 Result := ufCompareValue(A,B,Epsilon);
 end;
@@ -14335,28 +14387,28 @@ end;
     iCompareValueOp - signed integers
 -------------------------------------------------------------------------------}
 
-Function iCompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iCompareValueOp(const A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iCompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iCompareValueOp(const A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iCompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iCompareValueOp(const A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iCompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iCompareValueOp(const A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iCompareValue(A,B),Operation);
 end;
@@ -14365,28 +14417,28 @@ end;
     uCompareValueOp - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uCompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uCompareValueOp(const A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uCompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uCompareValueOp(const A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uCompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uCompareValueOp(const A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uCompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uCompareValueOp(const A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uCompareValue(A,B),Operation);
 end;
@@ -14395,14 +14447,14 @@ end;
     fCompareValueOp - real numbers
 -------------------------------------------------------------------------------}
 
-Function fCompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fCompareValueOp(const A,B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fCompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fCompareValueOp(const A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fCompareValue(A,B),Operation);
 end;
@@ -14411,21 +14463,21 @@ end;
     CompareValueOp - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function CompareValueOp(A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iCompareValueOp(A,B,Operation);
 end;
@@ -14433,7 +14485,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iCompareValueOp(A,B,Operation);
 end;
@@ -14441,21 +14493,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uCompareValueOp(A,B,Operation);
 end;
@@ -14463,7 +14515,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uCompareValueOp(A,B,Operation);
 end;
@@ -14471,14 +14523,14 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A,B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A,B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fCompareValueOp(A,B,Operation);
 end;
@@ -14493,84 +14545,84 @@ end;
     iiCompareValueOp - signed integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function iiCompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(iiCompareValue(A,B),Operation);
-end; 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function iiCompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iiCompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iiCompareValueOp(const A: Int64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iiCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iiCompareValueOp(const A: Int64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iiCompareValue(A,B),Operation);
 end;
@@ -14579,112 +14631,112 @@ end;
     iuCompareValueOp - signed integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function iuCompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(iuCompareValue(A,B),Operation);
-end; 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function iuCompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int8; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int16; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int32; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iuCompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function iuCompareValueOp(const A: Int64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(iuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iuCompareValueOp(const A: Int64; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(iuCompareValue(A,B),Operation);
 end;
@@ -14693,112 +14745,112 @@ end;
     uiCompareValueOp - unsigned integer & signed integer
 -------------------------------------------------------------------------------}
 
-Function uiCompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt8; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt16; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt32; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uiCompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uiCompareValueOp(const A: UInt64; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uiCompareValue(A,B),Operation);
 end;
@@ -14807,84 +14859,84 @@ end;
     uuCompareValueOp - unsigned integer & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function uuCompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(uuCompareValue(A,B),Operation);
-end; 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function uuCompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uuCompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function uuCompareValueOp(const A: UInt64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(uuCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uuCompareValueOp(const A: UInt64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(uuCompareValue(A,B),Operation);
 end;
@@ -14893,56 +14945,56 @@ end;
     fiCompareValueOp - float & signed integer
 -------------------------------------------------------------------------------}
 
-Function fiCompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
-end; 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function fiCompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fiCompareValueOp(const A: Extended; const B: Int8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fiCompareValueOp(const A: Extended; const B: Int16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fiCompareValueOp(const A: Extended; const B: Int32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fiCompareValueOp(const A: Extended; const B: Int64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fiCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fiCompareValueOp(const A: Extended; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fiCompareValueOp(const A: Extended; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fiCompareValueOp(const A: Extended; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fiCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fiCompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fiCompareValueOp(const A: Extended; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fiCompareValue(A,B),Operation);
 end;
@@ -14951,56 +15003,56 @@ end;
     fuCompareValueOp - float & unsigned integer
 -------------------------------------------------------------------------------}
 
-Function fuCompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
-end;  
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function fuCompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fuCompareValueOp(const A: Extended; const B: UInt8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fuCompareValueOp(const A: Extended; const B: UInt16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fuCompareValueOp(const A: Extended; const B: UInt32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fuCompareValueOp(const A: Extended; const B: UInt64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(fuCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fuCompareValueOp(const A: Extended; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fuCompareValueOp(const A: Extended; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fuCompareValueOp(const A: Extended; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fuCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function fuCompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function fuCompareValueOp(const A: Extended; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(fuCompareValue(A,B),Operation);
 end;
@@ -15009,53 +15061,53 @@ end;
     ifCompareValueOp - signed integer & float
 -------------------------------------------------------------------------------}
 
-Function ifCompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ifCompareValueOp(const A: Int8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
-Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
-end; 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function ifCompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
 Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
+Function ifCompareValueOp(const A: Int16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
 Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
-end; 
+end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
+Function ifCompareValueOp(const A: Int32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
 Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
-end; 
+end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(ifCompareValue(A,B),Operation);
-end; 
+Function ifCompareValueOp(const A: Int64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;begin
+Result := ResolveOperation(ifCompareValue(A,B,Epsilon),Operation);
+end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(ifCompareValue(A,B),Operation);
-end; 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function ifCompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ifCompareValueOp(const A: Int8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(ifCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ifCompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ifCompareValueOp(const A: Int16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ifCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(const A: Int32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ifCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ifCompareValueOp(const A: Int64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(ifCompareValue(A,B),Operation);
 end;
@@ -15064,56 +15116,56 @@ end;
     ufCompareValueOp - unsigned integer & float
 -------------------------------------------------------------------------------}
 
-Function ufCompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ufCompareValueOp(const A: UInt8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
-end;  
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function ufCompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
-end; 
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function ufCompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ufCompareValueOp(const A: UInt16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ufCompareValueOp(const A: UInt32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
-Result := ResolveOperation(ufCompareValue(A,B),Operation);
-end; 
+Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
+end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ufCompareValueOp(const A: UInt64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B,Epsilon),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(const A: UInt8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(ufCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ufCompareValueOp(const A: UInt16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(ufCompareValue(A,B),Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function ufCompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function ufCompareValueOp(const A: UInt32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := ResolveOperation(ufCompareValue(A,B),Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ufCompareValueOp(const A: UInt64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ResolveOperation(ufCompareValue(A,B),Operation);
 end;
@@ -15122,14 +15174,14 @@ end;
     CompareValueOp - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function CompareValueOp(A: Int8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
@@ -15137,7 +15189,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
@@ -15145,14 +15197,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
@@ -15160,7 +15212,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
@@ -15168,14 +15220,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
@@ -15183,168 +15235,168 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := iiCompareValueOp(A,B,Operation);
-end;
-{$IFEND}
-
-//------------------------------------------------------------------------------
-
-Function CompareValueOp(A: Int8; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int16; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-{$IFEND}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int32; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-{$IF Declared(DistinctOverloadUInt64E)}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function CompareValueOp(A: Int64; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
-begin
-Result := iuCompareValueOp(A,B,Operation);
 end;
 {$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: UInt8; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int8; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int16; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int32; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CompareValueOp(const A: Int64; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+begin
+Result := iuCompareValueOp(A,B,Operation);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function CompareValueOp(const A: UInt8; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt8; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt8; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
@@ -15352,7 +15404,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt8; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
@@ -15360,21 +15412,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
@@ -15382,7 +15434,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
@@ -15390,21 +15442,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
@@ -15412,35 +15464,35 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uiCompareValueOp(A,B,Operation);
 end;
@@ -15448,14 +15500,14 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: UInt8; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt8; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
@@ -15463,7 +15515,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt8; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
@@ -15471,14 +15523,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
@@ -15486,7 +15538,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
@@ -15494,14 +15546,14 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
@@ -15509,28 +15561,28 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := uuCompareValueOp(A,B,Operation);
 end;
@@ -15538,21 +15590,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: Extended; B: Int8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: Int16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: Int32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15560,7 +15612,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: Int64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15568,21 +15620,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Operation);
 end;
@@ -15590,7 +15642,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: Int64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fiCompareValueOp(A,B,Operation);
 end;
@@ -15598,21 +15650,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: Extended; B: UInt8; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt8; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: UInt16; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt16; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: UInt32; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt32; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15620,7 +15672,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: UInt64; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt64; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15628,21 +15680,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt8; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt16; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt32; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Operation);
 end;
@@ -15650,7 +15702,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Extended; B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Extended; const B: UInt64; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := fuCompareValueOp(A,B,Operation);
 end;
@@ -15658,21 +15710,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: Int8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15680,7 +15732,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15688,21 +15740,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Operation);
 end;
@@ -15710,7 +15762,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: Int64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: Int64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ifCompareValueOp(A,B,Operation);
 end;
@@ -15718,21 +15770,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function CompareValueOp(A: UInt8; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Epsilon,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15740,7 +15792,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: Extended; Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: Extended; const Epsilon: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Epsilon,Operation);
 end;
@@ -15748,21 +15800,21 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt8; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt8; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt16; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt16; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Operation);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt32; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt32; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Operation);
 end;
@@ -15770,7 +15822,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function CompareValueOp(A: UInt64; B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
+Function CompareValueOp(const A: UInt64; const B: Extended; Operation: TCompareOperation = cmpEqual): Boolean;
 begin
 Result := ufCompareValueOp(A,B,Operation);
 end;
@@ -15779,14 +15831,14 @@ end;
 
 {===============================================================================
 --------------------------------------------------------------------------------
-                         Ternary-operator-like functions                        
+                         Ternary-operator-like functions
 --------------------------------------------------------------------------------
 ===============================================================================}
 {-------------------------------------------------------------------------------
     iIfThen - signed integers
 -------------------------------------------------------------------------------}
 
-Function iIfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8;
+Function iIfThen(Condition: Boolean; const OnTrue: Int8; const OnFalse: Int8 = 0): Int8;
 begin
 {
   this code would be prime candidate for some macro or generic function, if
@@ -15800,7 +15852,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16;
+Function iIfThen(Condition: Boolean; const OnTrue: Int16; const OnFalse: Int16 = 0): Int16;
 begin
 If Condition then
   Result := OnTrue
@@ -15810,7 +15862,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32;
+Function iIfThen(Condition: Boolean; const OnTrue: Int32; const OnFalse: Int32 = 0): Int32;
 begin
 If Condition then
   Result := OnTrue
@@ -15820,7 +15872,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function iIfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64;
+Function iIfThen(Condition: Boolean; const OnTrue: Int64; const OnFalse: Int64 = 0): Int64;
 begin
 If Condition then
   Result := OnTrue
@@ -15832,7 +15884,7 @@ end;
     uIfThen - unsigned integers
 -------------------------------------------------------------------------------}
 
-Function uIfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt8; const OnFalse: UInt8 = 0): UInt8;
 begin
 If Condition then
   Result := OnTrue
@@ -15842,7 +15894,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt16; const OnFalse: UInt16 = 0): UInt16;
 begin
 If Condition then
   Result := OnTrue
@@ -15852,7 +15904,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt32; const OnFalse: UInt32 = 0): UInt32;
 begin
 If Condition then
   Result := OnTrue
@@ -15862,7 +15914,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function uIfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64;
+Function uIfThen(Condition: Boolean; const OnTrue: UInt64; const OnFalse: UInt64 = 0): UInt64;
 begin
 If Condition then
   Result := OnTrue
@@ -15874,7 +15926,7 @@ end;
     fIfThen - real numbers
 -------------------------------------------------------------------------------}
 
-Function fIfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended;
+Function fIfThen(Condition: Boolean; const OnTrue: Extended; const OnFalse: Extended = 0.0): Extended;
 begin
 If Condition then
   Result := OnTrue
@@ -15886,7 +15938,7 @@ end;
     cIfThen - character types
 -------------------------------------------------------------------------------}
 
-Function cIfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
+Function cIfThen(Condition: Boolean; const OnTrue: AnsiChar; const OnFalse: AnsiChar = #0): AnsiChar;
 begin
 If Condition then
   Result := OnTrue
@@ -15896,7 +15948,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function cIfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
+Function cIfThen(Condition: Boolean; const OnTrue: WideChar; const OnFalse: WideChar = #0): WideChar;
 begin
 If Condition then
   Result := OnTrue
@@ -15906,7 +15958,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function cIfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
+Function cIfThen(Condition: Boolean; const OnTrue: UCS4Char; const OnFalse: UCS4Char = 0): UCS4Char;
 begin
 If Condition then
   Result := OnTrue
@@ -15980,7 +16032,7 @@ end;
     *IfThen - other types
 -------------------------------------------------------------------------------}
 
-Function pIfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer;
+Function pIfThen(Condition: Boolean; const OnTrue: Pointer; const OnFalse: Pointer = nil): Pointer;
 begin
 If Condition then
   Result := OnTrue
@@ -15990,7 +16042,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function oIfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject;
+Function oIfThen(Condition: Boolean; const OnTrue: TObject; const OnFalse: TObject = nil): TObject;
 begin
 If Condition then
   Result := OnTrue
@@ -16000,7 +16052,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function oIfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass;
+Function oIfThen(Condition: Boolean; const OnTrue: TClass; const OnFalse: TClass = nil): TClass;
 begin
 If Condition then
   Result := OnTrue
@@ -16017,7 +16069,7 @@ If Condition then
 else
   Result := OnFalse;
 end;
- 
+
 //------------------------------------------------------------------------------
 
 Function gIfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID;
@@ -16033,16 +16085,16 @@ end;
 procedure bIfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
 begin
 If Condition then
-  System.Move(OnTrue,Result,Size)
+  System.Move(OnTrue,Addr(Result)^,Size)
 else
-  System.Move(OnFalse,Result,Size);
+  System.Move(OnFalse,Addr(Result)^,Size);
 end;
 
 {-------------------------------------------------------------------------------
     IfThen* - non-overloadable types
 -------------------------------------------------------------------------------}
 
-Function IfThenAnsiChar(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar;
+Function IfThenAnsiChar(Condition: Boolean; const OnTrue: AnsiChar; const OnFalse: AnsiChar = #0): AnsiChar;
 begin
 If Condition then
   Result := OnTrue
@@ -16052,7 +16104,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenUTF8Char(Condition: Boolean; OnTrue: UTF8Char; OnFalse: UTF8Char = #0): UTF8Char;
+Function IfThenUTF8Char(Condition: Boolean; const OnTrue: UTF8Char; const OnFalse: UTF8Char = #0): UTF8Char;
 begin
 If Condition then
   Result := OnTrue
@@ -16062,7 +16114,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenWideChar(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar;
+Function IfThenWideChar(Condition: Boolean; const OnTrue: WideChar; const OnFalse: WideChar = #0): WideChar;
 begin
 If Condition then
   Result := OnTrue
@@ -16072,7 +16124,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenUnicodeChar(Condition: Boolean; OnTrue: UnicodeChar; OnFalse: UnicodeChar = #0): UnicodeChar;
+Function IfThenUnicodeChar(Condition: Boolean; const OnTrue: UnicodeChar; const OnFalse: UnicodeChar = #0): UnicodeChar;
 begin
 If Condition then
   Result := OnTrue
@@ -16082,7 +16134,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenUCS4Char(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char;
+Function IfThenUCS4Char(Condition: Boolean; const OnTrue: UCS4Char; const OnFalse: UCS4Char = 0): UCS4Char;
 begin
 If Condition then
   Result := OnTrue
@@ -16092,7 +16144,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenChar(Condition: Boolean; OnTrue: Char; OnFalse: Char = #0): Char;
+Function IfThenChar(Condition: Boolean; const OnTrue: Char; const OnFalse: Char = #0): Char;
 begin
 If Condition then
   Result := OnTrue
@@ -16102,7 +16154,7 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function IfThenShortStr(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
+Function IfThenShortString(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
 begin
 If Condition then
   Result := OnTrue
@@ -16112,31 +16164,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenAnsiStr(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
-begin
-If Condition then
-  Result := OnTrue
-else
-  Result := OnFalse;
-If UniqueCopy then
-  UniqueString(Result);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function IfThenUTF8Str(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
-begin
-If Condition then
-  Result := OnTrue
-else
-  Result := OnFalse;
-If UniqueCopy then
-  UniqueString(AnsiString(Result));
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function IfThenWideStr(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
+Function IfThenAnsiString(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
 begin
 If Condition then
   Result := OnTrue
@@ -16148,7 +16176,19 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenUnicodeStr(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
+Function IfThenUTF8String(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString({$IFNDEF FPC}AnsiString{$ENDIF}(Result));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenWideString(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
 begin
 If Condition then
   Result := OnTrue
@@ -16160,7 +16200,19 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenUCS4Str(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
+Function IfThenUnicodeString(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+  UniqueString(Result);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThenUCS4String(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
 begin
 If Condition then
   Result := OnTrue
@@ -16172,7 +16224,7 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThenStr(Condition: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False): String;
+Function IfThenString(Condition: Boolean; const OnTrue: String; const OnFalse: String = ''; UniqueCopy: Boolean = False): String;
 begin
 If Condition then
   Result := OnTrue
@@ -16186,21 +16238,21 @@ end;
     IfThen - common-name overloads
 -------------------------------------------------------------------------------}
 
-Function IfThen(Condition: Boolean; OnTrue: Int8; OnFalse: Int8 = 0): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int8; const OnFalse: Int8 = 0): Int8;
 begin
 Result := iIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: Int16; OnFalse: Int16 = 0): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int16; const OnFalse: Int16 = 0): Int16;
 begin
 Result := iIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: Int32; OnFalse: Int32 = 0): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int32; const OnFalse: Int32 = 0): Int32;
 begin
 Result := iIfThen(Condition,OnTrue,OnFalse);
 end;
@@ -16208,7 +16260,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: Int64; OnFalse: Int64 = 0): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Int64; const OnFalse: Int64 = 0): Int64;
 begin
 Result := iIfThen(Condition,OnTrue,OnFalse);
 end;
@@ -16216,21 +16268,21 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function IfThen(Condition: Boolean; OnTrue: UInt8; OnFalse: UInt8 = 0): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt8; const OnFalse: UInt8 = 0): UInt8;
 begin
 Result := uIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: UInt16; OnFalse: UInt16 = 0): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt16; const OnFalse: UInt16 = 0): UInt16;
 begin
 Result := uIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: UInt32; OnFalse: UInt32 = 0): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt32; const OnFalse: UInt32 = 0): UInt32;
 begin
 Result := uIfThen(Condition,OnTrue,OnFalse);
 end;
@@ -16238,7 +16290,7 @@ end;
 {$IF Declared(DistinctOverloadUInt64E)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: UInt64; OnFalse: UInt64 = 0): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UInt64; const OnFalse: UInt64 = 0): UInt64;
 begin
 Result := uIfThen(Condition,OnTrue,OnFalse);
 end;
@@ -16246,49 +16298,42 @@ end;
 
 //------------------------------------------------------------------------------
 
-Function IfThen(Condition: Boolean; OnTrue: Extended; OnFalse: Extended = 0.0): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Extended; const OnFalse: Extended = 0.0): Extended;
 begin
 Result := fIfThen(Condition,OnTrue,OnFalse);
 end;
 
 //------------------------------------------------------------------------------
 
-Function IfThen(Condition: Boolean; OnTrue: AnsiChar; OnFalse: AnsiChar = #0): AnsiChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: AnsiChar; const OnFalse: AnsiChar = #0): AnsiChar;
 begin
 Result := cIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: WideChar; OnFalse: WideChar = #0): WideChar; overload;{$IFDEF CanInline} inline;{$ENDIF}
-begin
-Result := cIfThen(Condition,OnTrue,OnFalse);
-end;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-Function IfThen(Condition: Boolean; OnTrue: UCS4Char; OnFalse: UCS4Char = 0): UCS4Char; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: WideChar; const OnFalse: WideChar = #0): WideChar;
 begin
 Result := cIfThen(Condition,OnTrue,OnFalse);
 end;
 
 //------------------------------------------------------------------------------
 
-Function IfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString;
 begin
 Result := sIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString;
 begin
 Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
 begin
 Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
 end;
@@ -16296,7 +16341,7 @@ end;
 {$IF Declared(DistinctOverloadUnicodeStringE)}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString;
 begin
 Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
 end;
@@ -16304,56 +16349,53 @@ end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUCS4StringE)}
+Function IfThen(Condition: Boolean; const OnTrue: UCS4String; const OnFalse: UCS4String = nil; UniqueCopy: Boolean = False): UCS4String;
 begin
 Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
 end;
+{$IFEND}
 
 //------------------------------------------------------------------------------
 
-Function IfThen(Condition: Boolean; OnTrue: Pointer; OnFalse: Pointer = nil): Pointer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: Pointer; const OnFalse: Pointer = nil): Pointer;
 begin
 Result := pIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: TObject; OnFalse: TObject = nil): TObject; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: TObject; const OnFalse: TObject = nil): TObject;
 begin
 Result := oIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; OnTrue: TClass; OnFalse: TClass = nil): TClass; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue: TClass; const OnFalse: TClass = nil): TClass;
 begin
 Result := oIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue,OnFalse: Variant): Variant;
 begin
 Result := vIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-Function IfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IfThen(Condition: Boolean; const OnTrue,OnFalse: TGUID): TGUID;
 begin
 Result := gIfThen(Condition,OnTrue,OnFalse);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result); overload;{$IFDEF CanInline} inline;{$ENDIF}
+procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out Result);
 begin
 bIfThen(Condition,OnTrue,OnFalse,Size,Result);
 end;
 
 end.
-
-
-
-
-

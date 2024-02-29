@@ -1,3 +1,73 @@
+{-------------------------------------------------------------------------------
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+-------------------------------------------------------------------------------}
+{===============================================================================
+
+  AuxMath
+
+    This library provides small set of auxiliary mathematical functions
+    implemented explicitly for more types than what is common (provided by RTL).
+
+    It was, at first, developed only to provide combined DivCeil, DivFloor and
+    Min and Max for mixed types, but more functionality was added during later
+    development.
+
+    Given nature of this library, there are many overloads for each function
+    that differ only by argument type. Unfortunately, some type overloads
+    cannot be properly processed (recognized) by older compilers. As a
+    workaround, almost all functions are provided in two forms/names.
+
+      First form is with one- or two-letter prefix in name that marks which
+      type group the function accepts. These functions are always implemented
+      for all supported types - the prefixes are here to better distinguish
+      types, so that the compiler does not have problem recognizing them and
+      selecting proper overload. Following prefixes are currently used:
+
+          i - signed integers
+          u - unsigned integers
+          f - floating point numbers
+          c - characters
+          s - strings
+          p - pointers
+          o - objects/classes
+          v - variants
+          g - TGUID
+          b - general untyped buffer
+
+      Second form is without prefix - the function has normal expected name
+      (eg. Max, DivMod, ...). Given the abovementioned problems, these do not
+      provide overloads for all supported types in all compilers. For details
+      about which types and what functions are affected, refer to "Overloading
+      information symbols" further down.
+
+  Version 1.0 (2024-02-29)
+
+  Last change (2024-02-29)
+
+  ©2024 František Milt
+
+  Contacts:
+    František Milt: frantisek.milt@gmail.com
+
+  Support:
+    If you find this code useful, please consider supporting its author(s) by
+    making a small donation using the following link(s):
+
+      https://www.paypal.me/FMilt
+
+  Changelog:
+    For detailed changelog and history please refer to this git repository:
+
+      github.com/TheLazyTomcat/Lib.AuxMath
+
+  Dependencies:
+    AuxTypes - github.com/TheLazyTomcat/Lib.AuxTypes
+
+===============================================================================}
 unit AuxMath;
 {
   AuxMath_PurePascal
@@ -10,7 +80,6 @@ unit AuxMath;
 {$IFDEF AuxMath_PurePascal}
   {$DEFINE PurePascal}
 {$ENDIF}
-{.$DEFINE PurePascal}
 
 {$IFDEF ENDIAN_BIG}
   {$MESSAGE FATAL 'Big-endian system not supported'}  // because of memory overlays
@@ -63,11 +132,17 @@ unit AuxMath;
 
 {$IFDEF FPC}
   {$DEFINE DistinctUCS4Str}
+  {$DEFINE DistinctUTF8Str}
 {$ELSE}
   {$IF (CompilerVersion > 15)}  // newer than Delphi 7
     {$DEFINE DistinctUCS4Str}
   {$ELSE}
     {$UNDEF DistinctUCS4Str}
+  {$IFEND}
+  {$IF (CompilerVersion >= 17)} // Delphi 2005+
+    {$DEFINE DistinctUTF8Str}
+  {$ELSE}
+    {$UNDEF DistinctUTF8Str}
   {$IFEND}
 {$ENDIF}
 
@@ -77,7 +152,77 @@ uses
   SysUtils,
   AuxTypes;
 
-{$message 'todo: description'}
+{===============================================================================
+    Overloading information symbols
+===============================================================================}
+{
+  This unit provides many overloaded variants for the same function, where
+  these differ only by argument types. But in older compilers, some of these
+  types are either declared only as an alias for exiting type, or the compiler
+  might not be able to distinguish between some types when overloading based
+  only on input parameters (ie. no "var" or "out" modifier).
+
+  In such cases, it is not possible to provide all overloads, or those
+  overloads can be implemented but cannot be called (it will generate
+  "ambiguous overload" compilation error) - therefore, these overloads are not
+  provided (they are removed from the compilation) in affected compilers.
+
+  Following constants are here to provide a way of knowing whether such
+  overloads are present or not. Since these are true constants, they can be
+  used in conditional compilation, so there is no need for runtime binding -
+  all can be done statically at compilation.
+
+  There are always three constants for each problematic type. First is a
+  boolean (when true, overloads are present), second is numerical (N suffix,
+  integer, overloads are there when non-zero) and last (suffixed E) is only
+  declared when the overloads are provided (it can be used in Declared()
+  conditional).
+
+  For more details, refer to description of individual constants.
+}
+//------------------------------------------------------------------------------
+{
+  Following constants are informing whether overloads accepting type UInt64
+  are available.
+
+  In old compilers, type UInt64 is not (fully) supported, therefore it is
+  declared only as an alias for type Int64 (to be more precise, Int64 is
+  retyped to UInt64). This means, among others, that overloads for types Int64
+  and UInt64 are basically the same and cannot be distinguished in calls
+  (although they can be compiled).
+  Unfortunatelly, this also means that, when UInt64 overloads are not present
+  but Int64 are, compiler will call Int64 overload when UInt64 values/variables
+  are passed without giving any warning. This can lead to hard-to-find bugs,
+  where you are getting wrong results because unsigned integers are treated as
+  signed.
+
+  So, given the abovementioned, it has been decided to remove not only UInt64,
+  but also Int64 overloads in problematic environments. But note that there are
+  always some prefixed variants that can be used with Int64 and UInt64 (named
+  so they do no clash).
+
+  Following functions are affected:
+
+      DivCeil
+      DivFloor
+      IsPow2
+      IntLog2
+      DivCeilPow2
+      DivFloorPow2
+      DivCeilPow2NoCheck
+      DivCeilPow2NC
+      DivFloorPow2NoCheck
+      DivFloorPow2NC
+      Min (any variant accepting Int64 or UInt64)
+      Max (any variant accepting Int64 or UInt64)
+      MinValue
+      MaxValue
+      CompareValue (any variant accepting Int64 or UInt64)
+      CompareValueOp (any variant accepting Int64 or UInt64)
+      IfThen
+      InRange
+      EnsureRange
+}
 const
   DistinctOverloadUInt64 = {$IF Declared(NativeUInt64E)}True{$ELSE}False{$IFEND};
   DistinctOverloadUInt64N = {$IF Declared(NativeUInt64E)}1{$ELSE}0{$IFEND};
@@ -85,16 +230,80 @@ const
   DistinctOverloadUInt64E = True;
 {$IFEND}
 
+//------------------------------------------------------------------------------
+{
+  In modern compilers, the type UnicodeString is a distinct embedded (base)
+  type, but for old compilers, it is declared only as an alias for WideString.
+  There, distinct overloads for this type cannot be provided since they would
+  be completely the same as overloads for WideString.
+
+  That being said, you do not need to worry about whether this is so or not,
+  proper overload will be called in any way, it is here only to provide the
+  information.
+
+  Affected functions:
+
+      sIfThen
+      IfThen
+
+    NOTE - there is a non-overloaded function called IfThenUnicodeString, if
+           you want to be completely sure what is called.
+}
+const
   DistinctOverloadUnicodeString = {$IF Declared(UnicodeIsWideE)}False{$ELSE}True{$IFEND};
   DistinctOverloadUnicodeStringN = {$IF Declared(UnicodeIsWideE)}1{$ELSE}1{$IFEND};
 {$IF not Declared(UnicodeIsWideE)}
   DistinctOverloadUnicodeStringE = True;
 {$IFEND}
 
+//------------------------------------------------------------------------------
+{
+  For some bizzare reason, old Delphi (namely D7) cannot distinguish between
+  untyped pointers and dynamic array types when overloading. Here, this affects
+  type UCS4String, because it is declared as a dynamic array of UCS4Char.
+
+  As a result, the overloads accepting this string type are removed in Delphi 7
+  and older (I have decided to remove these instead of overloads for pointers,
+  as those are used more often). Following constants can be used to discern
+  whether overloads for UCS4String are present or not during compilation.
+
+  Affected functions:
+
+      IfThen
+
+    NOTE - you can always use function IfThenUCS4String if you do not want to
+           deal with these details.
+}
+const
   DistinctOverloadUCS4String = {$IFDEF DistinctUCS4Str}True{$ELSE}False{$ENDIF};
   DistinctOverloadUCS4StringN = {$IFDEF DistinctUCS4Str}1{$ELSE}0{$ENDIF};
 {$IFDEF DistinctUCS4Str}
   DistinctOverloadUCS4StringE = True;
+{$ENDIF}
+
+//------------------------------------------------------------------------------
+{
+  In old Delphi, the type UTF8String is not distinguishable from AnsiString,
+  therefore in those compilers (older than D2005) the UTF8String overloads are
+  removed and AnsiString overloads are called instead (since these compilers do
+  not support code pages, and there is no conversion done, it should be ok).
+  
+  Note that you do not need to change your code based on this particular
+  detail. If you call any function with UTF8String it will just be directed
+  to AnsiString overload (which, as mentioned above, should be ok).
+
+  Affected functions:
+
+      sIfThen
+      IfThen
+
+    NOTE - use function IfThenUTF8String if you want to be sure.
+}
+const
+  DistinctOverloadUTF8String = {$IFDEF DistinctUTF8Str}True{$ELSE}False{$ENDIF};
+  DistinctOverloadUTF8StringN = {$IFDEF DistinctUTF8Str}1{$ELSE}0{$ENDIF};
+{$IFDEF DistinctUTF8Str}
+  DistinctOverloadUTF8StringE = True;
 {$ENDIF}
 
 {===============================================================================
@@ -2564,6 +2773,9 @@ Function cIfThen(Condition: Boolean; const OnTrue: UCS4Char; const OnFalse: UCS4
 }
 Function sIfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;
 Function sIfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;
+{$IF Declared(DistinctOverloadUTF8StringE)}
+Function sIfThen(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String; overload;
+{$IFEND}
 Function sIfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString; overload;
 {$IF Declared(DistinctOverloadUnicodeStringE)}
 Function sIfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString; overload;
@@ -2633,6 +2845,9 @@ Function IfThen(Condition: Boolean; const OnTrue: WideChar; const OnFalse: WideC
 
 Function IfThen(Condition: Boolean; const OnTrue: ShortString; const OnFalse: ShortString = ''): ShortString; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function IfThen(Condition: Boolean; const OnTrue: AnsiString; const OnFalse: AnsiString = ''; UniqueCopy: Boolean = False): AnsiString; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUTF8StringE)}
+Function IfThen(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
 Function IfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IF Declared(DistinctOverloadUnicodeStringE)}
 Function IfThen(Condition: Boolean; const OnTrue: UnicodeString; const OnFalse: UnicodeString = ''; UniqueCopy: Boolean = False): UnicodeString; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -2658,6 +2873,10 @@ procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out R
                         Check whether number is in range
 --------------------------------------------------------------------------------
 ===============================================================================}
+{
+  Returns true when Value is within given range (higher or equal to LowBound
+  and lower or equal to HighBound).
+}
 
 Function iInRange(const Value,LowBound,HighBound: Int8): Boolean; overload;
 Function iInRange(const Value,LowBound,HighBound: Int16): Boolean; overload;
@@ -2699,6 +2918,10 @@ Function InRange(const Value,LowBound,HighBound: Extended): Boolean; overload;{$
                            Closest value within range
 --------------------------------------------------------------------------------
 ===============================================================================}
+{
+  Returns closest number to Value that is within the range given by low and
+  high bounds.
+}
 
 Function iEnsureRange(const Value,LowBound,HighBound: Int8): Int8; overload;
 Function iEnsureRange(const Value,LowBound,HighBound: Int16): Int16; overload;
@@ -2858,7 +3081,7 @@ else
 If (Temp < AM_INT_DBL_LO) or (Temp > AM_INT_DBL_HI) then
   raise EAMInvalidOperation.CreateFmt('FloatToUInt64: Floating point value (%g) cannot be accurately converted to UInt64.',[Temp]);
 {$IFEND}
-Result := Trunc(Temp);
+Result := UInt64(Trunc(Temp));
 end;
 
 
@@ -3461,11 +3684,7 @@ end;
 {$ELSE}
 begin
 Quotient := Dividend div Divisor;
-{$IFDEF CPU64bit}
-Remainder := Dividend - UInt32(Quotient * Divisor);
-{$ELSE}
 Remainder := UInt32(Dividend - (Int64(Quotient) * Divisor));
-{$ENDIF}
 end;
 {$ENDIF}
 
@@ -16056,6 +16275,24 @@ If UniqueCopy then
   UniqueString(Result);
 end;
 
+{$IF Declared(DistinctOverloadUTF8StringE)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function sIfThen(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
+begin
+If Condition then
+  Result := OnTrue
+else
+  Result := OnFalse;
+If UniqueCopy then
+{$IFDEF FPC}
+  UniqueString(Result);
+{$ELSE}
+  UniqueString(AnsiString(Result));
+{$ENDIF}
+end;
+{$IFEND}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function sIfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
@@ -16397,6 +16634,15 @@ begin
 Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
 end;
 
+{$IF Declared(DistinctOverloadUTF8StringE)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IfThen(Condition: Boolean; const OnTrue: UTF8String; const OnFalse: UTF8String = ''; UniqueCopy: Boolean = False): UTF8String;
+begin
+Result := sIfThen(Condition,OnTrue,OnFalse,UniqueCopy);
+end;
+{$IFEND}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 Function IfThen(Condition: Boolean; const OnTrue: WideString; const OnFalse: WideString = ''; UniqueCopy: Boolean = False): WideString;
@@ -16541,7 +16787,7 @@ begin
 If LowBound <= HighBound then
   Result := (Value >= LowBound) and (Value <= HighBound)
 else
-  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%u) is larger than high bound (%u).',[Int64(LowBound),Int64(HighBound)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -16651,7 +16897,8 @@ If LowBound <= HighBound then
   begin
   {
     Equality is used for optimization - if value is on a bound then the
-    function will return from here and does not continue to value assignment.
+    function will return early and does not continue to another comparison or
+    value assignment.
   }
     If Value <= LowBound then
       Result := LowBound
@@ -16758,7 +17005,7 @@ If LowBound <= HighBound then
     else
       Result := Value;
   end
-else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%u) is larger than high bound (%u).',[LowBound,HighBound]);
+else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%u) is larger than high bound (%u).',[Int64(LowBound),Int64(HighBound)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

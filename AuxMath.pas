@@ -10,7 +10,7 @@
   AuxMath
 
     This library provides small set of auxiliary mathematical functions
-    implemented explicitly for more types than what is common (provided by RTL).
+    implemented explicitly for more types than what is common (in RTL).
 
     It was, at first, developed only to provide combined DivCeil, DivFloor and
     Min and Max for mixed types, but more functionality was added during later
@@ -29,7 +29,7 @@
 
           i - signed integers
           u - unsigned integers
-          f - floating point numbers
+          f - floating point (real) numbers
           c - characters
           s - strings
           p - pointers
@@ -44,9 +44,9 @@
       about which types and what functions are affected, refer to "Overloading
       information symbols" further down.
 
-  Version 1.0 (2024-02-29)
+  Version 1.1 (2024-03-04)
 
-  Last change (2024-02-29)
+  Last change (2024-03-04)
 
   ©2024 František Milt
 
@@ -123,26 +123,25 @@ unit AuxMath;
 {$J-} // typed constants are not writeable
 
 //------------------------------------------------------------------------------
+// do not touch following defines!
+
+{$UNDEF AM_OverflowChecks}
+{$UNDEF AM_DistinctUCS4Str}
+{$UNDEF AM_DistinctUTF8Str}
 
 {$IFOPT Q+}
   {$DEFINE AM_OverflowChecks}
-{$ELSE}
-  {$UNDEF AM_OverflowChecks}
 {$ENDIF}
 
 {$IFDEF FPC}
-  {$DEFINE DistinctUCS4Str}
-  {$DEFINE DistinctUTF8Str}
+  {$DEFINE AM_DistinctUCS4Str}
+  {$DEFINE AM_DistinctUTF8Str}
 {$ELSE}
-  {$IF (CompilerVersion > 15)}  // newer than Delphi 7
-    {$DEFINE DistinctUCS4Str}
-  {$ELSE}
-    {$UNDEF DistinctUCS4Str}
-  {$IFEND}
-  {$IF (CompilerVersion >= 17)} // Delphi 2005+
-    {$DEFINE DistinctUTF8Str}
-  {$ELSE}
-    {$UNDEF DistinctUTF8Str}
+  {$IF (CompilerVersion > 15)}    // newer than Delphi 7
+    {$DEFINE AM_DistinctUCS4Str}
+    {$IF (CompilerVersion >= 17)} // Delphi 2005+
+      {$DEFINE AM_DistinctUTF8Str}
+    {$IFEND}
   {$IFEND}
 {$ENDIF}
 
@@ -157,15 +156,16 @@ uses
 ===============================================================================}
 {
   This unit provides many overloaded variants for the same function, where
-  these differ only by argument types. But in older compilers, some of these
+  these differ only by arguments type. But in older compilers, some of these
   types are either declared only as an alias for exiting type, or the compiler
   might not be able to distinguish between some types when overloading based
   only on input parameters (ie. no "var" or "out" modifier).
 
   In such cases, it is not possible to provide all overloads, or those
   overloads can be implemented but cannot be called (it will generate
-  "ambiguous overload" compilation error) - therefore, these overloads are not
-  provided (they are removed from the compilation) in affected compilers.
+  "ambiguous overloaded call" compilation error) - therefore, these overloads
+  are not provided (they are removed from the compilation) in affected
+  compilers.
 
   Following constants are here to provide a way of knowing whether such
   overloads are present or not. Since these are true constants, they can be
@@ -192,7 +192,7 @@ uses
   (although they can be compiled).
   Unfortunatelly, this also means that, when UInt64 overloads are not present
   but Int64 are, compiler will call Int64 overload when UInt64 values/variables
-  are passed without giving any warning. This can lead to hard-to-find bugs,
+  are passed, giving no warning about that. This can lead to hard-to-find bugs,
   where you are getting wrong results because unsigned integers are treated as
   signed.
 
@@ -275,9 +275,9 @@ const
            deal with these details.
 }
 const
-  DistinctOverloadUCS4String = {$IFDEF DistinctUCS4Str}True{$ELSE}False{$ENDIF};
-  DistinctOverloadUCS4StringN = {$IFDEF DistinctUCS4Str}1{$ELSE}0{$ENDIF};
-{$IFDEF DistinctUCS4Str}
+  DistinctOverloadUCS4String = {$IFDEF AM_DistinctUCS4Str}True{$ELSE}False{$ENDIF};
+  DistinctOverloadUCS4StringN = {$IFDEF AM_DistinctUCS4Str}1{$ELSE}0{$ENDIF};
+{$IFDEF AM_DistinctUCS4Str}
   DistinctOverloadUCS4StringE = True;
 {$ENDIF}
 
@@ -300,9 +300,9 @@ const
     NOTE - use function IfThenUTF8String if you want to be sure.
 }
 const
-  DistinctOverloadUTF8String = {$IFDEF DistinctUTF8Str}True{$ELSE}False{$ENDIF};
-  DistinctOverloadUTF8StringN = {$IFDEF DistinctUTF8Str}1{$ELSE}0{$ENDIF};
-{$IFDEF DistinctUTF8Str}
+  DistinctOverloadUTF8String = {$IFDEF AM_DistinctUTF8Str}True{$ELSE}False{$ENDIF};
+  DistinctOverloadUTF8StringN = {$IFDEF AM_DistinctUTF8Str}1{$ELSE}0{$ENDIF};
+{$IFDEF AM_DistinctUTF8Str}
   DistinctOverloadUTF8StringE = True;
 {$ENDIF}
 
@@ -314,6 +314,7 @@ type
 
   EAMInvalidOperation = class(EAMException);
   EAMInvalidValue     = class(EAMException);
+  EAMRangeError       = class(EAMException);
 
 {===============================================================================
     Public constants
@@ -2876,6 +2877,9 @@ procedure IfThen(Condition: Boolean; const OnTrue,OnFalse; Size: TMemSize; out R
 {
   Returns true when Value is within given range (higher or equal to LowBound
   and lower or equal to HighBound).
+
+  LowBound must be lower or equal to HighBound, otherwise an exception of class
+  EAMInvalidValue is raised.
 }
 
 Function iInRange(const Value,LowBound,HighBound: Int8): Boolean; overload;
@@ -2921,6 +2925,9 @@ Function InRange(const Value,LowBound,HighBound: Extended): Boolean; overload;{$
 {
   Returns closest number to Value that is within the range given by low and
   high bounds.
+
+  LowBound must be lower or equal to HighBound, otherwise an exception of class
+  EAMInvalidValue is raised.  
 }
 
 Function iEnsureRange(const Value,LowBound,HighBound: Int8): Int8; overload;
@@ -2957,8 +2964,129 @@ Function EnsureRange(const Value,LowBound,HighBound: UInt64): UInt64; overload;{
 
 Function EnsureRange(const Value,LowBound,HighBound: Extended): Extended; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                        Controlled conversion of integers
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Following functions are to be used when converting (NOT type-casting) between
+  signed and unsigned integers or between integers of differing widths. They
+  are pretty much equivalent to assignment with enabled range checks - so why
+  they exist? Because range checks are usually globally disabled in production
+  code, so if you want explicit range checks without a need to manage the
+  settings locally, you can use them.
+  Note that there are functions doing no checks at all (because no problem can
+  arise eg. when assigning from smaller signed integer to a larger signed int).
+  Their use is more-or-less pointless, but for the sake of completeness they
+  are nevertheless provided (and where possible also inlined, which should
+  theoretically result in no-op).
+
+  If input number cannot be converted to output (eg. negative value to unsigned
+  integer, or too large value for the result), then an exception of class
+  EAMRangeError is raised.
+
+    NOTE - because overloading based on result type is not possible, functions
+           have result width appended to their name (except for few selected
+           functions).
+}
+
+Function CvtI2I16(const N: Int8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2I32(const N: Int8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2I64(const N: Int8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtI2I8(const N: Int16): Int8; overload;
+Function CvtI2I32(const N: Int16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2I64(const N: Int16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtI2I8(const N: Int32): Int8; overload;
+Function CvtI2I16(const N: Int32): Int16; overload;
+Function CvtI2I64(const N: Int32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtI2I8(const N: Int64): Int8; overload;
+Function CvtI2I16(const N: Int64): Int16; overload;
+Function CvtI2I32(const N: Int64): Int32; overload;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2U8(const N: Int8): UInt8; overload;
+Function CvtI2U16(const N: Int8): UInt16; overload;
+Function CvtI2U32(const N: Int8): UInt32; overload;
+Function CvtI2U64(const N: Int8): UInt64; overload;
+
+Function CvtI2U8(const N: Int16): UInt8; overload;
+Function CvtI2U16(const N: Int16): UInt16; overload;
+Function CvtI2U32(const N: Int16): UInt32; overload;
+Function CvtI2U64(const N: Int16): UInt64; overload;
+
+Function CvtI2U8(const N: Int32): UInt8; overload;
+Function CvtI2U16(const N: Int32): UInt16; overload;
+Function CvtI2U32(const N: Int32): UInt32; overload;
+Function CvtI2U64(const N: Int32): UInt64; overload;
+
+Function CvtI2U8(const N: Int64): UInt8; overload;
+Function CvtI2U16(const N: Int64): UInt16; overload;
+Function CvtI2U32(const N: Int64): UInt32; overload;
+Function CvtI2U64(const N: Int64): UInt64; overload;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2I8(const N: UInt8): Int8; overload;
+Function CvtU2I16(const N: UInt8): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2I32(const N: UInt8): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2I64(const N: UInt8): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtU2I8(const N: UInt16): Int8; overload;
+Function CvtU2I16(const N: UInt16): Int16; overload;
+Function CvtU2I32(const N: UInt16): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2I64(const N: UInt16): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtU2I8(const N: UInt32): Int8; overload;
+Function CvtU2I16(const N: UInt32): Int16; overload;
+Function CvtU2I32(const N: UInt32): Int32; overload;
+Function CvtU2I64(const N: UInt32): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtU2I8(const N: UInt64): Int8; overload;
+Function CvtU2I16(const N: UInt64): Int16; overload;
+Function CvtU2I32(const N: UInt64): Int32; overload;
+Function CvtU2I64(const N: UInt64): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2U16(const N: UInt8): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2U32(const N: UInt8): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2U64(const N: UInt8): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtU2U8(const N: UInt16): UInt8; overload;
+Function CvtU2U32(const N: UInt16): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2U64(const N: UInt16): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtU2U8(const N: UInt32): UInt8; overload;
+Function CvtU2U16(const N: UInt32): UInt16; overload;
+Function CvtU2U64(const N: UInt32): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtU2U8(const N: UInt64): UInt8; overload;
+Function CvtU2U16(const N: UInt64): UInt16; overload;
+Function CvtU2U32(const N: UInt64): UInt32; overload;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2U(const N: Int8): UInt8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2U(const N: Int16): UInt16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2U(const N: Int32): UInt32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2U(const N: Int64): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function CvtU2I(const N: UInt8): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2I(const N: UInt16): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2I(const N: UInt32): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2I(const N: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 implementation
 
+// paranoia...
 {$IF (SizeOf(Extended) <> 10) and (SizeOf(Extended) <> 8)}
   {$MESSAGE FATAL 'Unsupported size of type Extended.'}
 {$IFEND}
@@ -11293,7 +11421,7 @@ If B <= UInt32(High(Int8)) then
     else
       Result := Int8(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int8.',[Int64(B)]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %d) is too high for Int8.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -11345,7 +11473,7 @@ If B <= UInt32(High(Int16)) then
     else
       Result := Int16(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int16.',[Int64(B)]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %d) is too high for Int16.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -11393,7 +11521,7 @@ If B <= UInt32(High(Int32)) then
     else
       Result := Int32(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %u) is too high for Int32.',[Int64(B)]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt32: %d) is too high for Int32.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -11407,7 +11535,7 @@ If CompareUInt64(B,UInt64(High(Int32))) <= 0 then
     else
       Result := Int32(B);
   end
-else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %u) is too high for Int32.',[Int64(B)]);
+else raise EAMInvalidOperation.CreateFmt('iuMax: Value of B (UInt64: %d) is too high for Int32.',[Int64(B)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -16787,7 +16915,7 @@ begin
 If LowBound <= HighBound then
   Result := (Value >= LowBound) and (Value <= HighBound)
 else
-  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%u) is larger than high bound (%u).',[Int64(LowBound),Int64(HighBound)]);
+  raise EAMInvalidValue.CreateFmt('uInRange: Low bound (%d) is larger than high bound (%d).',[Int64(LowBound),Int64(HighBound)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -17005,7 +17133,7 @@ If LowBound <= HighBound then
     else
       Result := Value;
   end
-else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%u) is larger than high bound (%u).',[Int64(LowBound),Int64(HighBound)]);
+else raise EAMInvalidValue.CreateFmt('uEnsureRange: Low bound (%d) is larger than high bound (%d).',[Int64(LowBound),Int64(HighBound)]);
 end;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -17109,6 +17237,586 @@ end;
 Function EnsureRange(const Value,LowBound,HighBound: Extended): Extended;
 begin
 Result := fEnsureRange(Value,LowBound,HighBound);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                        Controlled conversion of integers
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    CvtI2U* - signed integer -> signed integer
+-------------------------------------------------------------------------------}
+
+Function CvtI2I16(const N: Int8): Int16;
+begin
+Result :=  Int16(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I32(const N: Int8): Int32;
+begin
+Result :=  Int32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I64(const N: Int8): Int64;
+begin
+Result :=  Int64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2I8(const N: Int16): Int8;
+begin
+If (N >= Int16(Low(Int8))) and (N <= Int16(High(Int8))) then
+  Result := Int8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2I8: Int16 (%d) out of range for Int8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I32(const N: Int16): Int32;
+begin
+Result := Int32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I64(const N: Int16): Int64;
+begin
+Result := Int64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2I8(const N: Int32): Int8;
+begin
+If (N >= Int32(Low(Int8))) and (N <= Int32(High(Int8))) then
+  Result := Int8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2I8: Int32 (%d) out of range for Int8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I16(const N: Int32): Int16;
+begin
+If (N >= Int32(Low(Int16))) and (N <= Int32(High(Int16))) then
+  Result := Int16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2I16: Int32 (%d) out of range for Int16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I64(const N: Int32): Int64;
+begin
+Result := Int64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2I8(const N: Int64): Int8;
+begin
+If (N >= Int64(Low(Int8))) and (N <= Int64(High(Int8))) then
+  Result := Int8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2I8: Int64 (%d) out of range for Int8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I16(const N: Int64): Int16;
+begin
+If (N >= Int64(Low(Int16))) and (N <= Int64(High(Int16))) then
+  Result := Int16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2I16: Int64 (%d) out of range for Int16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2I32(const N: Int64): Int32;
+begin
+If (N >= Int64(Low(Int32))) and (N <= Int64(High(Int32))) then
+  Result := Int32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2I32: Int64 (%d) out of range for Int32.',[N]);
+end;
+
+{-------------------------------------------------------------------------------
+    CvtI2U* - signed integer -> unsigned integer
+-------------------------------------------------------------------------------}
+
+Function CvtI2U8(const N: Int8): UInt8;
+begin
+If N >= 0 then
+  Result := UInt8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U8: Int8 (%d) out of range for UInt8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U16(const N: Int8): UInt16;
+begin
+If N >= 0 then
+  Result := UInt16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U16: Int8 (%d) out of range for UInt16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U32(const N: Int8): UInt32;
+begin
+If N >= 0 then
+  Result := UInt32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U32: Int8 (%d) out of range for UInt32.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U64(const N: Int8): UInt64;
+begin
+If N >= 0 then
+  Result := UInt64(UInt8(N))
+else
+  raise EAMRangeError.CreateFmt('CvtI2U64: Int8 (%d) out of range for UInt64.',[N]);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2U8(const N: Int16): UInt8;
+begin
+If (N >= 0) and (N <= Int16(High(UInt8))) then
+  Result := UInt8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U8: Int16 (%d) out of range for UInt8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U16(const N: Int16): UInt16;
+begin
+If N >= 0 then
+  Result := UInt16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U16: Int16 (%d) out of range for UInt16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U32(const N: Int16): UInt32;
+begin
+If N >= 0 then
+  Result := UInt32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U32: Int16 (%d) out of range for UInt32.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U64(const N: Int16): UInt64;
+begin
+If N >= 0 then
+  Result := UInt64(UInt16(N))
+else
+  raise EAMRangeError.CreateFmt('CvtI2U64: Int16 (%d) out of range for UInt64.',[N]);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2U8(const N: Int32): UInt8;
+begin
+If (N >= 0) and (N <= Int32(High(UInt8))) then
+  Result := UInt8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U8: Int32 (%d) out of range for UInt8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U16(const N: Int32): UInt16;
+begin
+If (N >= 0) and (N <= Int32(High(UInt16))) then
+  Result := UInt16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U16: Int32 (%d) out of range for UInt16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U32(const N: Int32): UInt32;
+begin
+If N >= 0 then
+  Result := UInt32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U32: Int32 (%d) out of range for UInt32.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U64(const N: Int32): UInt64;
+begin
+If N >= 0 then
+  Result := UInt64(UInt32(N))
+else
+  raise EAMRangeError.CreateFmt('CvtI2U64: Int32 (%d) out of range for UInt64.',[N]);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2U8(const N: Int64): UInt8;
+begin
+If (N >= 0) and (N <= Int64(High(UInt8))) then
+  Result := UInt8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U8: Int64 (%d) out of range for UInt8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U16(const N: Int64): UInt16;
+begin
+If (N >= 0) and (N <= Int64(High(UInt16))) then
+  Result := UInt16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U16: Int64 (%d) out of range for UInt16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U32(const N: Int64): UInt32;
+begin
+If (N >= 0) and (N <= Int64(High(UInt32))) then
+  Result := UInt32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U32: Int64 (%d) out of range for UInt32.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U64(const N: Int64): UInt64;
+begin
+If N >= 0 then
+  Result := UInt64(N)
+else
+  raise EAMRangeError.CreateFmt('CvtI2U64: Int64 (%d) out of range for UInt64.',[N]);
+end;
+
+{-------------------------------------------------------------------------------
+    CvtU2I* - unsigned integer -> signed integer
+-------------------------------------------------------------------------------}
+
+Function CvtU2I8(const N: UInt8): Int8;
+begin
+If N <= UInt8(High(Int8)) then
+  Result := Int8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I8: UInt8 (%u) out of range for Int8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I16(const N: UInt8): Int16;
+begin
+Result := Int16(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I32(const N: UInt8): Int32;
+begin
+Result := Int32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I64(const N: UInt8): Int64;
+begin
+Result := Int64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2I8(const N: UInt16): Int8;
+begin
+If N <= UInt16(High(Int8)) then
+  Result := Int8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I8: UInt16 (%u) out of range for Int8.',[N]);
+end;
+ 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I16(const N: UInt16): Int16;
+begin
+If N <= UInt16(High(Int16)) then
+  Result := Int16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I16: UInt16 (%u) out of range for Int16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I32(const N: UInt16): Int32;
+begin
+Result := Int32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I64(const N: UInt16): Int64;
+begin
+Result := Int64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2I8(const N: UInt32): Int8;
+begin
+If N <= UInt32(High(Int8)) then
+  Result := Int8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I8: UInt32 (%d) out of range for Int8.',[Int64(N)]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I16(const N: UInt32): Int16;
+begin
+If N <= UInt32(High(Int16)) then
+  Result := Int16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I16: UInt32 (%d) out of range for Int16.',[Int64(N)]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I32(const N: UInt32): Int32;
+begin
+If N <= UInt32(High(Int32)) then
+  Result := Int32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I32: UInt32 (%d) out of range for Int32.',[Int64(N)]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I64(const N: UInt32): Int64;
+begin
+Result := Int64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2I8(const N: UInt64): Int8;
+begin
+If CompareUInt64(N,UInt64(High(Int8))) <= 0 then
+  Result := Int8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I8: UInt64 (%u) out of range for Int8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I16(const N: UInt64): Int16;
+begin
+If CompareUInt64(N,UInt64(High(Int16))) <= 0 then
+  Result := Int16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I16: UInt64 (%u) out of range for Int16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I32(const N: UInt64): Int32;
+begin
+If CompareUInt64(N,UInt64(High(Int32))) <= 0 then
+  Result := Int32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I32: UInt64 (%u) out of range for Int32.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I64(const N: UInt64): Int64;
+begin
+If CompareUInt64(N,UInt64(High(Int64))) <= 0 then
+  Result := Int64(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2I64: UInt64 (%u) out of range for Int64.',[N]);
+end;
+
+{-------------------------------------------------------------------------------
+    CvtU2U* - unsigned integer -> unsigned integer
+-------------------------------------------------------------------------------}
+
+Function CvtU2U16(const N: UInt8): UInt16;
+begin
+Result := UInt16(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U32(const N: UInt8): UInt32;
+begin
+Result := UInt32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U64(const N: UInt8): UInt64;
+begin
+Result := UInt64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2U8(const N: UInt16): UInt8;
+begin
+If N <= UInt16(High(UInt8)) then
+  Result := UInt8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2U8: UInt16 (%u) out of range for UInt8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U32(const N: UInt16): UInt32;
+begin
+Result := UInt32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U64(const N: UInt16): UInt64;
+begin
+Result := UInt64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2U8(const N: UInt32): UInt8;
+begin
+If N <= UInt32(High(UInt8)) then
+  Result := UInt8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2U8: UInt32 (%d) out of range for UInt8.',[Int64(N)]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U16(const N: UInt32): UInt16;
+begin
+If N <= UInt32(High(UInt16)) then
+  Result := UInt16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2U16: UInt32 (%d) out of range for UInt16.',[Int64(N)]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U64(const N: UInt32): UInt64;
+begin
+Result := UInt64(N);
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2U8(const N: UInt64): UInt8;
+begin
+If CompareUInt64(N,UInt64(High(UInt8))) <= 0 then
+  Result := UInt8(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2U8: UInt64 (%u) out of range for UInt8.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U16(const N: UInt64): UInt16;
+begin
+If CompareUInt64(N,UInt64(High(UInt16))) <= 0 then
+  Result := UInt16(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2U16: UInt64 (%u) out of range for UInt16.',[N]);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2U32(const N: UInt64): UInt32;
+begin
+If CompareUInt64(N,UInt64(High(UInt32))) <= 0 then
+  Result := UInt32(N)
+else
+  raise EAMRangeError.CreateFmt('CvtU2U32: UInt64 (%u) out of range for UInt32.',[N]);
+end;
+
+{-------------------------------------------------------------------------------
+    CvtI2U - common name overloads
+-------------------------------------------------------------------------------}
+
+Function CvtI2U(const N: Int8): UInt8;
+begin
+Result := CvtI2U8(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U(const N: Int16): UInt16;
+begin
+Result := CvtI2U16(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U(const N: Int32): UInt32;
+begin
+Result := CvtI2U32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2U(const N: Int64): UInt64;
+begin
+Result := CvtI2U64(N);
+end;
+
+{-------------------------------------------------------------------------------
+    CvtU2I - common name overloads
+-------------------------------------------------------------------------------}
+
+Function CvtU2I(const N: UInt8): Int8;
+begin
+Result := CvtU2I8(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I(const N: UInt16): Int16;
+begin
+Result := CvtU2I16(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I(const N: UInt32): Int32;
+begin
+Result := CvtU2I32(N);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2I(const N: UInt64): Int64;
+begin
+Result := CvtU2I64(N);
 end;
 
 end.

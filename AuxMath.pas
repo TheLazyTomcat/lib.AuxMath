@@ -65,17 +65,17 @@
       github.com/TheLazyTomcat/Lib.AuxMath
 
   Dependencies:
+  * AuxExceptions - github.com/TheLazyTomcat/Lib.AuxExceptions
     AuxTypes      - github.com/TheLazyTomcat/Lib.AuxTypes
-   *AuxExceptions - github.com/TheLazyTomcat/Lib.AuxExceptions
 
-  Library AuxExceptions is required only when rebasing local exception
-  classes (see symbol AuxMath_UseAuxExceptions for details).
+  Library AuxExceptions is required only when rebasing local exception classes
+  (see symbol AuxMath_UseAuxExceptions for details).
 
   Indirect dependencies:
     SimpleCPUID - github.com/TheLazyTomcat/Lib.SimpleCPUID
     StrRect     - github.com/TheLazyTomcat/Lib.StrRect
     UInt64Utils - github.com/TheLazyTomcat/Lib.UInt64Utils
-    WinFileInfo - github.com/TheLazyTomcat/Lib.WinFileInfo  
+    WinFileInfo - github.com/TheLazyTomcat/Lib.WinFileInfo 
 
 ===============================================================================}
 unit AuxMath;

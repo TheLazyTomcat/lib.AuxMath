@@ -44,9 +44,9 @@
       about which types and what functions are affected, refer to "Overloading
       information symbols" further down.
 
-  Version 1.3.1 (2025-03-31)
+  Version 1.3.2 (2025-04-19)
 
-  Last change (2025-03-31)
+  Last change (2025-04-19)
 
   ©2024-2025 František Milt
 
@@ -3134,6 +3134,11 @@ Function CvtU2I(const N: UInt64): Int64; overload;{$IFDEF CanInline} inline;{$EN
 
     PtrInt and PtrUInt are both pointer-sized - ie. have the same width as
     pointer, which obviously changes between 32bit and 64bit platfroms.
+
+    TMemOffset is a pointer-sized signed integer used when moving a memory
+    address (pointer), meaning it changes between 32bit and 64bit platforms.
+    Similarly, TMemSize is pointer-sized unsigned integer used to store size
+    of memory buffers.
 }
 
 Function CvtI2LI(const N: Int8): LongInt; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -3205,6 +3210,30 @@ Function CvtI2PU(const N: Int8): PtrUInt; overload;{$IFDEF CanInline} inline;{$E
 Function CvtI2PU(const N: Int16): PtrUInt; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function CvtI2PU(const N: Int32): PtrUInt; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function CvtI2PU(const N: Int64): PtrUInt; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function CvtI2MI(const N: Int8): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2MI(const N: Int16): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2MI(const N: Int32): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2MI(const N: Int64): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtU2MI(const N: UInt8): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2MI(const N: UInt16): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2MI(const N: UInt32): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2MI(const N: UInt64): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function CvtU2MU(const N: UInt8): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2MU(const N: UInt16): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2MU(const N: UInt32): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtU2MU(const N: UInt64): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+Function CvtI2MU(const N: Int8): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2MU(const N: Int16): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2MU(const N: Int32): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function CvtI2MU(const N: Int64): TMemSize; overload;{$IFDEF CanInline} inline;{$ENDIF}
 
 
 {===============================================================================
@@ -18580,6 +18609,122 @@ Result := CvtI2U64(N);
 {$ELSE}
 Result := CvtI2U32(N);
 {$IFEND}
+end;
+
+{-------------------------------------------------------------------------------
+    Cvt*2MI - conversion to TMemOffset
+-------------------------------------------------------------------------------}
+
+Function CvtI2MI(const N: Int8): TMemOffset;
+begin
+Result := TMemOffset(CvtI2PI(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2MI(const N: Int16): TMemOffset;
+begin
+Result := TMemOffset(CvtI2PI(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2MI(const N: Int32): TMemOffset;
+begin
+Result := TMemOffset(CvtI2PI(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2MI(const N: Int64): TMemOffset;
+begin
+Result := TMemOffset(CvtI2PI(N));
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtU2MI(const N: UInt8): TMemOffset;
+begin
+Result := TMemOffset(CvtU2PI(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2MI(const N: UInt16): TMemOffset;
+begin
+Result := TMemOffset(CvtU2PI(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2MI(const N: UInt32): TMemOffset;
+begin
+Result := TMemOffset(CvtU2PI(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2MI(const N: UInt64): TMemOffset;
+begin
+Result := TMemOffset(CvtU2PI(N));
+end;
+
+{-------------------------------------------------------------------------------
+    Cvt*2MU - conversion to TMemSize
+-------------------------------------------------------------------------------}
+
+Function CvtU2MU(const N: UInt8): TMemSize;
+begin
+Result := TMemSize(CvtU2PU(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2MU(const N: UInt16): TMemSize;
+begin
+Result := TMemSize(CvtU2PU(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2MU(const N: UInt32): TMemSize;
+begin
+Result := TMemSize(CvtU2PU(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtU2MU(const N: UInt64): TMemSize;
+begin
+Result := TMemSize(CvtU2PU(N));
+end;
+
+//------------------------------------------------------------------------------
+
+Function CvtI2MU(const N: Int8): TMemSize;
+begin
+Result := TMemSize(CvtI2PU(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2MU(const N: Int16): TMemSize;
+begin
+Result := TMemSize(CvtI2PU(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2MU(const N: Int32): TMemSize;
+begin
+Result := TMemSize(CvtI2PU(N));
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function CvtI2MU(const N: Int64): TMemSize;
+begin
+Result := TMemSize(CvtI2PU(N));
 end;
 
 

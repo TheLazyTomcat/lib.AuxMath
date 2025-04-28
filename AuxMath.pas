@@ -3468,6 +3468,10 @@ Function uGranularValue(const Value: UInt64; Granularity: UInt64; Direction: TAM
 
 //------------------------------------------------------------------------------
 
+Function pGranularValue(const Value: Pointer; Granularity: TMemSize; Direction: TAMGranularityDirection = grDefault): Pointer;
+
+//------------------------------------------------------------------------------
+
 Function GranularValue(const Value: Int8; Granularity: Int8; Direction: TAMGranularityDirection = grDefault): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function GranularValue(const Value: Int16; Granularity: Int16; Direction: TAMGranularityDirection = grDefault): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
 Function GranularValue(const Value: Int32; Granularity: Int32; Direction: TAMGranularityDirection = grDefault): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
@@ -3482,6 +3486,26 @@ Function GranularValue(const Value: UInt32; Granularity: UInt32; Direction: TAMG
 Function GranularValue(const Value: UInt64; Granularity: UInt64; Direction: TAMGranularityDirection = grDefault): UInt64; overload;{$IFDEF CanInline} inline;{$ENDIF}
 {$IFEND}
 
+//------------------------------------------------------------------------------
+
+Function GranularValue(const Value: Pointer; Granularity: TMemSize; Direction: TAMGranularityDirection = grDefault): Pointer; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                                 Indexing value
+--------------------------------------------------------------------------------
+===============================================================================}
+(*
+Function iIndexValue(const Value,Base,Stride: Int8): Int8;
+Function iIndexValue(const Value,Base,Stride: Int16): Int16;
+Function iIndexValue(const Value,Base,Stride: Int32): Int32;
+Function iIndexValue(const Value,Base,Stride: Int64): Int64;
+
+Function uIndexValue(const Value,Base,Stride: UInt8): UInt8;
+Function uIndexValue(const Value,Base,Stride: UInt16): UInt16;
+Function uIndexValue(const Value,Base,Stride: UInt32): UInt32;
+Function uIndexValue(const Value,Base,Stride: UInt64): UInt64;
+*)
 implementation
 
 // paranoia...
@@ -20549,6 +20573,22 @@ end;
 end;
 
 {-------------------------------------------------------------------------------
+    pGranularValue - pointers
+-------------------------------------------------------------------------------}
+
+Function pGranularValue(const Value: Pointer; Granularity: TMemSize; Direction: TAMGranularityDirection = grDefault): Pointer;
+var
+{
+  This goes without warning in FPC, unlike direct typecasting between pointers
+  and integrs.
+}
+  IntValue:   PtrUInt absolute Value;
+  IntResult:  PtrUInt absolute Result;
+begin
+IntResult := uGranularValue(IntValue,PtrUInt(Granularity),Direction);
+end;
+
+{-------------------------------------------------------------------------------
     GranularValue - common-name overloads
 -------------------------------------------------------------------------------}
 
@@ -20609,6 +20649,13 @@ begin
 Result := uGranularValue(Value,Granularity,Direction);
 end;
 {$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function GranularValue(const Value: Pointer; Granularity: TMemSize; Direction: TAMGranularityDirection = grDefault): Pointer;
+begin
+Result := pGranularValue(Value,Granularity,Direction);
+end;
 
 end.
 

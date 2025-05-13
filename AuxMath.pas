@@ -44,9 +44,9 @@
       about which types and what functions are affected, refer to "Overloading
       information symbols" further down.
 
-  Version 1.3.2 (2025-04-19)
+  Version 1.3.3 (2025-05-14)
 
-  Last change (2025-04-19)
+  Last change (2025-05-14)
 
   ©2024-2025 František Milt
 
@@ -248,6 +248,7 @@ uses
       EnsureRange
       LongMul
       GranularValue
+      IndexValue
 }
 const
   DistinctOverloadUInt64 = {$IF Declared(NativeUInt64E)}True{$ELSE}False{$IFEND};
@@ -3382,9 +3383,9 @@ Function SignProduct(const A,B: Extended): Boolean; overload;{$IFDEF CanInline} 
 --------------------------------------------------------------------------------
 ===============================================================================}
 {
-  Returns number closest to a given value that is an integral multiple of
-  absolute value of requested granularity in the given direction. As such,
-  this operation is very similar to rounding or step function.
+  Returns number closest to a given value in the given direction that is an
+  integral multiple of absolute value of requested granularity. As such, this
+  operation is very similar to rounding or step function.
 
   Exception of class EAMInvalidOperation will be raised if you set granularity
   to zero or to a minimum (negative) type value when using signed integers -
@@ -3396,61 +3397,85 @@ Function SignProduct(const A,B: Extended): Boolean; overload;{$IFDEF CanInline} 
   direction - this would return 150, but highest value Int8 can hold is 127),
   then an EAMRangeError exception is raised.
 
+    WARNING - pointer type is treated as an unsigned integer here.
+
   Individual direction values have following meaning and effects on returned
-  number (note grDefault is the same as grPosInf and grNearest is the same as
-  grNearEven):
+  number (note grDefault is the same as grPosInf, grAvoidZero is the same as
+  grAvoidZeroPos and grNearest is the same as grNearEven):
 
     grDefault
-    grPosInf      Returns number that is larger than or equal to a given value.
+    grPosInf        Towards positive infinity - returns number that is larger
+                    than or equal to a given value.
 
-                    Result >= Value
+                      Result >= Value
 
-    grNegInf      Returns number that is smaller than or equal to a given value.
+    grNegInf        Towards negative infinity - returns number that is smaller
+                    than or equal to a given value.
 
-                    Result <= Value
+                      Result <= Value
 
-    grToZero      For positive values, it returns number that is smaller than
-                  or equal to given value. For negative values, it returns
-                  number that is larger than or equal to the given value.
+    grToZero        Towards zero - for positive values, it returns number that
+                    is smaller than or equal to given value. For negative
+                    values, it returns number that is larger than or equal to
+                    the given value.
 
-                    Value >= 0  ...  Result <= Value
-                    Value < 0   ...  Result >= Value
+                      Value >= 0  ...  Result <= Value
+                      Value < 0   ...  Result >= Value
 
-                  For unsigned integers, this is fully equivalent to grNegInf.
+                    For unsigned integers, this is equivalent to grNegInf.
 
-    grFromZero    For positive values, it returns number that is larger than
-                  or equal to given value. For negative values, it returns
-                  number that is smaller than or equal to the given value.
+    grFromZero      Away from zero - for positive values, it returns number
+                    that is larger than or equal to given value. For negative
+                    values, it returns number that is smaller than or equal to
+                    the given value.
 
-                    Value >= 0  ...  Result >= Value
-                    Value < 0   ...  Result <= Value
+                      Value >= 0  ...  Result >= Value
+                      Value < 0   ...  Result <= Value
 
-                  For unsigned integers, this is fully equivalent to grPosInf.
+                    For unsigned integers, this is equivalent to grPosInf.
 
-    grAvoidZero   For values greater than zero, it returns number that is
-                  larger than or equal to given value. For values smaller than
-                  zero, it returns number that is smaller than or equal to the
-                  given value. For value of zero it returns closest number
-                  larger than zero.
+    grAvoidZero
+    grAvoidZeroPos  Avoiding zero towards positive value - for values greater
+                    than zero, it returns number that is larger than or equal
+                    to given value. For values smaller than zero, it returns
+                    number that is smaller than or equal to the given value.
+                    For value of zero it returns closest number larger than
+                    zero.
 
-                    Value > 0  ...  Result >= Value
-                    Value < 0  ...  Result <= Value
-                    Value = 0  ...  Result > Value
+                      Value > 0  ...  Result >= Value
+                      Value < 0  ...  Result <= Value
+                      Value = 0  ...  Result > Value
 
-    grNearest                    
-    grNearEven    Returns number that is closest to the given value. If the
-                  value is exatly midway between two selectable numbers (which
-                  can happen only for even granularity), then it returns the
-                  number that is an even multiple of granularity.
+    grAvoidZeroNeg  Avoiding zero towards negative value - for values greater
+                    than zero, it returns number that is larger than or equal
+                    to given value. For values smaller than zero, it returns
+                    number that is smaller than or equal to the given value.
+                    For value of zero it returns closest number smaller than
+                    zero.
 
-    grNearOdd     Returns number that is closest to the given value. If the
-                  value is exatly midway between two selectable numbers (which
-                  can happen only for even granularity), then it returns the
-                  number that is an odd multiple of granularity.
+                      Value > 0  ...  Result >= Value
+                      Value < 0  ...  Result <= Value
+                      Value = 0  ...  Result < Value or an exception
+
+                    WARNING - for unsigned integers, when the given value is
+                              zero, an exception of class EAMRangeError will
+                              always be raised.
+
+    grNearest
+    grNearEven      Returns number that is closest to the given value. If the
+                    value is exatly midway between two selectable numbers
+                    (which can happen only for even granularity), then it
+                    returns the number that is an even multiple of granularity.
+
+    grNearOdd       Returns number that is closest to the given value. If the
+                    value is exatly midway between two selectable numbers
+                    (which can happen only for even granularity), then it
+                    returns the number that is an odd multiple of granularity.
 }
 type
   TAMGranularityDirection = (grDefault,grPosInf,grNegInf,grToZero,grFromZero,
-                             grAvoidZero,grNearest,grNearEven,grNearOdd);
+                             grAvoidZero,grAvoidZeroPos,grAvoidZeroNeg,
+                             grNearest,grNearEven,grNearOdd);
 
 //------------------------------------------------------------------------------
 
@@ -3495,17 +3520,73 @@ Function GranularValue(const Value: Pointer; Granularity: TMemSize; Direction: T
                                  Indexing value
 --------------------------------------------------------------------------------
 ===============================================================================}
-(*
-Function iIndexValue(const Value,Base,Stride: Int8): Int8;
-Function iIndexValue(const Value,Base,Stride: Int16): Int16;
-Function iIndexValue(const Value,Base,Stride: Int32): Int32;
-Function iIndexValue(const Value,Base,Stride: Int64): Int64;
+{
+  These functions return an index of given value within a virtual values array
+  that starts at Base, and where each item has Stride size. In other words, it
+  returns to which stride the given value falls when counted from base.
 
-Function uIndexValue(const Value,Base,Stride: UInt8): UInt8;
-Function uIndexValue(const Value,Base,Stride: UInt16): UInt16;
-Function uIndexValue(const Value,Base,Stride: UInt32): UInt32;
-Function uIndexValue(const Value,Base,Stride: UInt64): UInt64;
-*)
+  It was originally designed to calculate item index withing an array when only
+  address of this item (or a field within it) is known. This inteded use also
+  prescribes details of its workings, namely:
+
+    The returned index is zero-based, rounded towards negative infinity, and
+    can be negative if value is smaller than base. First stride towards positive
+    infinity from the base has index zero, second has index 1 and so on. In the
+    direction of negative infinity, the first stride has index -1, second -2.
+
+    Value and Base can have any arbitrary value, but Stride must be greater
+    than zero (positive). If you pass zero or lower value, then an exception
+    of class EAMInvalidOperation will be raised.
+
+    The stride gives size of items in terms of numeric points, not as a simple
+    numerical difference. For example, given base of 0 with stride 3, this
+    would mean the first item towards positive infinity occupies values 0, 1
+    and 2.
+
+  It is possible, in rare circumstances (mainy when stride is set to one),
+  for the index to overflow - that is, it becomes negative even if it should be
+  positive or vice versa. When this happens and argument AllowOverflow is set
+  to false (default), then an EAMOverflowError is raised. If AllowOverflow is
+  set to true, then this error is suppressed and an overflowed index is
+  returned.
+}
+
+Function iIndexValue(const Value,Base,Stride: Int8; AllowOverflow: Boolean = False): Int8; overload;
+Function iIndexValue(const Value,Base,Stride: Int16; AllowOverflow: Boolean = False): Int16; overload;
+Function iIndexValue(const Value,Base,Stride: Int32; AllowOverflow: Boolean = False): Int32; overload;
+Function iIndexValue(const Value,Base,Stride: Int64; AllowOverflow: Boolean = False): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function uIndexValue(const Value,Base,Stride: UInt8; AllowOverflow: Boolean = False): Int8; overload;
+Function uIndexValue(const Value,Base,Stride: UInt16; AllowOverflow: Boolean = False): Int16; overload;
+Function uIndexValue(const Value,Base,Stride: UInt32; AllowOverflow: Boolean = False): Int32; overload;
+Function uIndexValue(const Value,Base,Stride: UInt64; AllowOverflow: Boolean = False): Int64; overload;
+
+//------------------------------------------------------------------------------
+
+Function pIndexValue(const Value,Base: Pointer; const Stride: TMemSize; AllowOverflow: Boolean = False): TMemOffset;
+
+//------------------------------------------------------------------------------
+
+Function IndexValue(const Value,Base,Stride: Int8; AllowOverflow: Boolean = False): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IndexValue(const Value,Base,Stride: Int16; AllowOverflow: Boolean = False): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IndexValue(const Value,Base,Stride: Int32; AllowOverflow: Boolean = False): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IndexValue(const Value,Base,Stride: Int64; AllowOverflow: Boolean = False): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+Function IndexValue(const Value,Base,Stride: UInt8; AllowOverflow: Boolean = False): Int8; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IndexValue(const Value,Base,Stride: UInt16; AllowOverflow: Boolean = False): Int16; overload;{$IFDEF CanInline} inline;{$ENDIF}
+Function IndexValue(const Value,Base,Stride: UInt32; AllowOverflow: Boolean = False): Int32; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IndexValue(const Value,Base,Stride: UInt64; AllowOverflow: Boolean = False): Int64; overload;{$IFDEF CanInline} inline;{$ENDIF}
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IndexValue(const Value,Base: Pointer; const Stride: TMemSize; AllowOverflow: Boolean = False): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
 implementation
 
 // paranoia...
@@ -3565,15 +3646,15 @@ end;
 
 //------------------------------------------------------------------------------
 
+// NOTE - overflows are ignored/suppressed here.
 {$IF Declared(NativeUInt64E)}
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF}
 Function SubtractUInt64(const A,B: UInt64): UInt64;
 begin
-Result := A - B;
+Result := UInt64(A - B);
 end;
+{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
 {$ELSE}
-{
-    NOTE - overflows are ignored here.
-}
 Function SubtractUInt64(const A,B: UInt64): UInt64;{$IFNDEF PurePascal} register; assembler;
 { --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
                         win32 & lin32       win64         lin64
@@ -19974,26 +20055,26 @@ end;
 
 Function iGranularValue(const Value: Int8; Granularity: Int8; Direction: TAMGranularityDirection = grDefault): Int8;
 
-  Function i8GranualarLo(const Value,Granularity: Int8): Int8;
+  Function GranualarLo(const Value,Granularity: Int8): Int8;
   var
     FullResult: Int16;
   begin
     If not iLongMul(iDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := Int8(FullResult)
     else
-      raise EAMRangeError.Create('iGranularValue.i8GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function i8GranualarHi(const Value,Granularity: Int8): Int8;
+  Function GranualarHi(const Value,Granularity: Int8): Int8;
   var
     FullResult: Int16;
   begin
     If not iLongMul(iDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := Int8(FullResult)
     else
-      raise EAMRangeError.Create('iGranularValue.i8GranualarHi: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarHi: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
@@ -20001,9 +20082,9 @@ Function iGranularValue(const Value: Int8; Granularity: Int8; Direction: TAMGran
   Function ValueSelect(LoValue: Boolean): Int8;
   begin
     If LoValue then
-      Result := i8GranualarLo(Value,Granularity)
+      Result := GranualarLo(Value,Granularity)
     else
-      Result := i8GranualarHi(Value,Granularity)
+      Result := GranualarHi(Value,Granularity)
   end;
 
 var
@@ -20019,45 +20100,50 @@ If Granularity < 0 then
 // and now calculate according to direction  
 case Direction of
   grDefault,
-  grPosInf:     Result := i8GranualarHi(Value,Granularity);
-  grNegInf:     Result := i8GranualarLo(Value,Granularity);
-  grToZero:     Result := ValueSelect(Value >= 0);
-  grFromZero:   Result := ValueSelect(Value < 0);
-  grAvoidZero:  If Value = 0 then
-                  Result := i8GranualarHi(1,Granularity)
-                else
-                  Result := ValueSelect(Value < 0);
+  grPosInf:       Result := GranualarHi(Value,Granularity);
+  grNegInf:       Result := GranualarLo(Value,Granularity);
+  grToZero:       Result := ValueSelect(Value >= 0);
+  grFromZero:     Result := ValueSelect(Value < 0);
+  grAvoidZero,
+  grAvoidZeroPos: If Value = 0 then
+                    Result := GranualarHi(1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
+  grAvoidZeroNeg: If Value = 0 then
+                    Result := GranualarLo(-1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                {
-                  Implementation for these directions might seem convoluted,
-                  but there is reason for it - it is this way to avoid raising
-                  an exception when not needed (ie. value that is out ouf range
-                  is not taken).
-                }
-                  Reference := ValueSelect(Value >= 0);
-                  If Value <> Reference then
-                    begin
-                      // get absolute (positive) distance
-                      Distance := Abs(Value - Reference);
-                      If Distance < (Granularity - Distance) then
-                        Result := Reference
-                      else If Distance > (Granularity - Distance) then
-                        // following can raise an exception if the result is out of range
-                        Result := ValueSelect(Value < 0)
-                      else
-                        begin
-                          // distance is exactly half the granularity
-                          iDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := ValueSelect(Value < 0)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                  {
+                    Implementation for these directions might seem convoluted,
+                    but there is reason for it - it is this way to avoid
+                    raising an exception when not needed (ie. value that is
+                    out of range is not taken).
+                  }
+                    Reference := ValueSelect(Value >= 0);
+                    If Value <> Reference then
+                      begin
+                        // get absolute (positive) distance
+                        Distance := Abs(Value - Reference);
+                        If Distance < (Granularity - Distance) then
+                          Result := Reference
+                        else If Distance > (Granularity - Distance) then
+                          // following can raise an exception if the result is out of range
+                          Result := ValueSelect(Value < 0)
+                        else
+                          begin
+                            // distance is exactly half the granularity
+                            iDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := ValueSelect(Value < 0)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('iGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20067,26 +20153,26 @@ end;
 
 Function iGranularValue(const Value: Int16; Granularity: Int16; Direction: TAMGranularityDirection = grDefault): Int16;
 
-  Function i16GranualarLo(const Value,Granularity: Int16): Int16;
+  Function GranualarLo(const Value,Granularity: Int16): Int16;
   var
     FullResult: Int32;
   begin
     If not iLongMul(iDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := Int16(FullResult)
     else
-      raise EAMRangeError.Create('iGranularValue.i16GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function i16GranualarHi(const Value,Granularity: Int16): Int16;
+  Function GranualarHi(const Value,Granularity: Int16): Int16;
   var
     FullResult: Int32;
   begin
     If not iLongMul(iDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := Int16(FullResult)
     else
-      raise EAMRangeError.Create('iGranularValue.i16GranualarHi: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarHi: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
@@ -20094,9 +20180,9 @@ Function iGranularValue(const Value: Int16; Granularity: Int16; Direction: TAMGr
   Function ValueSelect(LoValue: Boolean): Int16;
   begin
     If LoValue then
-      Result := i16GranualarLo(Value,Granularity)
+      Result := GranualarLo(Value,Granularity)
     else
-      Result := i16GranualarHi(Value,Granularity)
+      Result := GranualarHi(Value,Granularity)
   end;
 
 var
@@ -20109,36 +20195,41 @@ If Granularity < 0 then
   Granularity := -Granularity;
 case Direction of
   grDefault,
-  grPosInf:     Result := i16GranualarHi(Value,Granularity);
-  grNegInf:     Result := i16GranualarLo(Value,Granularity);
-  grToZero:     Result := ValueSelect(Value >= 0);
-  grFromZero:   Result := ValueSelect(Value < 0);
-  grAvoidZero:  If Value = 0 then
-                  Result := i16GranualarHi(1,Granularity)
-                else
-                  Result := ValueSelect(Value < 0);
+  grPosInf:       Result := GranualarHi(Value,Granularity);
+  grNegInf:       Result := GranualarLo(Value,Granularity);
+  grToZero:       Result := ValueSelect(Value >= 0);
+  grFromZero:     Result := ValueSelect(Value < 0);
+  grAvoidZero,
+  grAvoidZeroPos: If Value = 0 then
+                    Result := GranualarHi(1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
+  grAvoidZeroNeg: If Value = 0 then
+                    Result := GranualarLo(-1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                  Reference := ValueSelect(Value >= 0);
-                  If Value <> Reference then
-                    begin
-                      Distance := Abs(Value - Reference);
-                      If Distance < (Granularity - Distance) then
-                        Result := Reference
-                      else If Distance > (Granularity - Distance) then
-                        Result := ValueSelect(Value < 0)
-                      else
-                        begin
-                          iDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := ValueSelect(Value < 0)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                    Reference := ValueSelect(Value >= 0);
+                    If Value <> Reference then
+                      begin
+                        Distance := Abs(Value - Reference);
+                        If Distance < (Granularity - Distance) then
+                          Result := Reference
+                        else If Distance > (Granularity - Distance) then
+                          Result := ValueSelect(Value < 0)
+                        else
+                          begin
+                            iDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := ValueSelect(Value < 0)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('iGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20148,26 +20239,26 @@ end;
 
 Function iGranularValue(const Value: Int32; Granularity: Int32; Direction: TAMGranularityDirection = grDefault): Int32;
 
-  Function i32GranualarLo(const Value,Granularity: Int32): Int32;
+  Function GranualarLo(const Value,Granularity: Int32): Int32;
   var
     FullResult: Int64;
   begin
     If not iLongMul(iDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := Int32(FullResult)
     else
-      raise EAMRangeError.Create('iGranularValue.i32GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function i32GranualarHi(const Value,Granularity: Int32): Int32;
+  Function GranualarHi(const Value,Granularity: Int32): Int32;
   var
     FullResult: Int64;
   begin
     If not iLongMul(iDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := Int32(FullResult)
     else
-      raise EAMRangeError.Create('iGranularValue.i32GranualarHi: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarHi: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
@@ -20175,9 +20266,9 @@ Function iGranularValue(const Value: Int32; Granularity: Int32; Direction: TAMGr
   Function ValueSelect(LoValue: Boolean): Int32;
   begin
     If LoValue then
-      Result := i32GranualarLo(Value,Granularity)
+      Result := GranualarLo(Value,Granularity)
     else
-      Result := i32GranualarHi(Value,Granularity)
+      Result := GranualarHi(Value,Granularity)
   end;
 
 var
@@ -20190,36 +20281,41 @@ If Granularity < 0 then
   Granularity := -Granularity;
 case Direction of
   grDefault,
-  grPosInf:     Result := i32GranualarHi(Value,Granularity);
-  grNegInf:     Result := i32GranualarLo(Value,Granularity);
-  grToZero:     Result := ValueSelect(Value >= 0);
-  grFromZero:   Result := ValueSelect(Value < 0);
-  grAvoidZero:  If Value = 0 then
-                  Result := i32GranualarHi(1,Granularity)
-                else
-                  Result := ValueSelect(Value < 0);
+  grPosInf:       Result := GranualarHi(Value,Granularity);
+  grNegInf:       Result := GranualarLo(Value,Granularity);
+  grToZero:       Result := ValueSelect(Value >= 0);
+  grFromZero:     Result := ValueSelect(Value < 0);
+  grAvoidZero,
+  grAvoidZeroPos: If Value = 0 then
+                    Result := GranualarHi(1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
+  grAvoidZeroNeg: If Value = 0 then
+                    Result := GranualarLo(-1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                  Reference := ValueSelect(Value >= 0);
-                  If Value <> Reference then
-                    begin
-                      Distance := Abs(Value - Reference);
-                      If Distance < (Granularity - Distance) then
-                        Result := Reference
-                      else If Distance > (Granularity - Distance) then
-                        Result := ValueSelect(Value < 0)
-                      else
-                        begin
-                          iDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := ValueSelect(Value < 0)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                    Reference := ValueSelect(Value >= 0);
+                    If Value <> Reference then
+                      begin
+                        Distance := Abs(Value - Reference);
+                        If Distance < (Granularity - Distance) then
+                          Result := Reference
+                        else If Distance > (Granularity - Distance) then
+                          Result := ValueSelect(Value < 0)
+                        else
+                          begin
+                            iDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := ValueSelect(Value < 0)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('iGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20229,26 +20325,26 @@ end;
 
 Function iGranularValue(const Value: Int64; Granularity: Int64; Direction: TAMGranularityDirection = grDefault): Int64;
 
-  Function i64GranualarLo(const Value,Granularity: Int64): Int64;
+  Function GranualarLo(const Value,Granularity: Int64): Int64;
   var
     FullResult: Int128;
   begin
     If not iLongMul(iDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := Int64(FullResult.Lo)
     else
-      raise EAMRangeError.Create('iGranularValue.i64GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function i64GranualarHi(const Value,Granularity: Int64): Int64;
+  Function GranualarHi(const Value,Granularity: Int64): Int64;
   var
     FullResult: Int128;
   begin
     If not iLongMul(iDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := Int64(FullResult.Lo)
     else
-      raise EAMRangeError.Create('iGranularValue.i64GranualarHi: Granular value out of bounds.');
+      raise EAMRangeError.Create('iGranularValue.GranualarHi: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
@@ -20256,9 +20352,9 @@ Function iGranularValue(const Value: Int64; Granularity: Int64; Direction: TAMGr
   Function ValueSelect(LoValue: Boolean): Int64;
   begin
     If LoValue then
-      Result := i64GranualarLo(Value,Granularity)
+      Result := GranualarLo(Value,Granularity)
     else
-      Result := i64GranualarHi(Value,Granularity)
+      Result := GranualarHi(Value,Granularity)
   end;
 
 var
@@ -20271,36 +20367,41 @@ If Granularity < 0 then
   Granularity := -Granularity;
 case Direction of
   grDefault,
-  grPosInf:     Result := i64GranualarHi(Value,Granularity);
-  grNegInf:     Result := i64GranualarLo(Value,Granularity);
-  grToZero:     Result := ValueSelect(Value >= 0);
-  grFromZero:   Result := ValueSelect(Value < 0);
-  grAvoidZero:  If Value = 0 then
-                  Result := i64GranualarHi(1,Granularity)
-                else
-                  Result := ValueSelect(Value < 0);
+  grPosInf:       Result := GranualarHi(Value,Granularity);
+  grNegInf:       Result := GranualarLo(Value,Granularity);
+  grToZero:       Result := ValueSelect(Value >= 0);
+  grFromZero:     Result := ValueSelect(Value < 0);
+  grAvoidZero,
+  grAvoidZeroPos: If Value = 0 then
+                    Result := GranualarHi(1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
+  grAvoidZeroNeg: If Value = 0 then
+                    Result := GranualarLo(-1,Granularity)
+                  else
+                    Result := ValueSelect(Value < 0);
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                  Reference := ValueSelect(Value >= 0);
-                  If Value <> Reference then
-                    begin
-                      Distance := Abs(Value - Reference);
-                      If Distance < (Granularity - Distance) then
-                        Result := Reference
-                      else If Distance > (Granularity - Distance) then
-                        Result := ValueSelect(Value < 0)
-                      else
-                        begin
-                          iDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := ValueSelect(Value < 0)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                    Reference := ValueSelect(Value >= 0);
+                    If Value <> Reference then
+                      begin
+                        Distance := Abs(Value - Reference);
+                        If Distance < (Granularity - Distance) then
+                          Result := Reference
+                        else If Distance > (Granularity - Distance) then
+                          Result := ValueSelect(Value < 0)
+                        else
+                          begin
+                            iDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := ValueSelect(Value < 0)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('iGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20312,26 +20413,26 @@ end;
 
 Function uGranularValue(const Value: UInt8; Granularity: UInt8; Direction: TAMGranularityDirection = grDefault): UInt8;
 
-  Function u8GranualarLo(const Value,Granularity: UInt8): UInt8;
+  Function GranualarLo(const Value,Granularity: UInt8): UInt8;
   var
     FullResult: UInt16;
   begin
     If not uLongMul(uDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := UInt8(FullResult)
     else
-      raise EAMRangeError.Create('uGranularValue.u8GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function u8GranualarHi(const Value,Granularity: UInt8): UInt8;
+  Function GranualarHi(const Value,Granularity: UInt8): UInt8;
   var
     FullResult: UInt16;
   begin
     If not uLongMul(uDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := UInt8(FullResult)
     else
-      raise EAMRangeError.Create('uGranularValue.u8GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 var
@@ -20343,32 +20444,37 @@ If Granularity = 0 then
 case Direction of
   grDefault,
   grPosInf,
-  grFromZero:   Result := u8GranualarHi(Value,Granularity);
+  grFromZero:     Result := GranualarHi(Value,Granularity);
   grNegInf,
-  grToZero:     Result := u8GranualarLo(Value,Granularity);
-  grAvoidZero:  Result := u8GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grToZero:       Result := GranualarLo(Value,Granularity);
+  grAvoidZero,
+  grAvoidZeroPos: Result := GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grAvoidZeroNeg: If Value <> 0 then
+                    Result := GranualarHi(Value,Granularity)
+                  else
+                    raise EAMRangeError.Create('uGranularValue: Invalid value (0).');
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                  Reference := u8GranualarLo(Value,Granularity);
-                  If Value <> Reference then
-                    begin
-                      Distance := Value - Reference;
-                      If Distance < (Granularity - Distance) then
-                        Result := Reference
-                      else If Distance > (Granularity - Distance) then
-                        Result := u8GranualarHi(Value,Granularity)
-                      else
-                        begin
-                          uDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := u8GranualarHi(Value,Granularity)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                    Reference := GranualarLo(Value,Granularity);
+                    If Value <> Reference then
+                      begin
+                        Distance := Value - Reference;
+                        If Distance < (Granularity - Distance) then
+                          Result := Reference
+                        else If Distance > (Granularity - Distance) then
+                          Result := GranualarHi(Value,Granularity)
+                        else
+                          begin
+                            uDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := GranualarHi(Value,Granularity)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('uGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20378,26 +20484,26 @@ end;
 
 Function uGranularValue(const Value: UInt16; Granularity: UInt16; Direction: TAMGranularityDirection = grDefault): UInt16;
 
-  Function u16GranualarLo(const Value,Granularity: UInt16): UInt16;
+  Function GranualarLo(const Value,Granularity: UInt16): UInt16;
   var
     FullResult: UInt32;
   begin
     If not uLongMul(uDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := UInt16(FullResult)
     else
-      raise EAMRangeError.Create('uGranularValue.u16GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function u16GranualarHi(const Value,Granularity: UInt16): UInt16;
+  Function GranualarHi(const Value,Granularity: UInt16): UInt16;
   var
     FullResult: UInt32;
   begin
     If not uLongMul(uDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := UInt16(FullResult)
     else
-      raise EAMRangeError.Create('uGranularValue.u16GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 var
@@ -20409,32 +20515,37 @@ If Granularity = 0 then
 case Direction of
   grDefault,
   grPosInf,
-  grFromZero:   Result := u16GranualarHi(Value,Granularity);
+  grFromZero:     Result := GranualarHi(Value,Granularity);
   grNegInf,
-  grToZero:     Result := u16GranualarLo(Value,Granularity);
-  grAvoidZero:  Result := u16GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grToZero:       Result := GranualarLo(Value,Granularity);
+  grAvoidZero,
+  grAvoidZeroPos: Result := GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grAvoidZeroNeg: If Value <> 0 then
+                    Result := GranualarHi(Value,Granularity)
+                  else
+                    raise EAMRangeError.Create('uGranularValue: Invalid value (0).');
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                  Reference := u16GranualarLo(Value,Granularity);
-                  If Value <> Reference then
-                    begin
-                      Distance := Value - Reference;
-                      If Distance < (Granularity - Distance) then
-                        Result := Reference
-                      else If Distance > (Granularity - Distance) then
-                        Result := u16GranualarHi(Value,Granularity)
-                      else
-                        begin
-                          uDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := u16GranualarHi(Value,Granularity)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                    Reference := GranualarLo(Value,Granularity);
+                    If Value <> Reference then
+                      begin
+                        Distance := Value - Reference;
+                        If Distance < (Granularity - Distance) then
+                          Result := Reference
+                        else If Distance > (Granularity - Distance) then
+                          Result := GranualarHi(Value,Granularity)
+                        else
+                          begin
+                            uDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := GranualarHi(Value,Granularity)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('uGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20444,26 +20555,26 @@ end;
 
 Function uGranularValue(const Value: UInt32; Granularity: UInt32; Direction: TAMGranularityDirection = grDefault): UInt32;
 
-  Function u32GranualarLo(const Value,Granularity: UInt32): UInt32;
+  Function GranualarLo(const Value,Granularity: UInt32): UInt32;
   var
     FullResult: UInt64;
   begin
     If not uLongMul(uDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := UInt32(FullResult)
     else
-      raise EAMRangeError.Create('uGranularValue.u32GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function u32GranualarHi(const Value,Granularity: UInt32): UInt32;
+  Function GranualarHi(const Value,Granularity: UInt32): UInt32;
   var
     FullResult: UInt64;
   begin
     If not uLongMul(uDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := UInt32(FullResult)
     else
-      raise EAMRangeError.Create('uGranularValue.u32GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 var
@@ -20475,32 +20586,37 @@ If Granularity = 0 then
 case Direction of
   grDefault,
   grPosInf,
-  grFromZero:   Result := u32GranualarHi(Value,Granularity);
+  grFromZero:     Result := GranualarHi(Value,Granularity);
   grNegInf,
-  grToZero:     Result := u32GranualarLo(Value,Granularity);
-  grAvoidZero:  Result := u32GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grToZero:       Result := GranualarLo(Value,Granularity);
+  grAvoidZero,
+  grAvoidZeroPos: Result := GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grAvoidZeroNeg: If Value <> 0 then
+                    Result := GranualarHi(Value,Granularity)
+                  else
+                    raise EAMRangeError.Create('uGranularValue: Invalid value (0).');
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                  Reference := u32GranualarLo(Value,Granularity);
-                  If Value <> Reference then
-                    begin
-                      Distance := Value - Reference;
-                      If Distance < (Granularity - Distance) then
-                        Result := Reference
-                      else If Distance > (Granularity - Distance) then
-                        Result := u32GranualarHi(Value,Granularity)
-                      else
-                        begin
-                          uDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := u32GranualarHi(Value,Granularity)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                    Reference := GranualarLo(Value,Granularity);
+                    If Value <> Reference then
+                      begin
+                        Distance := Value - Reference;
+                        If Distance < (Granularity - Distance) then
+                          Result := Reference
+                        else If Distance > (Granularity - Distance) then
+                          Result := GranualarHi(Value,Granularity)
+                        else
+                          begin
+                            uDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := GranualarHi(Value,Granularity)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('uGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20510,26 +20626,26 @@ end;
 
 Function uGranularValue(const Value: UInt64; Granularity: UInt64; Direction: TAMGranularityDirection = grDefault): UInt64;
 
-  Function u64GranualarLo(const Value,Granularity: UInt64): UInt64;
+  Function GranualarLo(const Value,Granularity: UInt64): UInt64;
   var
     FullResult: UInt128;
   begin
     If not uLongMul(uDivFloor(Value,Granularity),Granularity,FullResult) then
       Result := UInt64(FullResult.Lo)
     else
-      raise EAMRangeError.Create('uGranularValue.u64GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 //   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
 
-  Function u64GranualarHi(const Value,Granularity: UInt64): UInt64;
+  Function GranualarHi(const Value,Granularity: UInt64): UInt64;
   var
     FullResult: UInt128;
   begin
     If not uLongMul(uDivCeil(Value,Granularity),Granularity,FullResult) then
       Result := UInt64(FullResult.Lo)
     else
-      raise EAMRangeError.Create('uGranularValue.u64GranualarLo: Granular value out of bounds.');
+      raise EAMRangeError.Create('uGranularValue.GranualarLo: Granular value out of bounds.');
   end;
 
 var
@@ -20541,32 +20657,37 @@ If Granularity = 0 then
 case Direction of
   grDefault,
   grPosInf,
-  grFromZero:   Result := u64GranualarHi(Value,Granularity);
+  grFromZero:     Result := GranualarHi(Value,Granularity);
   grNegInf,
-  grToZero:     Result := u64GranualarLo(Value,Granularity);
-  grAvoidZero:  Result := u64GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grToZero:       Result := GranualarLo(Value,Granularity);
+  grAvoidZero,
+  grAvoidZeroPos: Result := GranualarHi(uIfThen(Value = 0,1,Value),Granularity);
+  grAvoidZeroNeg: If Value <> 0 then
+                    Result := GranualarHi(Value,Granularity)
+                  else
+                    raise EAMRangeError.Create('uGranularValue: Invalid value (0).');
   grNearest,
   grNearEven,
-  grNearOdd:    begin
-                  Reference := u64GranualarLo(Value,Granularity);
-                  If CompareUInt64(Value,Reference) <> 0 then
-                    begin
-                      Distance := SubtractUInt64(Value,Reference);
-                      If CompareUInt64(Distance,SubtractUInt64(Granularity,Distance)) < 0 then
-                        Result := Reference
-                      else If CompareUInt64(Distance,SubtractUInt64(Granularity,Distance)) > 0 then
-                        Result := u64GranualarHi(Value,Granularity)
-                      else
-                        begin
-                          uDivMod(Reference,Granularity,Quotient,Remainder);
-                          If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
-                            Result := u64GranualarHi(Value,Granularity)
-                          else
-                            Result := Reference;
-                        end;
-                    end
-                  else Result := Reference;
-                end;
+  grNearOdd:      begin
+                    Reference := GranualarLo(Value,Granularity);
+                    If CompareUInt64(Value,Reference) <> 0 then
+                      begin
+                        Distance := SubtractUInt64(Value,Reference);
+                        If CompareUInt64(Distance,SubtractUInt64(Granularity,Distance)) < 0 then
+                          Result := Reference
+                        else If CompareUInt64(Distance,SubtractUInt64(Granularity,Distance)) > 0 then
+                          Result := GranualarHi(Value,Granularity)
+                        else
+                          begin
+                            uDivMod(Reference,Granularity,Quotient,Remainder);
+                            If ((Quotient and 1) = 0) xor (Direction in [grNearest,grNearEven]) then
+                              Result := GranualarHi(Value,Granularity)
+                            else
+                              Result := Reference;
+                          end;
+                      end
+                    else Result := Reference;
+                  end;
 else
   raise EAMInvalidValue.CreateFmt('uGranularValue: Unknown direction (%d).',[Ord(Direction)]);
 end;
@@ -20655,6 +20776,230 @@ end;
 Function GranularValue(const Value: Pointer; Granularity: TMemSize; Direction: TAMGranularityDirection = grDefault): Pointer;
 begin
 Result := pGranularValue(Value,Granularity,Direction);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                                 Indexing value
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iIndexValue - signed integers
+-------------------------------------------------------------------------------}
+
+{$IFDEF AM_OverflowChecks}{$Q-}{$ENDIF} // (Value - Base) can easily overflow
+
+Function iIndexValue(const Value,Base,Stride: Int8; AllowOverflow: Boolean = False): Int8;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('iIndexValue: Invalid stride (%d).',[Stride]);
+If Value <> Base then
+  begin
+    Result := iDivFloor(Int8(Value - Base),Stride);
+    // check whether the resulting index was wrapped around (ie. overflowed)
+    If not AllowOverflow then
+      If (Value < Base) xor (Result < 0) then
+        raise EAMOverflowError.Create('iIndexValue: Resulting index overflowed.');
+  end
+else Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIndexValue(const Value,Base,Stride: Int16; AllowOverflow: Boolean = False): Int16;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('iIndexValue: Invalid stride (%d).',[Stride]);
+If Value <> Base then
+  begin
+    Result := iDivFloor(Int16(Value - Base),Stride);
+    If not AllowOverflow then
+      If (Value < Base) xor (Result < 0) then
+        raise EAMOverflowError.Create('iIndexValue: Resulting index overflowed.');
+  end
+else Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIndexValue(const Value,Base,Stride: Int32; AllowOverflow: Boolean = False): Int32;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('iIndexValue: Invalid stride (%d).',[Stride]);
+If Value <> Base then
+  begin
+    Result := iDivFloor(Int32(Value - Base),Stride);
+    If not AllowOverflow then
+      If (Value < Base) xor (Result < 0) then
+        raise EAMOverflowError.Create('iIndexValue: Resulting index overflowed.');
+  end
+else Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIndexValue(const Value,Base,Stride: Int64; AllowOverflow: Boolean = False): Int64;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('iIndexValue: Invalid stride (%d).',[Stride]);
+If Value <> Base then
+  begin
+    Result := iDivFloor(Int64(Value - Base),Stride);
+    If not AllowOverflow then
+      If (Value < Base) xor (Result < 0) then
+        raise EAMOverflowError.Create('iIndexValue: Resulting index overflowed.');
+  end
+else Result := 0;
+end;
+
+{-------------------------------------------------------------------------------
+    uIndexValue - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uIndexValue(const Value,Base,Stride: UInt8; AllowOverflow: Boolean = False): Int8;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('uIndexValue: Invalid stride (%u).',[Stride]);
+If Value <> Base then
+  begin
+    Result := Int8(uDivFloor(UInt8(Value - Base),Stride));
+    If not AllowOverflow then
+      If (Value < Base) xor (Result < 0) then
+        raise EAMOverflowError.Create('uIndexValue: Resulting index overflowed.');    
+  end
+else Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIndexValue(const Value,Base,Stride: UInt16; AllowOverflow: Boolean = False): Int16;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('uIndexValue: Invalid stride (%u).',[Stride]);
+If Value <> Base then
+  begin
+    Result := Int16(uDivFloor(UInt16(Value - Base),Stride));
+    If not AllowOverflow then
+      If (Value < Base) xor (Result < 0) then
+        raise EAMOverflowError.Create('uIndexValue: Resulting index overflowed.');    
+  end
+else Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIndexValue(const Value,Base,Stride: UInt32; AllowOverflow: Boolean = False): Int32;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('uIndexValue: Invalid stride (%d).',[Int64(Stride)]);
+If Value <> Base then
+  begin
+    Result := Int32(uDivFloor(UInt32(Value - Base),Stride));
+    If not AllowOverflow then
+      If (Value < Base) xor (Result < 0) then
+        raise EAMOverflowError.Create('uIndexValue: Resulting index overflowed.');    
+  end
+else Result := 0;
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIndexValue(const Value,Base,Stride: UInt64; AllowOverflow: Boolean = False): Int64;
+begin
+If Stride <= 0 then
+  raise EAMInvalidOperation.CreateFmt('uIndexValue: Invalid stride (%u).',[Stride]);
+If Value <> Base then
+  begin
+    Result := Int64(uDivFloor(UInt64(Value - Base),Stride));
+    If not AllowOverflow then
+      If (CompareUInt64(Value,Base) < 0) xor (Result < 0) then
+        raise EAMOverflowError.Create('uIndexValue: Resulting index overflowed.');
+  end
+else Result := 0;
+end;
+
+{$IFDEF AM_OverflowChecks}{$Q+}{$ENDIF}
+
+{-------------------------------------------------------------------------------
+    pIndexValue - pointers
+-------------------------------------------------------------------------------}
+
+Function pIndexValue(const Value,Base: Pointer; const Stride: TMemSize; AllowOverflow: Boolean = False): TMemOffset;
+var
+  IntValue: PtrUInt absolute Value;
+  IntBase:  PtrUInt absolute Base;
+begin
+Result := TMemOffset(uIndexValue(IntValue,IntBase,PtrUInt(Stride),AllowOverflow));
+end;
+
+{-------------------------------------------------------------------------------
+    IndexValue - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function IndexValue(const Value,Base,Stride: Int8; AllowOverflow: Boolean = False): Int8;
+begin
+Result := iIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValue(const Value,Base,Stride: Int16; AllowOverflow: Boolean = False): Int16;
+begin
+Result := iIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValue(const Value,Base,Stride: Int32; AllowOverflow: Boolean = False): Int32;
+begin
+Result := iIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValue(const Value,Base,Stride: Int64; AllowOverflow: Boolean = False): Int64;
+begin
+Result := iIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IndexValue(const Value,Base,Stride: UInt8; AllowOverflow: Boolean = False): Int8;
+begin
+Result := uIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValue(const Value,Base,Stride: UInt16; AllowOverflow: Boolean = False): Int16;
+begin
+Result := uIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValue(const Value,Base,Stride: UInt32; AllowOverflow: Boolean = False): Int32;
+begin
+Result := uIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValue(const Value,Base,Stride: UInt64; AllowOverflow: Boolean = False): Int64;
+begin
+Result := uIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IndexValue(const Value,Base: Pointer; const Stride: TMemSize; AllowOverflow: Boolean = False): TMemOffset;
+begin
+Result := pIndexValue(Value,Base,Stride,AllowOverflow);
 end;
 
 end.

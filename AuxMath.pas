@@ -44,9 +44,9 @@
       about which types and what functions are affected, refer to "Overloading
       information symbols" further down.
 
-  Version 1.3.3 (2025-05-14)
+  Version 1.3.4 (2025-05-17)
 
-  Last change (2025-05-14)
+  Last change (2025-05-17)
 
   ©2024-2025 František Milt
 
@@ -150,11 +150,15 @@ unit AuxMath;
 // do not touch following defines!
 
 {$UNDEF AM_OverflowChecks}
+{$UNDEF AM_ForceStackFrames}
 {$UNDEF AM_DistinctUCS4Str}
 {$UNDEF AM_DistinctUTF8Str}
 
 {$IFOPT Q+}
   {$DEFINE AM_OverflowChecks}
+{$ENDIF}
+{$IFOPT W+}
+  {$DEFINE AM_ForceStackFrames}
 {$ENDIF}
 
 {$IFDEF FPC}
@@ -249,6 +253,7 @@ uses
       LongMul
       GranularValue
       IndexValue
+      IndexValueIn
 }
 const
   DistinctOverloadUInt64 = {$IF Declared(NativeUInt64E)}True{$ELSE}False{$IFEND};
@@ -3586,6 +3591,138 @@ Function IndexValue(const Value,Base,Stride: UInt64; AllowOverflow: Boolean = Fa
 //------------------------------------------------------------------------------
 
 Function IndexValue(const Value,Base: Pointer; const Stride: TMemSize; AllowOverflow: Boolean = False): TMemOffset; overload;{$IFDEF CanInline} inline;{$ENDIF}
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Indexing value in array
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  Takes given array (Arr parameter) as a set of contiguous intervals, finds
+  interval to which given value (parameter Value) falls and returns its index.
+
+  The array is interpreted as a set of intervals, containing length - 1
+  intervals, where i-th interval can be defined as [Arr[i],Arr[i+1]). Given
+  the definition, the intervals are contiguous (where one ends, the next
+  begins) and have zero-base indexing (first has index zero).
+
+  For example, let's have array [5,10,12,13,20,25] and value 15, This value
+  falls to interval [13,20) (fourth interval), therefore index 3 is returned.
+
+    WARNING - the values in Arr must be strictly growing. They must be ordered
+              from lowest to highest and there can be no two equal values -
+              each end every item must be larger than the prewious one (this
+              does NOT concern the first item, obviously). For performance
+              reasons, this is not checked by default (see ioCheckOrdering
+              option for more info).
+              Failing to provide correct data can result in wrong result being
+              returned, raising of unexpected exception or even to an infinite
+              loop, so be careful what you pass here.
+
+  If the given value does not belong to any interval, or no interval is given
+  (array is empty or has only one item), then -1 is returned.
+
+  Functions with bit width in name (eg. iIndexValueIn_16) are provided for use
+  in very old compilers (namely Delphi 7) because they cannot, under specific
+  circumstances, distinguish which common-name overload to call and fail with
+  "ambiguous overloaded call" error.
+
+  Operation of these function can be altered by passing option flags, which
+  currently include:
+
+    ioRightInclusive
+
+      When this option is activated, then the last given interval includes the
+      last (right-most) value from the array, and is therefore closed from both
+      sides.
+
+      For example in array [0,5,10,15], with this option active, the value 15
+      falls to the last interval (index 2).
+
+      This has also effect when the array contains only one item - with this
+      active the sole item is in itself one full interval.
+
+    ioCheckOrdering
+
+      When included, the function will check whether the given array has proper
+      format (ie. is strictly growing, see abowe).
+
+      If it is in correct format, then the function continues normally, but
+      if problem with the array is found, then the function will return value
+      of Low(Integer) (usually -2147483648).
+
+      This is somewhat expensive operation, so use it only when necessaary
+      (eg. when the array is passed from source that cannot be trusted).
+
+    ioCheckOrderingExc
+
+      This option has meaning only when ioCheckOrdering is also included.
+      If array format check fails and this is active, then, instead of returning
+      Low(Integer), the function will raise an EAMInvalidValue exception.
+}
+type
+  TAMIndexingOption = (ioRightInclusive,ioCheckOrdering,ioCheckOrderingExc);
+  TAMIndexingOptions = set of TAMIndexingOption;
+
+//------------------------------------------------------------------------------
+
+Function iIndexValueIn_8(const Value: Int8; const Arr: array of Int8; Options: TAMIndexingOptions = []): Integer;
+Function iIndexValueIn_16(const Value: Int16; const Arr: array of Int16; Options: TAMIndexingOptions = []): Integer;
+Function iIndexValueIn_32(const Value: Int32; const Arr: array of Int32; Options: TAMIndexingOptions = []): Integer;
+Function iIndexValueIn_64(const Value: Int64; const Arr: array of Int64; Options: TAMIndexingOptions = []): Integer;
+
+Function iIndexValueIn(const Value: Int8; const Arr: array of Int8; Options: TAMIndexingOptions = []): Integer; overload;
+Function iIndexValueIn(const Value: Int16; const Arr: array of Int16; Options: TAMIndexingOptions = []): Integer; overload;
+Function iIndexValueIn(const Value: Int32; const Arr: array of Int32; Options: TAMIndexingOptions = []): Integer; overload;
+Function iIndexValueIn(const Value: Int64; const Arr: array of Int64; Options: TAMIndexingOptions = []): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function uIndexValueIn_8(const Value: UInt8; const Arr: array of UInt8; Options: TAMIndexingOptions = []): Integer;
+Function uIndexValueIn_16(const Value: UInt16; const Arr: array of UInt16; Options: TAMIndexingOptions = []): Integer;
+Function uIndexValueIn_32(const Value: UInt32; const Arr: array of UInt32; Options: TAMIndexingOptions = []): Integer;
+Function uIndexValueIn_64(const Value: UInt64; const Arr: array of UInt64; Options: TAMIndexingOptions = []): Integer;
+
+Function uIndexValueIn(const Value: UInt8; const Arr: array of UInt8; Options: TAMIndexingOptions = []): Integer; overload;
+Function uIndexValueIn(const Value: UInt16; const Arr: array of UInt16; Options: TAMIndexingOptions = []): Integer; overload;
+Function uIndexValueIn(const Value: UInt32; const Arr: array of UInt32; Options: TAMIndexingOptions = []): Integer; overload;
+Function uIndexValueIn(const Value: UInt64; const Arr: array of UInt64; Options: TAMIndexingOptions = []): Integer; overload;
+
+//------------------------------------------------------------------------------
+
+Function fIndexValueIn(const Value: Single; const Arr: array of Single; Options: TAMIndexingOptions = []): Integer; overload;
+Function fIndexValueIn(const Value: Double; const Arr: array of Double; Options: TAMIndexingOptions = []): Integer; overload;
+{$IF SizeOf(Extended) = 10}
+Function fIndexValueIn(const Value: Extended; const Arr: array of Extended; Options: TAMIndexingOptions = []): Integer; overload;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function pIndexValueIn(const Value: Pointer; const Arr: array of Pointer; Options: TAMIndexingOptions = []): Integer;{$IFNDEF PurePascal} register; assembler;{$ENDIF}
+
+//------------------------------------------------------------------------------
+
+Function IndexValueIn(const Value: Int8; const Arr: array of Int8; Options: TAMIndexingOptions = []): Integer; overload;
+Function IndexValueIn(const Value: Int16; const Arr: array of Int16; Options: TAMIndexingOptions = []): Integer; overload;
+Function IndexValueIn(const Value: Int32; const Arr: array of Int32; Options: TAMIndexingOptions = []): Integer; overload;
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IndexValueIn(const Value: Int64; const Arr: array of Int64; Options: TAMIndexingOptions = []): Integer; overload;
+{$IFEND}
+
+Function IndexValueIn(const Value: UInt8; const Arr: array of UInt8; Options: TAMIndexingOptions = []): Integer; overload;
+Function IndexValueIn(const Value: UInt16; const Arr: array of UInt16; Options: TAMIndexingOptions = []): Integer; overload;
+Function IndexValueIn(const Value: UInt32; const Arr: array of UInt32; Options: TAMIndexingOptions = []): Integer; overload;
+{$IF Declared(DistinctOverloadUInt64E)}
+Function IndexValueIn(const Value: UInt64; const Arr: array of UInt64; Options: TAMIndexingOptions = []): Integer; overload;
+{$IFEND}
+
+Function IndexValueIn(const Value: Single; const Arr: array of Single; Options: TAMIndexingOptions = []): Integer; overload;
+Function IndexValueIn(const Value: Double; const Arr: array of Double; Options: TAMIndexingOptions = []): Integer; overload;
+{$IF SizeOf(Extended) = 10}
+Function IndexValueIn(const Value: Extended; const Arr: array of Extended; Options: TAMIndexingOptions = []): Integer; overload;
+{$IFEND}
+
+Function IndexValueIn(const Value: Pointer; const Arr: array of Pointer; Options: TAMIndexingOptions = []): Integer; overload;
 
 implementation
 
@@ -21000,6 +21137,1029 @@ end;
 Function IndexValue(const Value,Base: Pointer; const Stride: TMemSize; AllowOverflow: Boolean = False): TMemOffset;
 begin
 Result := pIndexValue(Value,Base,Stride,AllowOverflow);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                             Indexing value in array
+--------------------------------------------------------------------------------
+===============================================================================}
+{-------------------------------------------------------------------------------
+    iIndexValueIn - signed integers
+-------------------------------------------------------------------------------}
+
+Function iIndexValueIn_8(const Value: Int8; const Arr: array of Int8; Options: TAMIndexingOptions = []): Integer;
+{
+  Following code is almost completely the same for all overloads - only thing
+  different is name of the function in exception message and some comparisons
+  in UInt64 variant.
+
+  That being said, it cannot be moved to a common function called from them -
+  it IS possible to implement, but that would require some heavy overhead when
+  converting to a common type.
+
+  Another possibility would be to include it from a template file, but I want
+  to avoid that. I have some experience with this mechanism, and it is not
+  always sunshine, rainbow and bunnies. >:/
+
+  Ideal would be some sort of script or template managed by pre-processor in
+  the compiler, but that does no exist for pascal, so...
+
+  Just remember to keep the code in sync.
+}
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    // check ordering of the given array, if that is requested
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('iIndexValueIn_8: Given array is not properly ordered.');
+        end;
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      // right-most (last) item included and the given value is equal to it
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      // general case for arrays longer than 1
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+        {
+          Given value falls within the bounding values.
+
+          32 as a limit from which a binary search is used was selected pretty
+          much arbitrarily. That being said, I have done some tests and binary
+          search starts to be faster between 20 and 30 items, depending on base
+          type.
+
+          So why not use binary always? Because for short lists linear search
+          is statistically faster.
+        }
+          If Length(Arr) < 32 then
+            begin
+              // linear search
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              // binary search, note we are searching for range, not match
+              L := Low(Arr);
+              R := Pred(High(Arr)); // exclude last item
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
+
+Function iIndexValueIn_16(const Value: Int16; const Arr: array of Int16; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('iIndexValueIn_16: Given array is not properly ordered.');
+        end;
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
+
+Function iIndexValueIn_32(const Value: Int32; const Arr: array of Int32; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('iIndexValueIn_32: Given array is not properly ordered.');
+        end;
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
+
+Function iIndexValueIn_64(const Value: Int64; const Arr: array of Int64; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('iIndexValueIn_64: Given array is not properly ordered.');
+        end;  
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//==============================================================================
+
+Function iIndexValueIn(const Value: Int8; const Arr: array of Int8; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_8(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIndexValueIn(const Value: Int16; const Arr: array of Int16; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_16(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIndexValueIn(const Value: Int32; const Arr: array of Int32; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_32(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function iIndexValueIn(const Value: Int64; const Arr: array of Int64; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_64(Value,Arr,Options);
+end;
+
+{-------------------------------------------------------------------------------
+    uIndexValueIn - unsigned integers
+-------------------------------------------------------------------------------}
+
+Function uIndexValueIn_8(const Value: UInt8; const Arr: array of UInt8; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('uIndexValueIn_8: Given array is not properly ordered.');
+        end;
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
+
+Function uIndexValueIn_16(const Value: UInt16; const Arr: array of UInt16; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('uIndexValueIn_16: Given array is not properly ordered.');
+        end;
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
+
+Function uIndexValueIn_32(const Value: UInt32; const Arr: array of UInt32; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('uIndexValueIn_32: Given array is not properly ordered.');
+        end;
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
+
+Function uIndexValueIn_64(const Value: UInt64; const Arr: array of UInt64; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If CompareUInt64(Arr[i],Arr[Succ(i)]) >= 0 then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('uIndexValueIn_64: Given array is not properly ordered.');
+        end;
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]{no need to use CompareUInt64 here}) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (CompareUInt64(Value,Arr[Low(Arr)]) >= 0) and
+         (CompareUInt64(Value,Arr[High(Arr)]) < 0) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If CompareUInt64(Value,Arr[i]) >= 0 then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If CompareUInt64(Value,Arr[M]) < 0 then
+                    R := Pred(M)
+                  else If CompareUInt64(Value,Arr[Succ(M)]) >= 0 then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+//==============================================================================
+
+Function uIndexValueIn(const Value: UInt8; const Arr: array of UInt8; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_8(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIndexValueIn(const Value: UInt16; const Arr: array of UInt16; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_16(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIndexValueIn(const Value: UInt32; const Arr: array of UInt32; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_32(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function uIndexValueIn(const Value: UInt64; const Arr: array of UInt64; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_64(Value,Arr,Options);
+end;
+
+{-------------------------------------------------------------------------------
+    fIndexValueIn - real numbers
+-------------------------------------------------------------------------------}
+
+Function fIndexValueIn(const Value: Single; const Arr: array of Single; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('fIndexValueIn: Given array is not properly ordered.');
+        end;  
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fIndexValueIn(const Value: Double; const Arr: array of Double; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('fIndexValueIn: Given array is not properly ordered.');
+        end;  
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+
+{$IF SizeOf(Extended) = 10}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function fIndexValueIn(const Value: Extended; const Arr: array of Extended; Options: TAMIndexingOptions = []): Integer;
+
+  Function CheckOrdering: Boolean;
+  var
+    i:  Integer;
+  begin
+    Result := True;
+    If Length(Arr) > 1 then
+      For i := Low(Arr) to Pred(High(Arr)) do
+        If Arr[i] >= Arr[Succ(i)] then
+          begin
+            Result := False;
+            Break{For i};
+          end;
+  end;
+
+var
+  i,L,R,M:  Integer;
+begin
+Result := -1;
+If Length(Arr) > 0 then
+  begin
+    If ioCheckOrdering in Options then
+      If not CheckOrdering then
+        begin
+          If not(ioCheckOrderingExc in Options) then
+            begin
+              Result := Low(Integer);
+              Exit;
+            end
+          else raise EAMInvalidValue.Create('fIndexValueIn: Given array is not properly ordered.');
+        end;  
+    If (ioRightInclusive in Options) and (Value = Arr[High(Arr)]) then
+      Result := iIfThen(Length(Arr) > 1,Pred(High(Arr)),Low(Arr))
+    else If Length(Arr) > 1 then
+      If (Value >= Arr[Low(Arr)]) and (Value < Arr[High(Arr)]) then
+        begin
+          If Length(Arr) < 32 then
+            begin
+              For i := Pred(High(Arr)) downto Low(Arr) do
+                If Value >= Arr[i] then
+                  begin
+                    Result := i;
+                    Break{For i};
+                  end;
+            end
+          else
+            begin
+              L := Low(Arr);
+              R := Pred(High(Arr));
+              while L <= R do
+                begin
+                  M := L + ((R - L) div 2);
+                  If Value < Arr[M] then
+                    R := Pred(M)
+                  else If Value >= Arr[Succ(M)] then
+                    L := Succ(M)
+                  else
+                    begin
+                      Result := M;
+                      Break{while};
+                    end;                  
+                end;
+            end;
+        end;
+  end;
+end;
+{$IFEND}
+
+{-------------------------------------------------------------------------------
+    pIndexValueIn - pointers
+-------------------------------------------------------------------------------}
+
+{$If not Defined(AM_ForceStackFrames) and not Defined(PurePascal)}
+  {$W+} // force creation of stack frames, we need them in assembly code
+{$IFEND}
+
+Function pIndexValueIn(const Value: Pointer; const Arr: array of Pointer; Options: TAMIndexingOptions = []): Integer;
+{$IFNDEF PurePascal}
+asm
+{
+  Do not touch anything - leave parameters where they are and how they are,
+  revert whatever has function prolog done with the stack and just jump to
+  a proper integer function.
+}
+{$IFDEF x64}
+    MOV   RSP, RBP 
+    POP   RBP
+    JMP   uIndexValueIn_64
+{$ELSE}
+    MOV   ESP, EBP
+    POP   EBP
+    JMP   uIndexValueIn_32
+{$ENDIF}
+end;
+{$ELSE}
+var
+  IntValue: PtrUInt absolute Value;
+  IntArr:   array of PtrUInt;
+begin
+{
+  Avoid typecasting pointers to integers, FPC does not like it. Also, we cannot
+  overlay IntArr over the Arr argument because open arrays and dynamic arrays
+  have different memory layout (internally, Arr is just a pointer to the first
+  element of the passed array and length is passed in a hidden parameter,
+  whereas non-empty dynamic arrays have their length stored at the same memory
+  location as data just before the first item).
+
+  Is there any pure-pascal way of how to pass the array without conversion?
+}
+IntArr := nil;
+If Length(Arr) > 0 then
+  begin
+    SetLength(IntArr,Length(Arr));
+    Move(Arr[Low(Arr)],IntArr[Low(IntArr)],Length(Arr) * SizeOf(Pointer));
+  end;
+Result := uIndexValueIn(IntValue,IntArr,Options);
+end;
+{$ENDIF}
+
+{$If not Defined(AM_ForceStackFrames) and not Defined(PurePascal)}
+  {$W-} // restore stack frames generation settings
+{$IFEND}
+
+{-------------------------------------------------------------------------------
+    IndexValueIn - common-name overloads
+-------------------------------------------------------------------------------}
+
+Function IndexValueIn(const Value: Int8; const Arr: array of Int8; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_8(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: Int16; const Arr: array of Int16; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_16(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: Int32; const Arr: array of Int32; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_32(Value,Arr,Options);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: Int64; const Arr: array of Int64; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := iIndexValueIn_64(Value,Arr,Options);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IndexValueIn(const Value: UInt8; const Arr: array of UInt8; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_8(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: UInt16; const Arr: array of UInt16; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_16(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: UInt32; const Arr: array of UInt32; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_32(Value,Arr,Options);
+end;
+
+{$IF Declared(DistinctOverloadUInt64E)}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: UInt64; const Arr: array of UInt64; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := uIndexValueIn_64(Value,Arr,Options);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IndexValueIn(const Value: Single; const Arr: array of Single; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := fIndexValueIn(Value,Arr,Options);
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: Double; const Arr: array of Double; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := fIndexValueIn(Value,Arr,Options);
+end;
+
+{$IF SizeOf(Extended) = 10}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function IndexValueIn(const Value: Extended; const Arr: array of Extended; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := fIndexValueIn(Value,Arr,Options);
+end;
+{$IFEND}
+
+//------------------------------------------------------------------------------
+
+Function IndexValueIn(const Value: Pointer; const Arr: array of Pointer; Options: TAMIndexingOptions = []): Integer;
+begin
+Result := pIndexValueIn(Value,Arr,Options);
 end;
 
 end.

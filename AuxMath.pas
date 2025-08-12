@@ -44,9 +44,9 @@
       about which types and what functions are affected, refer to "Overloading
       information symbols" further down.
 
-  Version 1.3.4 (2025-05-17)
+  Version 1.3.5 (2025-08-13)
 
-  Last change (2025-05-17)
+  Last change (2025-08-13)
 
   ©2024-2025 František Milt
 
@@ -3723,6 +3723,80 @@ Function IndexValueIn(const Value: Extended; const Arr: array of Extended; Optio
 {$IFEND}
 
 Function IndexValueIn(const Value: Pointer; const Arr: array of Pointer; Options: TAMIndexingOptions = []): Integer; overload;
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                              Linear interpolation
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  InterpolateLinear
+
+  Linearly interpolates between Y1 and Y2 using value of X1 and X2. It will
+  return value of Y for point given by X coordinate that lies on a straight
+  line that goes through two points with coordinates (X1,Y1) and (X2,Y2).
+
+    NOTE - It is possible to pass X that does not lie between X1 and X2, this
+           way the interpolation is turned into linear extrapolation.
+
+    WARNING - X1 and X2 must NOT be equal, otherwise an EAMInvalidValue
+              exception will be raised.
+              Also note that precission errors within hardware might cause the
+              caclculation to raise other exceptions if the two mentioned
+              values are very close to each other or are very large.
+}
+Function InterpolateLinear(const X1,X2,Y1,Y2: Extended; const X: Extended): Extended; overload;
+
+{
+  InterpolateLinear
+
+  Linearly interpolates between values A and B using normalized range T.
+
+  For T = 0, it will return value A and for T = 1 value of B, but note that
+  this might be affected by precission errors in FPU hardware (ie. in some
+  circumstances the returned value might not be completely equal to A or B).
+  For T in interval (0,1) it will return a value between A and B.
+
+    NOTE - T is not checked to be in the internal (0,1). If T is lower than 0
+           or higher than 1 then the function calculates liner extrapolation.
+}
+Function InterpolateLinear(const A,B: Extended; const T: Extended): Extended; overload;
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                              Linear extrapolation
+--------------------------------------------------------------------------------
+===============================================================================}
+{
+  ExtrapolateLinear
+
+  Linearly extrapolates value using two data points ((X1,Y1) and (X2,Y2)).
+  It will return value of Y for point given by X coordinate that lies on a
+  straight line that goes through the two given data points.
+
+    NOTE - It is possible to pass X that lies between X1 and X2, effectively
+           calculating linear interpolation.
+
+    WARNING - X1 and X2 must NOT be equal, otherwise an EAMInvalidValue
+              exception will be raised.
+              Also note that precission errors within hardware might cause the
+              caclculation to raise other exceptions if the two mentioned
+              values are very close to each other or are very large.
+}
+Function ExtrapolateLinear(const X1,X2,Y1,Y2: Extended; const X: Extended): Extended; overload;
+
+{
+  ExtrapolateLinear
+
+  Linearly extrapolates from two given data points (A and B) based on value
+  given by T.
+
+  T is expected to be normalized for interval (A,B), but can otherwise be of
+  any value. For T = 0, it will return a value of B, for T = -1 it will return
+  A, for T = 1 it will return value of 2B - A.
+}
+Function ExtrapolateLinear(const A,B: Extended; const T: Extended): Extended; overload;
+
 
 implementation
 
@@ -22160,6 +22234,50 @@ end;
 Function IndexValueIn(const Value: Pointer; const Arr: array of Pointer; Options: TAMIndexingOptions = []): Integer;
 begin
 Result := pIndexValueIn(Value,Arr,Options);
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                              Linear interpolation
+--------------------------------------------------------------------------------
+===============================================================================}
+
+Function InterpolateLinear(const X1,X2,Y1,Y2: Extended; const X: Extended): Extended;
+begin
+If X1 <> X2 then
+  Result :=  (Y2 - Y1) * ((X - X1) / (X2 - X1)) + Y1
+else
+  raise EAMInvalidValue.Create('InterpolateLinear: Values X1 and X2 are equal, cannot interpolate.');
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function InterpolateLinear(const A,B: Extended; const T: Extended): Extended;
+begin
+Result := (B - A) * T + A;
+end;
+
+
+{===============================================================================
+--------------------------------------------------------------------------------
+                              Linear extrapolation
+--------------------------------------------------------------------------------
+===============================================================================}
+
+Function ExtrapolateLinear(const X1,X2,Y1,Y2: Extended; const X: Extended): Extended; 
+begin
+If X1 <> X2 then
+  Result :=  (Y2 - Y1) * ((X - X1) / (X2 - X1)) + Y1
+else
+  raise EAMInvalidValue.Create('ExtrapolateLinear: Values X1 and X2 are equal, cannot extrapolate.');
+end;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+Function ExtrapolateLinear(const A,B: Extended; const T: Extended): Extended;
+begin
+Result := (B - A) * T + B;
 end;
 
 end.
